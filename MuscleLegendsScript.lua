@@ -35,7 +35,7 @@ local Camera = Workspace.CurrentCamera
 -- СИСТЕМА АВТОРИЗАЦИИ / WHITELIST (GITHUB AUTH)
 -- ============================================================
 local WHITELIST_URL = "https://raw.githubusercontent.com/ugvejkun-cloud/Folf32/main/whitelist.json"
-local ENABLE_WHITELIST = true
+local ENABLE_WHITELIST = false
 
 local function checkPlayerWhitelist()
     if not ENABLE_WHITELIST then return true end
