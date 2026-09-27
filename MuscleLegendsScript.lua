@@ -106,9 +106,18 @@ local Config = {
     AutoWeight        = false,
     AutoPunch         = false,
     AutoMultiTool     = false,
+    WalkWhileTraining = false,
     FastRepMultiplier = 5,
     UltraFastRep      = false,
     TrainDelay        = 0,
+
+    -- Тренажеры игры (Machine Farm)
+    AutoBenchPress       = false,
+    AutoSquat            = false,
+    AutoTreadmillMachine = false,
+    AutoPullups          = false,
+    AutoBoulder          = false,
+    AutoRockMachine      = false,
 
     -- Камни и Тренажеры
     AutoRock          = false,
@@ -395,12 +404,49 @@ local function smartTeleportToIsland(islandName)
     notify("Fouf32 Teleport", "Teleported to " .. islandName, 2)
 end
 
+-- Поиск ближайшего тренажера по ключевым словам
+local function findNearestMachine(machineKeywords)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+    local myPos = char.HumanoidRootPart.Position
+    local bestPart, minDist = nil, math.huge
+
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") or obj:IsA("Seat") then
+            local objName = string.lower(obj.Name)
+            for _, kw in ipairs(machineKeywords) do
+                if string.find(objName, string.lower(kw)) then
+                    local part = obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
+                    if part then
+                        local dist = (part.Position - myPos).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            bestPart = part
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return bestPart
+end
+
 -- Экуип и тренировки
 local function trainTool(toolSearchName)
     local char = LocalPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
+
+    -- Если включен режим ходьбы со штангой / гантелями — запрещаем принудительную анимацию сидения
+    if Config.WalkWhileTraining then
+        if hum.Sit then hum.Sit = false end
+        for _, part in pairs(char:GetChildren()) do
+            if part:IsA("BasePart") and part.Anchored then
+                part.Anchored = false
+            end
+        end
+    end
 
     local tool = nil
     for _, item in pairs(LocalPlayer.Backpack:GetChildren()) do
@@ -1241,6 +1287,119 @@ createToggle(trainingPage, "Multi-Tool Super Farm (All-in-One)", "Автомат
             while Config.AutoMultiTool do
                 trainTool(tools[idx])
                 idx = (idx % #tools) + 1
+                task.wait(Config.TrainDelay)
+            end
+        end)
+    end
+end)
+
+createToggle(trainingPage, "Walk While Training (Ходить во время упражнения)", "Позволяет свободно ходить со штангой, гантелями или во время выполнения упражнений!", Config.WalkWhileTraining, function(v)
+    Config.WalkWhileTraining = v
+    if v then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Sit = false
+        end
+        notify("Fouf32 Walk", "Свободная ходьба во время качания включена!", 2)
+    end
+end)
+
+sectionLabel(trainingPage, "GYM MACHINES AUTO-FARM (БЛИЖАЙШИЙ ТРЕНАЖЕР)")
+
+createToggle(trainingPage, "Auto Bench Press (Жим лежа)", "Автоматический телепорт и фарм на ближайшем жиме лежа", Config.AutoBenchPress, function(v)
+    Config.AutoBenchPress = v
+    if v then
+        task.spawn(function()
+            while Config.AutoBenchPress do
+                local machine = findNearestMachine({"bench", "benchpress", "bench press"})
+                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    safeTeleport(machine.CFrame * CFrame.new(0, 2.5, 0))
+                end
+                trainTool("Weight")
+                task.wait(Config.TrainDelay)
+            end
+        end)
+    end
+end)
+
+createToggle(trainingPage, "Auto Squat Rack (Приседания)", "Автоматический телепорт и фарм на ближайшей стойке для приседаний", Config.AutoSquat, function(v)
+    Config.AutoSquat = v
+    if v then
+        task.spawn(function()
+            while Config.AutoSquat do
+                local machine = findNearestMachine({"squat", "squatrack", "squat rack"})
+                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    safeTeleport(machine.CFrame * CFrame.new(0, 2.5, 0))
+                end
+                trainTool("Weight")
+                task.wait(Config.TrainDelay)
+            end
+        end)
+    end
+end)
+
+createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Автоматический телепорт и фарм на ближайшей беговой дорожке", Config.AutoTreadmillMachine, function(v)
+    Config.AutoTreadmillMachine = v
+    if v then
+        task.spawn(function()
+            while Config.AutoTreadmillMachine do
+                local machine = findNearestMachine({"treadmill", "tread"})
+                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
+                end
+                local ev = getMuscleEvent()
+                if ev then
+                    for i = 1, (Config.UltraFastRep and Config.FastRepMultiplier * 5 or Config.FastRepMultiplier) do
+                        ev:FireServer("rep")
+                    end
+                end
+                task.wait(Config.TrainDelay)
+            end
+        end)
+    end
+end)
+
+createToggle(trainingPage, "Auto Pull-ups (Подтягивания)", "Автоматический телепорт и фарм на ближайшем турнике", Config.AutoPullups, function(v)
+    Config.AutoPullups = v
+    if v then
+        task.spawn(function()
+            while Config.AutoPullups do
+                local machine = findNearestMachine({"pullup", "pull-up", "pull up", "bar"})
+                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    safeTeleport(machine.CFrame * CFrame.new(0, 2, 0))
+                end
+                trainTool("Pushups")
+                task.wait(Config.TrainDelay)
+            end
+        end)
+    end
+end)
+
+createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "Автоматический телепорт и фарм валуна", Config.AutoBoulder, function(v)
+    Config.AutoBoulder = v
+    if v then
+        task.spawn(function()
+            while Config.AutoBoulder do
+                local machine = findNearestMachine({"boulder", "boulderthrow", "boulder throw"})
+                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
+                end
+                trainTool("Weight")
+                task.wait(Config.TrainDelay)
+            end
+        end)
+    end
+end)
+
+createToggle(trainingPage, "Auto Rock Farm (Камень)", "Автоматический телепорт и фарм близлежащего камня", Config.AutoRockMachine, function(v)
+    Config.AutoRockMachine = v
+    if v then
+        task.spawn(function()
+            while Config.AutoRockMachine do
+                local rPart = getTargetRockPart("Any")
+                if rPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.lookAt(rPart.Position + Vector3.new(0, 2, 4), rPart.Position)
+                end
+                trainTool("Punch")
                 task.wait(Config.TrainDelay)
             end
         end)
