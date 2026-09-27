@@ -1166,6 +1166,32 @@ createButton(clickGuiPage, "Optimize FPS (Smooth Plastic)", "Удаляет те
     notify("FPS Boost", "Текстуры карты оптимизированы!", 2)
 end)
 
+local function completeScriptUnload()
+    for _, conn in pairs(ScriptConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    ScriptConnections = {}
+    Config.AutoDumbbell = false
+    Config.AutoPushups = false
+    Config.AutoSitups = false
+    Config.AutoWeight = false
+    Config.AutoPunch = false
+    Config.AutoMultiTool = false
+    Config.AutoBenchPress = false
+    Config.AutoSquat = false
+    Config.AutoTreadmillMachine = false
+    Config.AutoPullups = false
+    Config.AutoBoulder = false
+    Config.AutoRockMachine = false
+    Config.KillAura = false
+    Config.AutoKillBoss = false
+    Config.AutoKillServer = false
+    Config.PlayerESP = false
+    Config.FlyEnabled = false
+    if ScreenGui then pcall(function() ScreenGui:Destroy() end) end
+    notify("Fouf32 Unload", "Скрипт Fouf32 успешно выгружен!", 3)
+end
+
 createButton(clickGuiPage, "Unload & Terminate Fouf32", "Полная выгрузка скрипта Fouf32 build 0.21 и очистка памяти", completeScriptUnload)
 
 -- ============================================================
