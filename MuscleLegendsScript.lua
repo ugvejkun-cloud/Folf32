@@ -404,25 +404,49 @@ local function smartTeleportToIsland(islandName)
     notify("Fouf32 Teleport", "Teleported to " .. islandName, 2)
 end
 
+-- Поиск ближайшего тренажера по ключевым словам
+local function findNearestMachine(machineKeywords)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil, nil end
+    local myPos = char.HumanoidRootPart.Position
+    local bestPart, bestModel, minDist = nil, nil, math.huge
+
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") or obj:IsA("Seat") then
+            local objName = string.lower(obj.Name)
+            for _, kw in ipairs(machineKeywords) do
+                if string.find(objName, string.lower(kw)) then
+                    local part = obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
+                    if part then
+                        local dist = (part.Position - myPos).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            bestPart = part
+                            bestModel = obj:IsA("Model") and obj or obj.Parent
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return bestPart, bestModel
+end
+
 -- Использование тренажера (посадка на сиденье / взаимодействие без гантели)
 local function useGymMachine(machineKeywords)
     local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
     local myHrp = char.HumanoidRootPart
     local myHum = char:FindFirstChildOfClass("Humanoid")
 
-    local machinePart = findNearestMachine(machineKeywords)
+    local machinePart, machineModel = findNearestMachine(machineKeywords)
     if machinePart then
         local seat = nil
         if machinePart:IsA("Seat") then
             seat = machinePart
-        elseif machinePart.Parent then
-            if machinePart.Parent:IsA("Model") and machinePart.Parent:FindFirstChildOfClass("Seat") then
-                seat = machinePart.Parent:FindFirstChildOfClass("Seat")
-            else
-                for _, child in pairs(machinePart.Parent:GetDescendants()) do
-                    if child:IsA("Seat") then seat = child; break end
-                end
+        elseif machineModel then
+            for _, child in pairs(machineModel:GetDescendants()) do
+                if child:IsA("Seat") then seat = child; break end
             end
         end
 
@@ -441,7 +465,9 @@ local function useGymMachine(machineKeywords)
                 end
             end)
         end
+        return machineModel
     end
+    return nil
 end
 
 -- Экуип и тренировки
@@ -1347,11 +1373,12 @@ sectionLabel(trainingPage, "GYM MACHINES AUTO-FARM (БЛИЖАЙШИЙ ТРЕН�
 createToggle(trainingPage, "Auto Bench Press (Жим лежа)", "Садится на ближайший жим лежа 1 раз и качает грудь!", Config.AutoBenchPress, function(v)
     Config.AutoBenchPress = v
     if v then
-        useGymMachine({"bench", "benchpress", "bench press"})
+        local mModel = useGymMachine({"bench", "benchpress", "bench press"})
         task.spawn(function()
             while Config.AutoBenchPress do
                 local ev = getMuscleEvent()
                 if ev then
+                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
                     local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
                     for i = 1, count do ev:FireServer("rep") end
                 end
@@ -1364,11 +1391,12 @@ end)
 createToggle(trainingPage, "Auto Squat Rack (Приседания)", "Садится на ближайшую стойку приседаний 1 раз и качает ноги!", Config.AutoSquat, function(v)
     Config.AutoSquat = v
     if v then
-        useGymMachine({"squat", "squatrack", "squat rack"})
+        local mModel = useGymMachine({"squat", "squatrack", "squat rack"})
         task.spawn(function()
             while Config.AutoSquat do
                 local ev = getMuscleEvent()
                 if ev then
+                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
                     local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
                     for i = 1, count do ev:FireServer("rep") end
                 end
@@ -1381,11 +1409,12 @@ end)
 createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Встает на ближайшую беговую дорожку 1 раз и качает ловкость!", Config.AutoTreadmillMachine, function(v)
     Config.AutoTreadmillMachine = v
     if v then
-        useGymMachine({"treadmill", "tread"})
+        local mModel = useGymMachine({"treadmill", "tread"})
         task.spawn(function()
             while Config.AutoTreadmillMachine do
                 local ev = getMuscleEvent()
                 if ev then
+                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
                     local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
                     for i = 1, count do ev:FireServer("rep") end
                 end
@@ -1398,11 +1427,12 @@ end)
 createToggle(trainingPage, "Auto Pull-ups (Подтягивания)", "Встает к ближайшему турнику 1 раз и подтягивается!", Config.AutoPullups, function(v)
     Config.AutoPullups = v
     if v then
-        useGymMachine({"pullup", "pull-up", "pull up", "bar"})
+        local mModel = useGymMachine({"pullup", "pull-up", "pull up", "bar"})
         task.spawn(function()
             while Config.AutoPullups do
                 local ev = getMuscleEvent()
                 if ev then
+                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
                     local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
                     for i = 1, count do ev:FireServer("rep") end
                 end
@@ -1415,13 +1445,20 @@ end)
 createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "Подходит к валуну 1 раз и качает броски!", Config.AutoBoulder, function(v)
     Config.AutoBoulder = v
     if v then
-        useGymMachine({"boulder", "boulderthrow", "boulder throw"})
+        local mModel = useGymMachine({"boulder", "boulderthrow", "boulder throw"})
         task.spawn(function()
             while Config.AutoBoulder do
                 local ev = getMuscleEvent()
                 if ev then
+                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
                     local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
                     for i = 1, count do ev:FireServer("rep") end
+                end
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
+            end
+        end)
+    end
+end)
                 end
                 task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
@@ -1792,6 +1829,7 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
     if v then
         notify("Fouf32 Boss", "Авто-фарм Босса включен! Наведение...", 3)
         task.spawn(function()
+            local notifiedNoBoss = false
             while Config.AutoKillBoss do
                 local myChar = LocalPlayer.Character
                 if myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar:FindFirstChildOfClass("Humanoid") then
@@ -1806,6 +1844,7 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
 
                     local bossModel, bossHum, bossHrp = getActiveBoss()
                     if bossModel and bossHrp and bossHum and bossHum.Health > 0 then
+                        notifiedNoBoss = false
                         local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or myChar:FindFirstChild("Punch")
                         if punch and punch.Parent == LocalPlayer.Backpack then
                             myHum:EquipTool(punch)
@@ -1830,7 +1869,10 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                             end
                         end)
                     else
-                        notify("Fouf32 Boss", "Ожидание спавна Босса на карте...", 2)
+                        if not notifiedNoBoss then
+                            notify("Fouf32 Boss", "Ожидание спавна Босса на карте...", 3)
+                            notifiedNoBoss = true
+                        end
                         task.wait(1.5)
                     end
                 end
