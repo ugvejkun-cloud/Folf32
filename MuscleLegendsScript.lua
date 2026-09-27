@@ -1416,17 +1416,17 @@ createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "Т
     end
 end)
 
-createToggle(trainingPage, "Auto Rock Farm (Камень)", "Автоматический телепорт и фарм близлежащего камня", Config.AutoRockMachine, function(v)
+createToggle(trainingPage, "Auto Rock Farm (Камень)", "Телепортируется к ближайшему камню 1 раз и непрерывно бьет!", Config.AutoRockMachine, function(v)
     Config.AutoRockMachine = v
     if v then
+        local rPart = getTargetRockPart("Any")
+        if rPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.lookAt(rPart.Position + Vector3.new(0, 2, 4), rPart.Position)
+        end
         task.spawn(function()
             while Config.AutoRockMachine do
-                local rPart = getTargetRockPart("Any")
-                if rPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.lookAt(rPart.Position + Vector3.new(0, 2, 4), rPart.Position)
-                end
                 trainTool("Punch")
-                task.wait(Config.TrainDelay)
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
@@ -1456,27 +1456,24 @@ RockInfoLabel.BackgroundTransparency = 1; RockInfoLabel.Position = UDim2.new(0, 
 RockInfoLabel.Font = Enum.Font.GothamBold; RockInfoLabel.TextColor3 = Color3.fromRGB(94, 234, 212); RockInfoLabel.TextSize = 11; RockInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 RockInfoLabel.Text = "Selected Rock Tier: Any"
 
-createToggle(rocksPage, "Auto Farm Selected Rock", "Автоматически телепортируется лицом к камню выбранного уровня и непрерывно бьет!", Config.AutoRock, function(v)
+createToggle(rocksPage, "Auto Farm Selected Rock", "Телепортируется к камню 1 раз и непрерывно бьет!", Config.AutoRock, function(v)
     Config.AutoRock = v
     if v then
+        local rPart = getTargetRockPart(Config.SelectedRockTier)
+        if rPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.lookAt(rPart.Position + Vector3.new(0, 2, 4), rPart.Position)
+            LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+        end
         task.spawn(function()
             while Config.AutoRock do
                 local char = LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+                if char and char:FindFirstChildOfClass("Humanoid") then
                     local hum = char:FindFirstChildOfClass("Humanoid")
-                    local hrp = char.HumanoidRootPart
-
                     local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or char:FindFirstChild("Punch")
                     if punch and punch.Parent == LocalPlayer.Backpack then
                         hum:EquipTool(punch)
                     end
                     if punch then pcall(function() punch:Activate() end) end
-
-                    local rPart = getTargetRockPart(Config.SelectedRockTier)
-                    if rPart then
-                        hrp.CFrame = CFrame.lookAt(rPart.Position + Vector3.new(0, 2, 4), rPart.Position)
-                        hrp.AssemblyLinearVelocity = Vector3.zero
-                    end
 
                     local ev = getMuscleEvent()
                     if ev then
@@ -1487,32 +1484,24 @@ createToggle(rocksPage, "Auto Farm Selected Rock", "Автоматически �
                         end
                     end
                 end
-                task.wait(Config.TrainDelay)
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
 end)
 
-createToggle(rocksPage, "Auto Treadmill Farm (Agility)", "Безопасная авто-прокачка ловкости на беговой дорожке", Config.AutoTreadmill, function(v)
+createToggle(rocksPage, "Auto Treadmill Farm (Agility)", "Телепортируется на беговую дорожку 1 раз и качает ловкость!", Config.AutoTreadmill, function(v)
     Config.AutoTreadmill = v
     if v then
+        local machine = findNearestMachine({"treadmill", "tread"})
+        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
+        end
         task.spawn(function()
             while Config.AutoTreadmill do
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    for _, obj in pairs(Workspace:GetDescendants()) do
-                        if string.find(string.lower(obj.Name), "treadmill") then
-                            local part = obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
-                            if part then
-                                safeTeleport(part.CFrame * CFrame.new(0, 3, 0))
-                                local ev = getMuscleEvent()
-                                if ev then ev:FireServer("rep") end
-                                break
-                            end
-                        end
-                    end
-                end
-                task.wait(0.1)
+                local ev = getMuscleEvent()
+                if ev then ev:FireServer("rep") end
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
