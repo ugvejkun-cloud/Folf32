@@ -1331,86 +1331,86 @@ end)
 
 sectionLabel(trainingPage, "GYM MACHINES AUTO-FARM (БЛИЖАЙШИЙ ТРЕНАЖЕР)")
 
-createToggle(trainingPage, "Auto Bench Press (Жим лежа)", "Автоматический телепорт и фарм на ближайшем жиме лежа", Config.AutoBenchPress, function(v)
+createToggle(trainingPage, "Auto Bench Press (Жим лежа)", "Телепортируется на ближайший жим лежа 1 раз и непрерывно бьет/качает!", Config.AutoBenchPress, function(v)
     Config.AutoBenchPress = v
     if v then
+        local machine = findNearestMachine({"bench", "benchpress", "bench press"})
+        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            safeTeleport(machine.CFrame * CFrame.new(0, 2.5, 0))
+        end
         task.spawn(function()
             while Config.AutoBenchPress do
-                local machine = findNearestMachine({"bench", "benchpress", "bench press"})
-                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    safeTeleport(machine.CFrame * CFrame.new(0, 2.5, 0))
-                end
                 trainTool("Weight")
-                task.wait(Config.TrainDelay)
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
 end)
 
-createToggle(trainingPage, "Auto Squat Rack (Приседания)", "Автоматический телепорт и фарм на ближайшей стойке для приседаний", Config.AutoSquat, function(v)
+createToggle(trainingPage, "Auto Squat Rack (Приседания)", "Телепортируется на ближайшую стойку приседаний 1 раз и непрерывно качает!", Config.AutoSquat, function(v)
     Config.AutoSquat = v
     if v then
+        local machine = findNearestMachine({"squat", "squatrack", "squat rack"})
+        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            safeTeleport(machine.CFrame * CFrame.new(0, 2.5, 0))
+        end
         task.spawn(function()
             while Config.AutoSquat do
-                local machine = findNearestMachine({"squat", "squatrack", "squat rack"})
-                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    safeTeleport(machine.CFrame * CFrame.new(0, 2.5, 0))
-                end
                 trainTool("Weight")
-                task.wait(Config.TrainDelay)
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
 end)
 
-createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Автоматический телепорт и фарм на ближайшей беговой дорожке", Config.AutoTreadmillMachine, function(v)
+createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Телепортируется на ближайшую беговую дорожку 1 раз и качает ловкость!", Config.AutoTreadmillMachine, function(v)
     Config.AutoTreadmillMachine = v
     if v then
+        local machine = findNearestMachine({"treadmill", "tread"})
+        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
+        end
         task.spawn(function()
             while Config.AutoTreadmillMachine do
-                local machine = findNearestMachine({"treadmill", "tread"})
-                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
-                end
                 local ev = getMuscleEvent()
                 if ev then
                     for i = 1, (Config.UltraFastRep and Config.FastRepMultiplier * 5 or Config.FastRepMultiplier) do
                         ev:FireServer("rep")
                     end
                 end
-                task.wait(Config.TrainDelay)
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
 end)
 
-createToggle(trainingPage, "Auto Pull-ups (Подтягивания)", "Автоматический телепорт и фарм на ближайшем турнике", Config.AutoPullups, function(v)
+createToggle(trainingPage, "Auto Pull-ups (Подтягивания)", "Телепортируется на ближайший турник 1 раз и качает подтягивания!", Config.AutoPullups, function(v)
     Config.AutoPullups = v
     if v then
+        local machine = findNearestMachine({"pullup", "pull-up", "pull up", "bar"})
+        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            safeTeleport(machine.CFrame * CFrame.new(0, 2, 0))
+        end
         task.spawn(function()
             while Config.AutoPullups do
-                local machine = findNearestMachine({"pullup", "pull-up", "pull up", "bar"})
-                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    safeTeleport(machine.CFrame * CFrame.new(0, 2, 0))
-                end
                 trainTool("Pushups")
-                task.wait(Config.TrainDelay)
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
 end)
 
-createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "Автоматический телепорт и фарм валуна", Config.AutoBoulder, function(v)
+createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "Телепортируется к валуну 1 раз и непрерывно качает!", Config.AutoBoulder, function(v)
     Config.AutoBoulder = v
     if v then
+        local machine = findNearestMachine({"boulder", "boulderthrow", "boulder throw"})
+        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
+        end
         task.spawn(function()
             while Config.AutoBoulder do
-                local machine = findNearestMachine({"boulder", "boulderthrow", "boulder throw"})
-                if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
-                end
                 trainTool("Weight")
-                task.wait(Config.TrainDelay)
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
