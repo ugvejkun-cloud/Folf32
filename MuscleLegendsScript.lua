@@ -122,6 +122,8 @@ local Config = {
     KillAuraRange     = 45,
     KillAuraDelay     = 0.03,
     PunchMultiplier   = 2,
+    AutoKillBoss      = false,
+    BossHitMultiplier = 5,
     AutoKillServer    = false,
     AutoBrawl         = false,
     SelectedTargetPlayer = nil,
@@ -1534,6 +1536,80 @@ createToggle(combatPage, "Auto Join & Win Brawls", "Авто-вход на Brawl
         end)
     end
 end)
+
+sectionLabel(combatPage, "LEGEND BOSS KILLER ENGINE (GODMODE & FAST ATTACK)")
+
+local function getActiveBoss()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            local n = string.lower(obj.Name)
+            if string.find(n, "boss") or string.find(n, "босс") or string.find(n, "legend") or string.find(n, "evil") then
+                local hum = obj:FindFirstChildOfClass("Humanoid")
+                local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
+                if hum and hum.Health > 0 and hrp then
+                    return obj, hum, hrp
+                end
+            end
+        end
+    end
+    return nil, nil, nil
+end
+
+createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авто-фарм Босса: безопасный телепорт за спину босса + отключение урона по вам + быстрая атака!", Config.AutoKillBoss, function(v)
+    Config.AutoKillBoss = v
+    if v then
+        notify("Fouf32 Boss", "Авто-фарм Босса включен! Безопасный урон активирован.", 3)
+        task.spawn(function()
+            while Config.AutoKillBoss do
+                local myChar = LocalPlayer.Character
+                if myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar:FindFirstChildOfClass("Humanoid") then
+                    local myHrp = myChar.HumanoidRootPart
+                    local myHum = myChar:FindFirstChildOfClass("Humanoid")
+
+                    -- Безопасность: отключаем CanTouch чтобы босс не мог нанести урон
+                    for _, p in pairs(myChar:GetChildren()) do
+                        if p:IsA("BasePart") then p.CanTouch = false end
+                    end
+                    myHum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+                    myHum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+
+                    -- Экуипируем кулак
+                    local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or myChar:FindFirstChild("Punch")
+                    if punch and punch.Parent == LocalPlayer.Backpack then
+                        myHum:EquipTool(punch)
+                    end
+                    if punch then pcall(function() punch:Activate() end) end
+
+                    -- Ищем Босса
+                    local bossModel, bossHum, bossHrp = getActiveBoss()
+                    if bossModel and bossHrp and bossHum and bossHum.Health > 0 then
+                        -- Телепортируемся вплотную сзади босса (высота +2 stud, расстояние -3 studs)
+                        safeTeleport(CFrame.lookAt(bossHrp.Position + (bossHrp.CFrame.LookVector * -3) + Vector3.new(0, 2, 0), bossHrp.Position))
+
+                        local ev = getMuscleEvent()
+                        if ev then
+                            for i = 1, Config.BossHitMultiplier do
+                                ev:FireServer("punch", "leftHand")
+                                ev:FireServer("punch", "rightHand")
+                            end
+                        end
+                    end
+                end
+                task.wait(0.04)
+            end
+        end)
+    else
+        if LocalPlayer.Character then
+            for _, p in pairs(LocalPlayer.Character:GetChildren()) do
+                if p:IsA("BasePart") then p.CanTouch = true end
+            end
+        end
+    end
+end)
+
+createSlider(combatPage, "Boss Hit Multiplier (1x-20x)", 1, 20, 5, function(v)
+    Config.BossHitMultiplier = v
+end, nil, "Количество ударов по боссу за один цикл")
 
 -- ============================================================
 -- 6. РАЗДЕЛ: PROTECTION
