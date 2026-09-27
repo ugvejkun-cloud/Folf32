@@ -735,6 +735,18 @@ EnBtn.Font = Enum.Font.GothamBold
 EnBtn.TextSize = 13
 applyCorner(EnBtn, 10)
 
+RuBtn.MouseButton1Click:Connect(function()
+    Config.Language = "RU"
+    LangModal.Visible = false
+    if MainFrame then MainFrame.Visible = true end
+end)
+
+EnBtn.MouseButton1Click:Connect(function()
+    Config.Language = "EN"
+    LangModal.Visible = false
+    if MainFrame then MainFrame.Visible = true end
+end)
+
 -- ============================================================
 -- КНОПКА ОТКРЫТИЯ НА ЭКРАНЕ FOUF32
 -- ============================================================
@@ -807,7 +819,8 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -345, 0.5, -260)
 MainFrame.Size = UDim2.new(0, 690, 0, 520)
 MainFrame.Active = true
-MainFrame.Visible = false -- Скрыто до выбора языка
+MainFrame.Visible = true
+LangModal.Visible = false
 MainFrame.ClipsDescendants = true
 applyCorner(MainFrame, 18)
 local MainStroke = applyStroke(MainFrame, AccentColor, 0.3, 1.5)
