@@ -15,6 +15,10 @@
     ================================================================================
 --]]
 
+print("==================================================")
+print("[FOUF32 BUILD 0.21]: SCRIPT EXECUTION STARTED!")
+print("==================================================")
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
