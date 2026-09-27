@@ -100,6 +100,7 @@ local Config = {
     EnableTooltips    = true,
 
     -- Тренировки
+    AutoOpFarm        = false,
     AutoDumbbell      = false,
     AutoPushups       = false,
     AutoSitups        = false,
@@ -1282,6 +1283,53 @@ createSlider(dashboardPage, "Custom Size Multiplier", 1, 30, 1, function(v) setC
 -- ============================================================
 -- 3. РАЗДЕЛ: AUTO FARM / TRAINING
 -- ============================================================
+sectionLabel(trainingPage, "🔥 AUTO OP - UNIVERSAL TURBO FAST FARM")
+
+createToggle(trainingPage, "Auto OP (Универсальный сумасшедший кликер)", "Сели за ЛЮБОЙ тренажер или взяли ЛЮБОЙ снаряд — мгновенно качает на предельной турбо-скорости!", Config.AutoOpFarm, function(v)
+    Config.AutoOpFarm = v
+    if v then
+        notify("Fouf32 Auto OP", "Auto OP включен! Просто сядьте на тренажер или возьмите снаряд!", 4)
+        task.spawn(function()
+            while Config.AutoOpFarm do
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChildOfClass("Humanoid") then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    local ev = getMuscleEvent()
+
+                    local isSitting = hum.Sit or (hum.SeatPart ~= nil)
+                    local equippedTool = char:FindFirstChildOfClass("Tool")
+
+                    if isSitting or equippedTool then
+                        if equippedTool then
+                            pcall(function() equippedTool:Activate() end)
+                            if string.lower(equippedTool.Name) == "punch" and ev then
+                                ev:FireServer("punch", "leftHand")
+                                ev:FireServer("punch", "rightHand")
+                            end
+                        end
+
+                        if isSitting and hum.SeatPart then
+                            local seat = hum.SeatPart
+                            local mModel = seat:FindFirstAncestorOfClass("Model")
+                            if mModel and ev then
+                                pcall(function() ev:FireServer("interact", mModel) end)
+                            end
+                        end
+
+                        if ev then
+                            local count = Config.UltraFastRep and (Config.FastRepMultiplier * 10) or (Config.FastRepMultiplier * 3)
+                            for i = 1, count do
+                                ev:FireServer("rep")
+                            end
+                        end
+                    end
+                end
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.01)
+            end
+        end)
+    end
+end)
+
 sectionLabel(trainingPage, "AUTOMATED EXERCISE MACHINES")
 createToggle(trainingPage, "Auto Dumbbell Farm", "Авто-фарм Силы через Гантели", Config.AutoDumbbell, function(v)
     Config.AutoDumbbell = v
