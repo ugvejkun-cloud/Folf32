@@ -1540,12 +1540,59 @@ end)
 sectionLabel(combatPage, "LEGEND BOSS KILLER ENGINE (GODMODE & FAST ATTACK)")
 
 local function getActiveBoss()
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") then
+    -- 1. Проверяем стандартные папки боссов Muscle Legends
+    local candidateFolders = {
+        Workspace:FindFirstChild("bossFolder"),
+        Workspace:FindFirstChild("BossFolder"),
+        Workspace:FindFirstChild("Bosses"),
+        Workspace:FindFirstChild("Boss"),
+        ReplicatedStorage:FindFirstChild("bossFolder")
+    }
+    for _, folder in ipairs(candidateFolders) do
+        if folder then
+            for _, obj in pairs(folder:GetChildren()) do
+                if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
+                    local hum = obj:FindFirstChildOfClass("Humanoid")
+                    local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
+                    if hum and hum.Health > 0 and hrp then
+                        return obj, hum, hrp
+                    end
+                end
+            end
+        end
+    end
+
+    -- 2. Сканируем модели верхнего уровня Workspace (исключая игроков, статуи и порталы)
+    for _, obj in pairs(Workspace:GetChildren()) do
+        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
             local n = string.lower(obj.Name)
-            if string.find(n, "boss") or string.find(n, "босс") or string.find(n, "legend") or string.find(n, "evil") then
+            local isExcluded = string.find(n, "statue") or string.find(n, "portal") or string.find(n, "gate") 
+                or string.find(n, "leaderboard") or string.find(n, "display") or string.find(n, "decor") 
+                or string.find(n, "island") or string.find(n, "beach") or string.find(n, "gym") or string.find(n, "ring")
+
+            if not isExcluded then
+                if string.find(n, "boss") or string.find(n, "босс") or string.find(n, "evil") then
+                    local hum = obj:FindFirstChildOfClass("Humanoid")
+                    local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
+                    if hum and hum.Health > 0 and hrp then
+                        return obj, hum, hrp
+                    end
+                end
+            end
+        end
+    end
+
+    -- 3. Глубокий рекурсивный поиск строго по ключевому слову 'boss' (исключая статуи и порталы)
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
+            local n = string.lower(obj.Name)
+            if (string.find(n, "boss") or string.find(n, "босс")) 
+               and not string.find(n, "statue") 
+               and not string.find(n, "portal") 
+               and not string.find(n, "display") 
+               and not string.find(n, "leaderboard") then
                 local hum = obj:FindFirstChildOfClass("Humanoid")
-                local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
+                local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
                 if hum and hum.Health > 0 and hrp then
                     return obj, hum, hrp
                 end
@@ -1593,6 +1640,9 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                                 ev:FireServer("punch", "rightHand")
                             end
                         end
+                    else
+                        -- Если босс еще не заспавнился
+                        notify("Fouf32 Boss", "Ожидание спавна Босса...", 1)
                     end
                 end
                 task.wait(0.04)
