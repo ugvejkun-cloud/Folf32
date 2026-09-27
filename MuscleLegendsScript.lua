@@ -1669,17 +1669,60 @@ end)
 -- 8. РАЗДЕЛ: AUTOMATION & EGGS
 -- ============================================================
 sectionLabel(automationPage, "REBIRTH ENGINE")
-createToggle(automationPage, "Auto Rebirth", "Автоматические перерождения сразу при достижении требований", Config.AutoRebirth, function(v)
+
+local function triggerRebirth()
+    -- Метод 1: muscleEvent ("rebirthRequest")
+    local ev = getMuscleEvent()
+    if ev then
+        pcall(function() ev:FireServer("rebirthRequest") end)
+    end
+
+    -- Метод 2: Поиск в ReplicatedStorage.rEvents (rebirthEvent / rebirthRemote / rebirth)
+    pcall(function()
+        local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
+        if rEvents then
+            for _, child in pairs(rEvents:GetChildren()) do
+                local cName = string.lower(child.Name)
+                if string.find(cName, "rebirth") then
+                    if child:IsA("RemoteEvent") then
+                        child:FireServer()
+                        child:FireServer("rebirthRequest")
+                    elseif child:IsA("RemoteFunction") then
+                        child:InvokeServer()
+                    end
+                end
+            end
+        end
+    end)
+
+    -- Метод 3: Глобальный поиск любых RemoteEvent с именем rebirth в ReplicatedStorage
+    pcall(function()
+        for _, item in pairs(ReplicatedStorage:GetDescendants()) do
+            if item:IsA("RemoteEvent") and string.find(string.lower(item.Name), "rebirth") then
+                item:FireServer()
+                item:FireServer("rebirthRequest")
+            elseif item:IsA("RemoteFunction") and string.find(string.lower(item.Name), "rebirth") then
+                item:InvokeServer()
+            end
+        end
+    end)
+end
+
+createToggle(automationPage, "Auto Rebirth", "Автоматические перерождения сразу при достижении требований (Мульти-ивент)", Config.AutoRebirth, function(v)
     Config.AutoRebirth = v
     if v then
         task.spawn(function()
             while Config.AutoRebirth do
-                local ev = getMuscleEvent()
-                if ev then ev:FireServer("rebirthRequest") end
-                task.wait(1)
+                triggerRebirth()
+                task.wait(0.5)
             end
         end)
     end
+end)
+
+createButton(automationPage, "Manual Rebirth (Переродиться 1 раз)", "Принудительно запрашивает перерождение прямо сейчас", function()
+    triggerRebirth()
+    notify("Fouf32 Rebirth", "Запрос на перерождение отправлен!", 2)
 end)
 
 sectionLabel(automationPage, "CHESTS & ORBS MAGNET")
