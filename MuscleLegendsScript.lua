@@ -106,8 +106,9 @@ local Config = {
     AutoWeight        = false,
     AutoPunch         = false,
     AutoMultiTool     = false,
-    FastRepMultiplier = 2,
-    TrainDelay        = 0.01,
+    FastRepMultiplier = 5,
+    UltraFastRep      = false,
+    TrainDelay        = 0,
 
     -- Камни и Тренажеры
     AutoRock          = false,
@@ -434,7 +435,8 @@ local function trainTool(toolSearchName)
 
     local ev = getMuscleEvent()
     if ev then
-        for i = 1, Config.FastRepMultiplier do
+        local repCount = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
+        for i = 1, repCount do
             ev:FireServer("rep")
         end
     end
@@ -1243,13 +1245,20 @@ createToggle(trainingPage, "Multi-Tool Super Farm (All-in-One)", "Автомат
     end
 end)
 
-createSlider(trainingPage, "Fast Rep Multiplier (1x-20x)", 1, 20, 2, function(v)
-    Config.FastRepMultiplier = v
-end, nil, "Ускоритель фарма: количество отправляемых ивентов качания за один клик (до 20x)")
+createToggle(trainingPage, "ULTRA FAST INSTANT REP MODE (TURBO 100X)", "Ультра-скоростной режим: мгновенный спам ивентов качания без задержки!", Config.UltraFastRep, function(v)
+    Config.UltraFastRep = v
+    if v then
+        notify("Fouf32 Turbo Farm", "Ультра-скоростной фарм включен! (100x Rep Spam)", 3)
+    end
+end)
 
-createSlider(trainingPage, "Train Delay Speed (sec)", 0.001, 0.1, Config.TrainDelay, function(v)
+createSlider(trainingPage, "Fast Rep Multiplier (1x-100x)", 1, 100, 10, function(v)
+    Config.FastRepMultiplier = v
+end, nil, "Ускоритель фарма: количество отправляемых пакетов качания за один раз (до 100x)")
+
+createSlider(trainingPage, "Train Delay Speed (sec)", 0, 0.05, Config.TrainDelay, function(v)
     Config.TrainDelay = v
-end, nil, "Задержка между повторами качания")
+end, nil, "Задержка между повторами (0 = мгновенно)")
 
 -- ============================================================
 -- 4. РАЗДЕЛ: ROCKS & GYM MACHINES (ИСПРАВЛЕН ФАРМ КАМНЕЙ)
