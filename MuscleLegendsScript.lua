@@ -686,6 +686,7 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = FRAMEWORK_NAME
 ScreenGui.ResetOnSpawn = false
+ScreenGui.Enabled = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 pcall(function()
@@ -698,8 +699,16 @@ if not ScreenGui.Parent then
     pcall(function() ScreenGui.Parent = targetParent end)
 end
 if not ScreenGui.Parent then
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    pcall(function() ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end)
 end
+
+pcall(function()
+    StarterGui:SetCore("SendNotification", {
+        Title = "FOUF32 BUILD 0.21",
+        Text = "Скрипт успешно запущен! Нажмите Right Shift или кнопку на экране.",
+        Duration = 5
+    })
+end)
 
 -- ============================================================
 -- ПРИВЕТСТВЕННОЕ ОКНО ВЫБОРА ЯЗЫКА (WELCOME LANGUAGE MODAL)
