@@ -1557,7 +1557,6 @@ createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "П
                 task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
-        end)
     end
 end)
 
@@ -2350,7 +2349,13 @@ end)
 
 local espDrawings = {}
 local function clearESP()
-    for _, drawing in pairs(espDrawings) do pcall(function() drawing:Remove() end) end
+    for _, drawing in pairs(espDrawings) do
+        if drawing then
+            pcall(function() drawing.Visible = false end)
+            pcall(function() drawing:Destroy() end)
+            pcall(function() drawing:Remove() end)
+        end
+    end
     espDrawings = {}
 end
 
@@ -2436,10 +2441,12 @@ local function toggleMenu()
         MainFrame.Visible = true
         MainFrame.Size = UDim2.new(0,690,0,0)
         local t = tw(MainFrame, {Size = UDim2.new(0,690,0,520)}, 0.25, Enum.EasingStyle.Quart)
-        t:Play(); t.Completed:Once(function() isAnimating = false end)
+        t:Play()
+        task.delay(0.25, function() isAnimating = false end)
     else
         local t = tw(MainFrame, {Size = UDim2.new(0,690,0,0)}, 0.2, Enum.EasingStyle.Quart)
-        t:Play(); t.Completed:Once(function() MainFrame.Visible = false; isAnimating = false end)
+        t:Play()
+        task.delay(0.2, function() MainFrame.Visible = false; isAnimating = false end)
     end
 end
 
