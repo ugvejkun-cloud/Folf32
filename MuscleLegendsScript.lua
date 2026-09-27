@@ -1668,16 +1668,26 @@ end)
 -- ============================================================
 -- 8. РАЗДЕЛ: AUTOMATION & EGGS
 -- ============================================================
-sectionLabel(automationPage, "REBIRTH ENGINE")
+sectionLabel(automationPage, "REBIRTH ENGINE (MUSCLE LEGENDS)")
 
 local function triggerRebirth()
-    -- Метод 1: muscleEvent ("rebirthRequest")
+    -- 1. Стандартный muscleEvent
     local ev = getMuscleEvent()
     if ev then
         pcall(function() ev:FireServer("rebirthRequest") end)
+        pcall(function() ev:FireServer("rebirth") end)
+        pcall(function() ev:FireServer("requestRebirth") end)
     end
 
-    -- Метод 2: Поиск в ReplicatedStorage.rEvents (rebirthEvent / rebirthRemote / rebirth)
+    -- 2. Поиск в LocalPlayer (Muscle Legends иногда кладет muscleEvent прямо в игрока)
+    pcall(function()
+        if LocalPlayer:FindFirstChild("muscleEvent") then
+            LocalPlayer.muscleEvent:FireServer("rebirthRequest")
+            LocalPlayer.muscleEvent:FireServer("rebirth")
+        end
+    end)
+
+    -- 3. rEvents в ReplicatedStorage (Все комбинации RemoteEvent и RemoteFunction)
     pcall(function()
         local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
         if rEvents then
@@ -1685,42 +1695,46 @@ local function triggerRebirth()
                 local cName = string.lower(child.Name)
                 if string.find(cName, "rebirth") then
                     if child:IsA("RemoteEvent") then
-                        child:FireServer()
-                        child:FireServer("rebirthRequest")
+                        pcall(function() child:FireServer() end)
+                        pcall(function() child:FireServer("rebirthRequest") end)
+                        pcall(function() child:FireServer("rebirth") end)
                     elseif child:IsA("RemoteFunction") then
-                        child:InvokeServer()
+                        pcall(function() child:InvokeServer() end)
+                        pcall(function() child:InvokeServer("rebirthRequest") end)
+                        pcall(function() child:InvokeServer("rebirth") end)
                     end
                 end
             end
         end
     end)
 
-    -- Метод 3: Глобальный поиск любых RemoteEvent с именем rebirth в ReplicatedStorage
+    -- 4. Глобальный поиск любых ремоутов с именем rebirth по всему ReplicatedStorage и Workspace
     pcall(function()
         for _, item in pairs(ReplicatedStorage:GetDescendants()) do
             if item:IsA("RemoteEvent") and string.find(string.lower(item.Name), "rebirth") then
-                item:FireServer()
-                item:FireServer("rebirthRequest")
+                pcall(function() item:FireServer() end)
+                pcall(function() item:FireServer("rebirthRequest") end)
             elseif item:IsA("RemoteFunction") and string.find(string.lower(item.Name), "rebirth") then
-                item:InvokeServer()
+                pcall(function() item:InvokeServer() end)
+                pcall(function() item:InvokeServer("rebirthRequest") end)
             end
         end
     end)
 end
 
-createToggle(automationPage, "Auto Rebirth", "Автоматические перерождения сразу при достижении требований (Мульти-ивент)", Config.AutoRebirth, function(v)
+createToggle(automationPage, "Auto Rebirth (Бесконечный авто-ребирт)", "Автоматически выполняет перерождение сразу при достижении нужного количества силы", Config.AutoRebirth, function(v)
     Config.AutoRebirth = v
     if v then
         task.spawn(function()
             while Config.AutoRebirth do
                 triggerRebirth()
-                task.wait(0.5)
+                task.wait(0.2)
             end
         end)
     end
 end)
 
-createButton(automationPage, "Manual Rebirth (Переродиться 1 раз)", "Принудительно запрашивает перерождение прямо сейчас", function()
+createButton(automationPage, "Manual Rebirth (Переродиться прямо сейчас)", "Принудительно запрашивает перерождение на сервере через все каналы", function()
     triggerRebirth()
     notify("Fouf32 Rebirth", "Запрос на перерождение отправлен!", 2)
 end)
