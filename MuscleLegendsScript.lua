@@ -74,9 +74,16 @@ end
 
 -- Защита от повторного запуска Fouf32
 local FRAMEWORK_NAME = "Fouf32_MuscleLegends_Master"
-if CoreGui:FindFirstChild(FRAMEWORK_NAME) then
-    CoreGui[FRAMEWORK_NAME]:Destroy()
-end
+pcall(function()
+    if typeof(gethui) == "function" and gethui():FindFirstChild(FRAMEWORK_NAME) then
+        gethui()[FRAMEWORK_NAME]:Destroy()
+    end
+end)
+pcall(function()
+    if CoreGui:FindFirstChild(FRAMEWORK_NAME) then
+        CoreGui[FRAMEWORK_NAME]:Destroy()
+    end
+end)
 pcall(function()
     if LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild(FRAMEWORK_NAME) then
         LocalPlayer.PlayerGui[FRAMEWORK_NAME]:Destroy()
@@ -661,19 +668,38 @@ table.insert(ScriptConnections, infJumpConn)
 -- ============================================================
 -- БАЗА ГУИ (FOUF32 GLASS UI FRAMEWORK)
 -- ============================================================
-local targetParent
+local targetParent = nil
 if typeof(gethui) == "function" then
-    targetParent = gethui()
-else
-    local ok, res = pcall(function() return CoreGui end)
-    if ok and res then targetParent = res else targetParent = LocalPlayer:WaitForChild("PlayerGui") end
+    pcall(function() targetParent = gethui() end)
+end
+if not targetParent then
+    pcall(function()
+        if syn and syn.protect_gui then
+            targetParent = CoreGui
+        end
+    end)
+end
+if not targetParent then
+    pcall(function() targetParent = LocalPlayer:WaitForChild("PlayerGui") end)
 end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = FRAMEWORK_NAME
-ScreenGui.Parent = targetParent
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+pcall(function()
+    if syn and syn.protect_gui then
+        syn.protect_gui(ScreenGui)
+        ScreenGui.Parent = CoreGui
+    end
+end)
+if not ScreenGui.Parent then
+    pcall(function() ScreenGui.Parent = targetParent end)
+end
+if not ScreenGui.Parent then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
 
 -- ============================================================
 -- ПРИВЕТСТВЕННОЕ ОКНО ВЫБОРА ЯЗЫКА (WELCOME LANGUAGE MODAL)
