@@ -363,13 +363,13 @@ local function safeTeleport(targetCFrame)
         platform.CanCollide = true
         platform.Parent = Workspace
 
-        hrp.AssemblyLinearVelocity = Vector3.zero
-        hrp.AssemblyAngularVelocity = Vector3.zero
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
 
         task.wait(0.05)
         hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
-        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
         task.delay(3, function()
             pcall(function() platform:Destroy() end)
@@ -379,7 +379,7 @@ end
 
 local function smartTeleportToIsland(islandName)
     local data = islandDatabase[islandName]
-    local targetPos = data and data.pos or Vector3.zero
+    local targetPos = data and data.pos or Vector3.new(0, 0, 0)
 
     local foundPart = nil
     if data and data.keywords then
@@ -453,7 +453,7 @@ local function useGymMachine(machineKeywords)
 
         local targetPart = seat or machinePart
         myHrp.CFrame = targetPart.CFrame + Vector3.new(0, 1.5, 0)
-        myHrp.AssemblyLinearVelocity = Vector3.zero
+        myHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
         if seat then
             pcall(function()
@@ -570,7 +570,7 @@ local function startFlight()
 
     flyBv = Instance.new("BodyVelocity")
     flyBv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    flyBv.Velocity = Vector3.zero
+    flyBv.Velocity = Vector3.new(0, 0, 0)
     flyBv.Parent = hrp
 
     flyBg = Instance.new("BodyGyro")
@@ -588,7 +588,7 @@ local function startFlight()
         end
 
         local cam = Workspace.CurrentCamera
-        local moveDir = Vector3.zero
+        local moveDir = Vector3.new(0, 0, 0)
 
         if flyKeys.W then moveDir = moveDir + cam.CFrame.LookVector end
         if flyKeys.S then moveDir = moveDir - cam.CFrame.LookVector end
@@ -1518,11 +1518,6 @@ createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "П
                 task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
-    end
-end)
-                end
-                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
-            end
         end)
     end
 end)
@@ -1573,7 +1568,7 @@ createToggle(rocksPage, "Auto Farm Selected Rock", "Телепортируетс
         local rPart = getTargetRockPart(Config.SelectedRockTier)
         if rPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.lookAt(rPart.Position + Vector3.new(0, 2, 4), rPart.Position)
-            LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+            LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         end
         task.spawn(function()
             while Config.AutoRock do
@@ -1695,7 +1690,7 @@ createToggle(combatPage, "Enable Kill Aura (Auto Hit & Teleport)", "Активи
                                         if Config.KillAuraMode == "Bring To Me" then
                                             pcall(function()
                                                 oHrp.CFrame = myHrp.CFrame * CFrame.new(0, 0, -2.5)
-                                                oHrp.AssemblyLinearVelocity = Vector3.zero
+                                                oHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                             end)
                                         elseif Config.KillAuraMode == "Magnet TP to Target" then
                                             safeTeleport(oHrp.CFrame * CFrame.new(0, 0, 2.5))
@@ -1913,7 +1908,7 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                         if punch then pcall(function() punch:Activate() end) end
 
                         myHrp.CFrame = CFrame.lookAt(bossHrp.Position + (bossHrp.CFrame.LookVector * -2.5) + Vector3.new(0, 1, 0), bossHrp.Position)
-                        myHrp.AssemblyLinearVelocity = Vector3.zero
+                        myHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
                         local ev = getMuscleEvent()
                         if ev then
