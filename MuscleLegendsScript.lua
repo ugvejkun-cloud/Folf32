@@ -404,31 +404,44 @@ local function smartTeleportToIsland(islandName)
     notify("Fouf32 Teleport", "Teleported to " .. islandName, 2)
 end
 
--- Поиск ближайшего тренажера по ключевым словам
-local function findNearestMachine(machineKeywords)
+-- Использование тренажера (посадка на сиденье / взаимодействие без гантели)
+local function useGymMachine(machineKeywords)
     local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    local myPos = char.HumanoidRootPart.Position
-    local bestPart, minDist = nil, math.huge
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local myHrp = char.HumanoidRootPart
+    local myHum = char:FindFirstChildOfClass("Humanoid")
 
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") or obj:IsA("BasePart") or obj:IsA("Seat") then
-            local objName = string.lower(obj.Name)
-            for _, kw in ipairs(machineKeywords) do
-                if string.find(objName, string.lower(kw)) then
-                    local part = obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
-                    if part then
-                        local dist = (part.Position - myPos).Magnitude
-                        if dist < minDist then
-                            minDist = dist
-                            bestPart = part
-                        end
-                    end
+    local machinePart = findNearestMachine(machineKeywords)
+    if machinePart then
+        local seat = nil
+        if machinePart:IsA("Seat") then
+            seat = machinePart
+        elseif machinePart.Parent then
+            if machinePart.Parent:IsA("Model") and machinePart.Parent:FindFirstChildOfClass("Seat") then
+                seat = machinePart.Parent:FindFirstChildOfClass("Seat")
+            else
+                for _, child in pairs(machinePart.Parent:GetDescendants()) do
+                    if child:IsA("Seat") then seat = child; break end
                 end
             end
         end
+
+        local targetPart = seat or machinePart
+        myHrp.CFrame = targetPart.CFrame + Vector3.new(0, 1.5, 0)
+        myHrp.AssemblyLinearVelocity = Vector3.zero
+
+        if seat then
+            pcall(function()
+                if firetouchinterest then
+                    firetouchinterest(myHrp, seat, 0)
+                    task.wait(0.05)
+                    firetouchinterest(myHrp, seat, 1)
+                else
+                    myHum.Sit = true
+                end
+            end)
+        end
     end
-    return bestPart
 end
 
 -- Экуип и тренировки
@@ -1331,52 +1344,16 @@ end)
 
 sectionLabel(trainingPage, "GYM MACHINES AUTO-FARM (БЛИЖАЙШИЙ ТРЕНАЖЕР)")
 
-createToggle(trainingPage, "Auto Bench Press (Жим лежа)", "Телепортируется на ближайший жим лежа 1 раз и непрерывно бьет/качает!", Config.AutoBenchPress, function(v)
+createToggle(trainingPage, "Auto Bench Press (Жим лежа)", "Садится на ближайший жим лежа 1 раз и качает грудь!", Config.AutoBenchPress, function(v)
     Config.AutoBenchPress = v
     if v then
-        local machine = findNearestMachine({"bench", "benchpress", "bench press"})
-        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            safeTeleport(machine.CFrame * CFrame.new(0, 2.5, 0))
-        end
+        useGymMachine({"bench", "benchpress", "bench press"})
         task.spawn(function()
             while Config.AutoBenchPress do
-                trainTool("Weight")
-                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
-            end
-        end)
-    end
-end)
-
-createToggle(trainingPage, "Auto Squat Rack (Приседания)", "Телепортируется на ближайшую стойку приседаний 1 раз и непрерывно качает!", Config.AutoSquat, function(v)
-    Config.AutoSquat = v
-    if v then
-        local machine = findNearestMachine({"squat", "squatrack", "squat rack"})
-        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            safeTeleport(machine.CFrame * CFrame.new(0, 2.5, 0))
-        end
-        task.spawn(function()
-            while Config.AutoSquat do
-                trainTool("Weight")
-                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
-            end
-        end)
-    end
-end)
-
-createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Телепортируется на ближайшую беговую дорожку 1 раз и качает ловкость!", Config.AutoTreadmillMachine, function(v)
-    Config.AutoTreadmillMachine = v
-    if v then
-        local machine = findNearestMachine({"treadmill", "tread"})
-        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
-        end
-        task.spawn(function()
-            while Config.AutoTreadmillMachine do
                 local ev = getMuscleEvent()
                 if ev then
-                    for i = 1, (Config.UltraFastRep and Config.FastRepMultiplier * 5 or Config.FastRepMultiplier) do
-                        ev:FireServer("rep")
-                    end
+                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
+                    for i = 1, count do ev:FireServer("rep") end
                 end
                 task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
@@ -1384,32 +1361,68 @@ createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Т
     end
 end)
 
-createToggle(trainingPage, "Auto Pull-ups (Подтягивания)", "Телепортируется на ближайший турник 1 раз и качает подтягивания!", Config.AutoPullups, function(v)
-    Config.AutoPullups = v
+createToggle(trainingPage, "Auto Squat Rack (Приседания)", "Садится на ближайшую стойку приседаний 1 раз и качает ноги!", Config.AutoSquat, function(v)
+    Config.AutoSquat = v
     if v then
-        local machine = findNearestMachine({"pullup", "pull-up", "pull up", "bar"})
-        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            safeTeleport(machine.CFrame * CFrame.new(0, 2, 0))
-        end
+        useGymMachine({"squat", "squatrack", "squat rack"})
         task.spawn(function()
-            while Config.AutoPullups do
-                trainTool("Pushups")
+            while Config.AutoSquat do
+                local ev = getMuscleEvent()
+                if ev then
+                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
+                    for i = 1, count do ev:FireServer("rep") end
+                end
                 task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
     end
 end)
 
-createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "Телепортируется к валуну 1 раз и непрерывно качает!", Config.AutoBoulder, function(v)
+createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Встает на ближайшую беговую дорожку 1 раз и качает ловкость!", Config.AutoTreadmillMachine, function(v)
+    Config.AutoTreadmillMachine = v
+    if v then
+        useGymMachine({"treadmill", "tread"})
+        task.spawn(function()
+            while Config.AutoTreadmillMachine do
+                local ev = getMuscleEvent()
+                if ev then
+                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
+                    for i = 1, count do ev:FireServer("rep") end
+                end
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
+            end
+        end)
+    end
+end)
+
+createToggle(trainingPage, "Auto Pull-ups (Подтягивания)", "Встает к ближайшему турнику 1 раз и подтягивается!", Config.AutoPullups, function(v)
+    Config.AutoPullups = v
+    if v then
+        useGymMachine({"pullup", "pull-up", "pull up", "bar"})
+        task.spawn(function()
+            while Config.AutoPullups do
+                local ev = getMuscleEvent()
+                if ev then
+                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
+                    for i = 1, count do ev:FireServer("rep") end
+                end
+                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
+            end
+        end)
+    end
+end)
+
+createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "Подходит к валуну 1 раз и качает броски!", Config.AutoBoulder, function(v)
     Config.AutoBoulder = v
     if v then
-        local machine = findNearestMachine({"boulder", "boulderthrow", "boulder throw"})
-        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
-        end
+        useGymMachine({"boulder", "boulderthrow", "boulder throw"})
         task.spawn(function()
             while Config.AutoBoulder do
-                trainTool("Weight")
+                local ev = getMuscleEvent()
+                if ev then
+                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
+                    for i = 1, count do ev:FireServer("rep") end
+                end
                 task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
         end)
@@ -1714,12 +1727,12 @@ end)
 sectionLabel(combatPage, "LEGEND BOSS KILLER ENGINE (GODMODE & FAST ATTACK)")
 
 local function getActiveBoss()
-    -- 1. Проверяем стандартные папки боссов Muscle Legends
     local candidateFolders = {
         Workspace:FindFirstChild("bossFolder"),
         Workspace:FindFirstChild("BossFolder"),
         Workspace:FindFirstChild("Bosses"),
         Workspace:FindFirstChild("Boss"),
+        Workspace:FindFirstChild("npcs"),
         ReplicatedStorage:FindFirstChild("bossFolder")
     }
     for _, folder in ipairs(candidateFolders) do
@@ -1736,7 +1749,6 @@ local function getActiveBoss()
         end
     end
 
-    -- 2. Сканируем модели верхнего уровня Workspace (исключая игроков, статуи и порталы)
     for _, obj in pairs(Workspace:GetChildren()) do
         if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
             local n = string.lower(obj.Name)
@@ -1745,7 +1757,7 @@ local function getActiveBoss()
                 or string.find(n, "island") or string.find(n, "beach") or string.find(n, "gym") or string.find(n, "ring")
 
             if not isExcluded then
-                if string.find(n, "boss") or string.find(n, "босс") or string.find(n, "evil") then
+                if string.find(n, "boss") or string.find(n, "босс") or string.find(n, "evil") or string.find(n, "king") then
                     local hum = obj:FindFirstChildOfClass("Humanoid")
                     local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
                     if hum and hum.Health > 0 and hrp then
@@ -1756,11 +1768,10 @@ local function getActiveBoss()
         end
     end
 
-    -- 3. Глубокий рекурсивный поиск строго по ключевому слову 'boss' (исключая статуи и порталы)
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
             local n = string.lower(obj.Name)
-            if (string.find(n, "boss") or string.find(n, "босс")) 
+            if (string.find(n, "boss") or string.find(n, "босс") or string.find(n, "evil")) 
                and not string.find(n, "statue") 
                and not string.find(n, "portal") 
                and not string.find(n, "display") 
@@ -1776,10 +1787,10 @@ local function getActiveBoss()
     return nil, nil, nil
 end
 
-createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авто-фарм Босса: безопасный телепорт за спину босса + отключение урона по вам + быстрая атака!", Config.AutoKillBoss, function(v)
+createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авто-фарм Босса: позиция у босса + без урона по вам + быстрая атака!", Config.AutoKillBoss, function(v)
     Config.AutoKillBoss = v
     if v then
-        notify("Fouf32 Boss", "Авто-фарм Босса включен! Безопасный урон активирован.", 3)
+        notify("Fouf32 Boss", "Авто-фарм Босса включен! Наведение...", 3)
         task.spawn(function()
             while Config.AutoKillBoss do
                 local myChar = LocalPlayer.Character
@@ -1787,25 +1798,22 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                     local myHrp = myChar.HumanoidRootPart
                     local myHum = myChar:FindFirstChildOfClass("Humanoid")
 
-                    -- Безопасность: отключаем CanTouch чтобы босс не мог нанести урон
                     for _, p in pairs(myChar:GetChildren()) do
                         if p:IsA("BasePart") then p.CanTouch = false end
                     end
                     myHum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
                     myHum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
 
-                    -- Экуипируем кулак
-                    local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or myChar:FindFirstChild("Punch")
-                    if punch and punch.Parent == LocalPlayer.Backpack then
-                        myHum:EquipTool(punch)
-                    end
-                    if punch then pcall(function() punch:Activate() end) end
-
-                    -- Ищем Босса
                     local bossModel, bossHum, bossHrp = getActiveBoss()
                     if bossModel and bossHrp and bossHum and bossHum.Health > 0 then
-                        -- Телепортируемся вплотную сзади босса (высота +2 stud, расстояние -3 studs)
-                        safeTeleport(CFrame.lookAt(bossHrp.Position + (bossHrp.CFrame.LookVector * -3) + Vector3.new(0, 2, 0), bossHrp.Position))
+                        local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or myChar:FindFirstChild("Punch")
+                        if punch and punch.Parent == LocalPlayer.Backpack then
+                            myHum:EquipTool(punch)
+                        end
+                        if punch then pcall(function() punch:Activate() end) end
+
+                        myHrp.CFrame = CFrame.lookAt(bossHrp.Position + (bossHrp.CFrame.LookVector * -2.5) + Vector3.new(0, 1, 0), bossHrp.Position)
+                        myHrp.AssemblyLinearVelocity = Vector3.zero
 
                         local ev = getMuscleEvent()
                         if ev then
@@ -1814,9 +1822,16 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                                 ev:FireServer("punch", "rightHand")
                             end
                         end
+                        pcall(function()
+                            local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
+                            if rEvents and rEvents:FindFirstChild("punchEvent") then
+                                rEvents.punchEvent:FireServer("rightHand")
+                                rEvents.punchEvent:FireServer("leftHand")
+                            end
+                        end)
                     else
-                        -- Если босс еще не заспавнился
-                        notify("Fouf32 Boss", "Ожидание спавна Босса...", 1)
+                        notify("Fouf32 Boss", "Ожидание спавна Босса на карте...", 2)
+                        task.wait(1.5)
                     end
                 end
                 task.wait(0.04)
