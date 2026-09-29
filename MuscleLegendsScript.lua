@@ -1,11 +1,11 @@
 --[[
     ================================================================================
-    FOUF32 BUILD 0.21 — MUSCLE LEGENDS MASTER HUB
+    Vortex 0.23 — MUSCLE LEGENDS MASTER HUB
     ================================================================================
-    Название клиента: Fouf32 build 0.21
-    Открытие / Скрытие меню: Right Shift (r.shift) или кнопка FOUF32 на экране
+    Название клиента: Vortex 0.23
+    Открытие / Скрытие меню: Right Shift (r.shift) или кнопка Vortex на экране
     
-    Особенности v0.21:
+    Особенности v0.23:
       - Стартовое приветственное окно: "Привет! Какой язык ты предпочитаешь?"
       - Двуязычный интерфейс (Русский / English) с модальным переключением
       - 10 Удобных разделов с индикаторами состояния [ВКЛ / ВЫКЛ]
@@ -16,7 +16,7 @@
 --]]
 
 print("==================================================")
-print("[FOUF32 BUILD 0.21]: SCRIPT EXECUTION STARTED!")
+print("[Vortex 0.23]: SCRIPT EXECUTION STARTED!")
 print("==================================================")
 
 local Players = game:GetService("Players")
@@ -45,7 +45,7 @@ local function checkPlayerWhitelist()
     if not ENABLE_WHITELIST then return true end
 
     local playerName = string.lower(LocalPlayer.Name)
-    print("[Fouf32 STAGE A]: авторизация игрока '" .. LocalPlayer.Name .. "'")
+    print("[Vortex STAGE A]: авторизация игрока '" .. LocalPlayer.Name .. "'")
 
     -- До 3 попыток: raw.githubusercontent иногда отдает 429/таймаут
     for attempt = 1, 3 do
@@ -58,45 +58,45 @@ local function checkPlayerWhitelist()
                 for _, name in ipairs(data) do
                     local n = string.lower(tostring(name))
                     if n == playerName or n == "all" then
-                        print("[Fouf32 STAGE B]: whitelist OK (попытка " .. attempt .. ")")
+                        print("[Vortex STAGE B]: whitelist OK (попытка " .. attempt .. ")")
                         return true
                     end
                 end
-                print("[Fouf32 STAGE B]: ник '" .. LocalPlayer.Name .. "' НЕ найден в whitelist.json")
+                print("[Vortex STAGE B]: ник '" .. LocalPlayer.Name .. "' НЕ найден в whitelist.json")
                 return false -- список загружен, игрока в нем нет
             end
-            warn("[Fouf32 Auth]: JSON некорректен (попытка " .. attempt .. ")")
+            warn("[Vortex Auth]: JSON некорректен (попытка " .. attempt .. ")")
         else
-            warn("[Fouf32 Auth]: HttpGet whitelist не удался (попытка " .. attempt .. "): " .. tostring(response))
+            warn("[Vortex Auth]: HttpGet whitelist не удался (попытка " .. attempt .. "): " .. tostring(response))
         end
         task.wait(0.5)
     end
 
     -- Резерв для владельца, если GitHub совсем недоступен
     if LocalPlayer.Name == "Tvinkilp" or LocalPlayer.Name == "User" then
-        print("[Fouf32 STAGE B]: резервный доступ владельца")
+        print("[Vortex STAGE B]: резервный доступ владельца")
         return true
     end
-    warn("[Fouf32 Auth]: не удалось загрузить whitelist.json (попыток: 3)")
+    warn("[Vortex Auth]: не удалось загрузить whitelist.json (попыток: 3)")
     return false
 end
 
 if not checkPlayerWhitelist() then
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = "Fouf32 Auth Error",
-            Text = "У вас нет доступа к скрипту Fouf32 build 0.21! Ник: " .. LocalPlayer.Name,
+            Title = "Vortex Auth Error",
+            Text = "У вас нет доступа к скрипту Vortex 0.23! Ник: " .. LocalPlayer.Name,
             Duration = 10
         })
     end)
-    warn("[Fouf32 Auth]: Доступ запрещен для игрока " .. LocalPlayer.Name)
+    warn("[Vortex Auth]: Доступ запрещен для игрока " .. LocalPlayer.Name)
     return
 end
 
-print("[Fouf32 STAGE C]: whitelist пройден, создаю интерфейс...")
+print("[Vortex STAGE C]: whitelist пройден, создаю интерфейс...")
 
--- Защита от повторного запуска Fouf32
-local FRAMEWORK_NAME = "Fouf32_MuscleLegends_Master"
+-- Защита от повторного запуска Vortex
+local FRAMEWORK_NAME = "Vortex_MuscleLegends_Master"
 pcall(function()
     if typeof(gethui) == "function" and gethui():FindFirstChild(FRAMEWORK_NAME) then
         gethui()[FRAMEWORK_NAME]:Destroy()
@@ -119,7 +119,7 @@ local ScriptConnections = {}
 local clearESP
 
 -- ============================================================
--- ГЛОБАЛЬНЫЙ КОНФИГ FOUF32 BUILD 0.21
+-- ГЛОБАЛЬНЫЙ КОНФИГ Vortex 0.23
 -- ============================================================
 local Config = {
     -- Язык по умолчанию
@@ -242,7 +242,7 @@ local LangDict = {
     ["Интенсивность размытия стекла"] = "Glass blur intensity",
     ["Отображение описания функций внизу экрана"] = "Show feature descriptions at the bottom of the screen",
     ["Удаляет текстуры карты для увеличения FPS"] = "Removes map textures to boost FPS",
-    ["Полная выгрузка скрипта Fouf32 build 0.21 и очистка памяти"] = "Fully unload Fouf32 build 0.21 and free memory",
+    ["Полная выгрузка скрипта Vortex 0.23 и очистка памяти"] = "Fully unload Vortex 0.23 and free memory",
     ["Делает персонажа незаметным мини-карликом"] = "Makes your character a tiny unnoticed dwarf",
     ["Стандартный человеческий размер"] = "Standard human size",
     ["Большой накачанный персонаж"] = "Big muscular character",
@@ -312,7 +312,7 @@ local LangDict = {
     ["Авто-открытие кристалла с питомцами (авто-телепорт вплотную)"] = "Auto-opens pet crystals (auto-teleport up close)",
     ["Автоматически объединяет одинаковых питомцев для эволюции"] = "Automatically merges identical pets for evolution",
     ["Автоматически надевает лучших питомцев в инвентаре"] = "Automatically equips the best pets in your inventory",
-    ["Режим свободного полета Fouf32"] = "Fouf32 free flight mode",
+    ["Режим свободного полета Vortex"] = "Vortex free flight mode",
     ["Скорость полета в воздухе"] = "Flight speed in the air",
     ["Изменение скорости ходьбы"] = "Change walk speed",
     ["Значение скорости ходьбы"] = "Walk speed value",
@@ -347,6 +347,21 @@ local LangDict = {
     ["CRYSTAL SELECTOR (ВЫБОР ЯЙЦА)"] = "CRYSTAL SELECTOR",
     ["Встает на ближайшую беговую дорожку и качает ловкость!"] = "Steps onto the nearest treadmill and trains agility!",
     ["Активирует Kill Aura: бьет, телепортирует врагов прямо к вам или телепортируется к ним!"] = "Enables Kill Aura: hits enemies, dashes to them or pulls them into your fists!",
+    ["Настройки, язык и темы интерфейса"] = "Settings, language and UI themes",
+    ["Обзор статистики и прогресса"] = "Stats and progress overview",
+    ["Тренажёры и авто-фарм"] = "Gym machines and auto farm",
+    ["Камни и спортзалы"] = "Rocks and gyms",
+    ["Kill Aura и охота на боссов"] = "Kill Aura and boss hunting",
+    ["Защита и безопасность"] = "Protection and safety",
+    ["Точки и телепорты"] = "Waypoints and teleports",
+    ["Яйца и авто-действия"] = "Eggs and auto actions",
+    ["Питомцы и инвентарь"] = "Pets and inventory",
+    ["Движение и ESP"] = "Movement and ESP",
+    ["Инициализация ядра..."] = "Initializing core...",
+    ["Загрузка модулей..."] = "Loading modules...",
+    ["Подготовка интерфейса..."] = "Preparing interface...",
+    ["Готово! Открываем меню..."] = "Ready! Opening menu...",
+    ["Загрузка завершена! Меню: [Right Shift]"] = "Loaded! Menu: [Right Shift]",
 }
 
 local TextBindings = {}
@@ -425,7 +440,7 @@ local crystalsList = {
 }
 
 -- ============================================================
--- УТИЛИТЫ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ FOUF32
+-- УТИЛИТЫ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ Vortex
 -- ============================================================
 local function round(n) return math.floor(n + 0.5) end
 
@@ -452,7 +467,7 @@ end
 local function notify(title, message, duration)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = title or "Fouf32 build 0.21",
+            Title = title or "Vortex 0.23",
             Text = message or "",
             Duration = duration or 4
         })
@@ -667,7 +682,7 @@ local function hatchCrystal(crystalName)
 end
 
 -- ============================================================
--- УМНЫЙ ТЕЛЕПОРТ FOUF32 (Smart Teleport Engine)
+-- УМНЫЙ ТЕЛЕПОРТ Vortex (Smart Teleport Engine)
 -- ============================================================
 local islandDatabase = {
     ["Spawn Beach"]             = {pos = Vector3.new(0, 10, 0),       keywords = {"spawn", "beach"}},
@@ -741,7 +756,7 @@ local function smartTeleportToIsland(islandName)
     elseif data then
         safeTeleport(CFrame.new(targetPos))
     end
-    notify("Fouf32 Teleport", "Teleported to " .. islandName, 2)
+    notify("Vortex Teleport", "Teleported to " .. islandName, 2)
 end
 
 -- Поиск ближайшего тренажера по ключевым словам
@@ -959,7 +974,7 @@ local lowHpConn = RunService.Heartbeat:Connect(function()
         local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum and hum.Health > 0 and (hum.Health / hum.MaxHealth) < 0.25 then
             safeTeleport(CFrame.new(0, 5005, 0))
-            notify("Fouf32 Safety", "Low HP! Emergency teleport to sky safe zone!", 3)
+            notify("Vortex Safety", "Low HP! Emergency teleport to sky safe zone!", 3)
             task.wait(5)
         end
     end
@@ -1069,7 +1084,7 @@ end)
 table.insert(ScriptConnections, infJumpConn)
 
 -- ============================================================
--- БАЗА ГУИ (FOUF32 GLASS UI FRAMEWORK)
+-- БАЗА ГУИ (Vortex GLASS UI FRAMEWORK)
 -- ============================================================
 local targetParent = nil
 if typeof(gethui) == "function" then
@@ -1091,7 +1106,7 @@ ScreenGui.Name = FRAMEWORK_NAME
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Enabled = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-print("[Fouf32 STAGE D]: ScreenGui создан")
+print("[Vortex STAGE D]: ScreenGui создан")
 
 pcall(function()
     if syn and syn.protect_gui then
@@ -1108,85 +1123,110 @@ end
 
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "FOUF32 BUILD 0.21",
+        Title = "Vortex 0.23",
         Text = "Скрипт успешно запущен! Нажмите Right Shift или кнопку на экране.",
         Duration = 5
     })
 end)
 
 -- ============================================================
--- ПРИВЕТСТВЕННОЕ ОКНО ВЫБОРА ЯЗЫКА (WELCOME LANGUAGE MODAL)
+-- ЭКРАН ЗАГРУЗКИ СКРИПТА (SCRIPT LOADING SCREEN) — вместо выбора языка
 -- ============================================================
-local LangModal = Instance.new("Frame", ScreenGui)
-LangModal.Name = "LangModal"
-LangModal.Size = UDim2.new(0, 480, 0, 260)
-LangModal.Position = UDim2.new(0.5, -240, 0.5, -130)
-LangModal.BackgroundColor3 = currentTheme().window
-LangModal.BackgroundTransparency = 0
-LangModal.ZIndex = 20
-CollectionService:AddTag(LangModal, "ThemeWindow")
-applyCorner(LangModal, 16)
-local langStroke = applyStroke(LangModal, AccentColor, 0.2, 2)
-CollectionService:AddTag(langStroke, "AccentStroke")
+local LoadModal = Instance.new("Frame", ScreenGui)
+LoadModal.Name = "LoadModal"
+LoadModal.Size = UDim2.new(0, 420, 0, 196)
+LoadModal.Position = UDim2.new(0.5, -210, 0.5, -98)
+LoadModal.BackgroundColor3 = currentTheme().window
+LoadModal.BackgroundTransparency = 0
+LoadModal.ZIndex = 20
+CollectionService:AddTag(LoadModal, "ThemeWindow")
+applyCorner(LoadModal, 16)
+local loadStroke = applyStroke(LoadModal, AccentColor, 0.25, 1.5)
+CollectionService:AddTag(loadStroke, "AccentStroke")
+local LoadScale = Instance.new("UIScale", LoadModal)
+LoadScale.Scale = 1
 
-local LangTitle = Instance.new("TextLabel", LangModal)
-LangTitle.BackgroundTransparency = 1
-LangTitle.Position = UDim2.new(0, 20, 0, 18)
-LangTitle.Size = UDim2.new(1, -40, 0, 28)
-LangTitle.Font = Enum.Font.GothamBold
-LangTitle.Text = "FOUF32 BUILD 0.21"
-LangTitle.TextColor3 = AccentColor
-LangTitle.TextSize = 16
-LangTitle.TextXAlignment = Enum.TextXAlignment.Center
-CollectionService:AddTag(LangTitle, "AccentText")
+local LoadIcon = Instance.new("Frame", LoadModal)
+LoadIcon.AnchorPoint = Vector2.new(0.5, 0)
+LoadIcon.Position = UDim2.new(0.5, 0, 0, 24)
+LoadIcon.Size = UDim2.new(0, 14, 0, 14)
+LoadIcon.BackgroundColor3 = AccentColor
+LoadIcon.Rotation = 45
+LoadIcon.ZIndex = 21
+CollectionService:AddTag(LoadIcon, "AccentFill")
+applyCorner(LoadIcon, 3)
 
-local LangSubTitle = Instance.new("TextLabel", LangModal)
-LangSubTitle.BackgroundTransparency = 1
-LangSubTitle.Position = UDim2.new(0, 20, 0, 52)
-LangSubTitle.Size = UDim2.new(1, -40, 0, 40)
-LangSubTitle.Font = Enum.Font.GothamMedium
-LangSubTitle.Text = "Привет! Какой язык ты предпочитаешь?\nHello! Which language do you prefer?"
-LangSubTitle.TextColor3 = Color3.fromRGB(240, 250, 248)
-LangSubTitle.TextSize = 13
-LangSubTitle.TextXAlignment = Enum.TextXAlignment.Center
-LangSubTitle.TextWrapped = true
+local LoadTitle = Instance.new("TextLabel", LoadModal)
+LoadTitle.BackgroundTransparency = 1
+LoadTitle.Position = UDim2.new(0, 20, 0, 48)
+LoadTitle.Size = UDim2.new(1, -40, 0, 30)
+LoadTitle.Font = Enum.Font.GothamBold
+LoadTitle.Text = "Vortex"
+LoadTitle.TextColor3 = AccentColor
+LoadTitle.TextSize = 24
+LoadTitle.TextXAlignment = Enum.TextXAlignment.Center
+LoadTitle.ZIndex = 21
+CollectionService:AddTag(LoadTitle, "AccentText")
 
-local RuBtn = Instance.new("TextButton", LangModal)
-RuBtn.Name = "RuBtn"
-RuBtn.Size = UDim2.new(0, 190, 0, 48)
-RuBtn.Position = UDim2.new(0, 35, 0, 160)
-RuBtn.BackgroundColor3 = AccentColor
-RuBtn.BackgroundTransparency = 0
-RuBtn.Text = "🇷🇺 Русский Язык"
-RuBtn.TextColor3 = Color3.fromRGB(10, 15, 15)
-RuBtn.Font = Enum.Font.GothamBold
-RuBtn.TextSize = 13
-applyCorner(RuBtn, 10)
+local LoadVersion = Instance.new("TextLabel", LoadModal)
+LoadVersion.BackgroundTransparency = 1
+LoadVersion.Position = UDim2.new(0, 20, 0, 78)
+LoadVersion.Size = UDim2.new(1, -40, 0, 14)
+LoadVersion.Font = Enum.Font.GothamMedium
+LoadVersion.Text = "v0.23  •  Muscle Legends"
+LoadVersion.TextColor3 = Color3.fromRGB(148, 163, 184)
+LoadVersion.TextSize = 10
+LoadVersion.TextXAlignment = Enum.TextXAlignment.Center
+LoadVersion.ZIndex = 21
 
-local EnBtn = Instance.new("TextButton", LangModal)
-EnBtn.Name = "EnBtn"
-EnBtn.Size = UDim2.new(0, 190, 0, 48)
-EnBtn.Position = UDim2.new(1, -225, 0, 160)
-EnBtn.BackgroundColor3 = currentTheme().panel
-EnBtn.BackgroundTransparency = 0
-EnBtn.Text = "🇬🇧 English"
-EnBtn.TextColor3 = Color3.fromRGB(240, 250, 248)
-EnBtn.Font = Enum.Font.GothamBold
-EnBtn.TextSize = 13
-applyCorner(EnBtn, 10)
+local LoadStatus = Instance.new("TextLabel", LoadModal)
+LoadStatus.BackgroundTransparency = 1
+LoadStatus.Position = UDim2.new(0, 30, 0, 112)
+LoadStatus.Size = UDim2.new(1, -60, 0, 16)
+LoadStatus.Font = Enum.Font.Gotham
+LoadStatus.Text = "Инициализация ядра..."
+LoadStatus.TextColor3 = Color3.fromRGB(203, 213, 225)
+LoadStatus.TextSize = 11
+LoadStatus.TextXAlignment = Enum.TextXAlignment.Center
+LoadStatus.ZIndex = 21
 
--- Обработчики кнопок языка подключены ниже (selectLanguage) — см. конец секции UI
+local LoadBarBG = Instance.new("Frame", LoadModal)
+LoadBarBG.Position = UDim2.new(0, 40, 0, 150)
+LoadBarBG.Size = UDim2.new(1, -80, 0, 6)
+LoadBarBG.BackgroundColor3 = Color3.fromRGB(51, 65, 85)
+LoadBarBG.BorderSizePixel = 0
+LoadBarBG.ZIndex = 21
+applyCorner(LoadBarBG, 3)
+
+local LoadBarFill = Instance.new("Frame", LoadBarBG)
+LoadBarFill.Size = UDim2.new(0, 0, 1, 0)
+LoadBarFill.BackgroundColor3 = AccentColor
+LoadBarFill.BorderSizePixel = 0
+LoadBarFill.ZIndex = 22
+CollectionService:AddTag(LoadBarFill, "AccentFill")
+applyCorner(LoadBarFill, 3)
+
+local LoadPercent = Instance.new("TextLabel", LoadModal)
+LoadPercent.BackgroundTransparency = 1
+LoadPercent.Position = UDim2.new(0, 40, 0, 162)
+LoadPercent.Size = UDim2.new(1, -80, 0, 14)
+LoadPercent.Font = Enum.Font.GothamBold
+LoadPercent.Text = "0%"
+LoadPercent.TextColor3 = Color3.fromRGB(148, 163, 184)
+LoadPercent.TextSize = 9
+LoadPercent.TextXAlignment = Enum.TextXAlignment.Right
+LoadPercent.ZIndex = 21
 
 -- ============================================================
--- КНОПКА ОТКРЫТИЯ НА ЭКРАНЕ FOUF32
+-- КНОПКА ОТКРЫТИЯ НА ЭКРАНЕ Vortex
 -- ============================================================
 local OpenBtn = Instance.new("TextButton", ScreenGui)
-OpenBtn.Name = "Fouf32_OpenBtn"
+OpenBtn.Name = "Vortex_OpenBtn"
 OpenBtn.Size = UDim2.new(0, 160, 0, 40)
 OpenBtn.Position = UDim2.new(0, 15, 0.35, 0)
 OpenBtn.BackgroundColor3 = currentTheme().window
 OpenBtn.BackgroundTransparency = 0
-OpenBtn.Text = "FOUF32 BUILD 0.21"
+OpenBtn.Text = "Vortex 0.23"
 OpenBtn.TextColor3 = Color3.fromRGB(240, 250, 248)
 OpenBtn.TextSize = 11
 OpenBtn.Font = Enum.Font.GothamBold
@@ -1235,13 +1275,13 @@ local hudConn = RunService.RenderStepped:Connect(function(dt)
         local str = leaderstats and leaderstats:FindFirstChild("Strength") and leaderstats.Strength.Value or 0
         local reb = leaderstats and leaderstats:FindFirstChild("Rebirths") and leaderstats.Rebirths.Value or 0
         
-        HUDContentLabel.Text = string.format("FOUF32 BUILD 0.21 HUD:\n  • FPS: %d | Ping: %d ms\n  • Player: %s\n  • Strength: %s\n  • Rebirths: %s", fps, ping, LocalPlayer.Name, tostring(str), tostring(reb))
+        HUDContentLabel.Text = string.format("Vortex 0.23 HUD:\n  • FPS: %d | Ping: %d ms\n  • Player: %s\n  • Strength: %s\n  • Rebirths: %s", fps, ping, LocalPlayer.Name, tostring(str), tostring(reb))
     end
 end)
 table.insert(ScriptConnections, hudConn)
 
 -- ============================================================
--- ГЛАВНОЕ ОКНО FOUF32 BUILD 0.21 (690x520)
+-- ГЛАВНОЕ ОКНО Vortex 0.23 (690x520)
 -- ============================================================
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
@@ -1251,14 +1291,20 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -345, 0.5, -260)
 MainFrame.Size = UDim2.new(0, 690, 0, 520)
 MainFrame.Active = true
-MainFrame.Visible = false -- стартовое окно языка поверх меню
-LangModal.Visible = true
-print("[Fouf32 STAGE E]: главное окно построено, показано окно языка")
+MainFrame.Visible = false -- пока идёт экран загрузки
+LoadModal.Visible = true
+print("[Vortex STAGE E]: главное окно построено, показан экран загрузки")
 MainFrame.ClipsDescendants = true
 CollectionService:AddTag(MainFrame, "ThemeWindow")
 applyCorner(MainFrame, 18)
 local MainStroke = applyStroke(MainFrame, AccentColor, 0.3, 1.5)
 CollectionService:AddTag(MainStroke, "AccentStroke")
+
+-- Состояние анимаций открытия/закрытия меню
+local menuScale = Instance.new("UIScale", MainFrame)
+menuScale.Scale = 1
+local menuTargetPos = MainFrame.Position
+local guiVisible, isAnimating = false, false
 
 local GlassLayer1 = Instance.new("Frame", MainFrame)
 GlassLayer1.Size = UDim2.new(1,0,1,0); GlassLayer1.BackgroundColor3 = Color3.fromRGB(255,255,255); GlassLayer1.BackgroundTransparency = 1; GlassLayer1.BorderSizePixel = 0; GlassLayer1.ZIndex = 0; applyCorner(GlassLayer1, 18)
@@ -1269,33 +1315,104 @@ GlassLayer2.Size = UDim2.new(1,0,1,0); GlassLayer2.BackgroundColor3 = Color3.fro
 local BgOverlay = Instance.new("Frame", MainFrame)
 BgOverlay.Size = UDim2.new(1,0,1,0); BgOverlay.BackgroundColor3 = Color3.fromRGB(5,8,10); BgOverlay.BackgroundTransparency = 1; BgOverlay.BorderSizePixel = 0; BgOverlay.ZIndex = 2; applyCorner(BgOverlay, 18)
 
--- Шапка
+-- Бренд-шапка над сайдбаром: иконка-ромб + название + версия
+local BrandHeader = Instance.new("Frame", MainFrame)
+BrandHeader.BackgroundColor3 = currentTheme().bar
+BrandHeader.BackgroundTransparency = 0
+BrandHeader.BorderSizePixel = 0
+BrandHeader.Position = UDim2.new(0, 0, 0, 0)
+BrandHeader.Size = UDim2.new(0, 190, 0, 58)
+BrandHeader.ZIndex = 6
+BrandHeader.Active = true
+CollectionService:AddTag(BrandHeader, "ThemeBar")
+
+local BrandIcon = Instance.new("Frame", BrandHeader)
+BrandIcon.Position = UDim2.new(0, 18, 0, 22)
+BrandIcon.Size = UDim2.new(0, 13, 0, 13)
+BrandIcon.BackgroundColor3 = AccentColor
+BrandIcon.Rotation = 45
+BrandIcon.ZIndex = 7
+CollectionService:AddTag(BrandIcon, "AccentFill")
+applyCorner(BrandIcon, 3)
+
+local BrandTitle = Instance.new("TextLabel", BrandHeader)
+BrandTitle.BackgroundTransparency = 1
+BrandTitle.Position = UDim2.new(0, 42, 0, 9)
+BrandTitle.Size = UDim2.new(1, -50, 0, 22)
+BrandTitle.Font = Enum.Font.GothamBold
+BrandTitle.Text = "Vortex"
+BrandTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
+BrandTitle.TextSize = 16
+BrandTitle.TextXAlignment = Enum.TextXAlignment.Left
+BrandTitle.ZIndex = 7
+
+local BrandVer = Instance.new("TextLabel", BrandHeader)
+BrandVer.BackgroundTransparency = 1
+BrandVer.Position = UDim2.new(0, 42, 0, 32)
+BrandVer.Size = UDim2.new(1, -50, 0, 14)
+BrandVer.Font = Enum.Font.GothamMedium
+BrandVer.Text = "v0.23"
+BrandVer.TextColor3 = Color3.fromRGB(148, 163, 184)
+BrandVer.TextSize = 10
+BrandVer.TextXAlignment = Enum.TextXAlignment.Left
+BrandVer.ZIndex = 7
+
+-- Шапка контента: заголовок страницы + подзаголовок + кнопка закрытия
 local TopBar = Instance.new("Frame", MainFrame)
-TopBar.BackgroundColor3 = currentTheme().bar; TopBar.BackgroundTransparency = 0; TopBar.Size = UDim2.new(1,0,0,50); TopBar.BorderSizePixel = 0; TopBar.Active = true; TopBar.ZIndex = 6
+TopBar.BackgroundColor3 = currentTheme().bar
+TopBar.BackgroundTransparency = 0
+TopBar.BorderSizePixel = 0
+TopBar.Position = UDim2.new(0, 190, 0, 0)
+TopBar.Size = UDim2.new(1, -190, 0, 58)
+TopBar.Active = true
+TopBar.ZIndex = 6
 CollectionService:AddTag(TopBar, "ThemeBar")
-applyCorner(TopBar, 18)
 
-local TopCover = Instance.new("Frame", TopBar)
-TopCover.BackgroundColor3 = currentTheme().bar; TopCover.BackgroundTransparency = 0; TopCover.BorderSizePixel = 0; TopCover.Position = UDim2.new(0,0,1,-12); TopCover.Size = UDim2.new(1,0,0,12); TopCover.ZIndex = 6
-CollectionService:AddTag(TopCover, "ThemeBar")
+local PageTitle = Instance.new("TextLabel", TopBar)
+PageTitle.BackgroundTransparency = 1
+PageTitle.Position = UDim2.new(0, 18, 0, 9)
+PageTitle.Size = UDim2.new(1, -70, 0, 22)
+PageTitle.Font = Enum.Font.GothamBold
+PageTitle.Text = "ClickGUI & Config"
+PageTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
+PageTitle.TextSize = 16
+PageTitle.TextXAlignment = Enum.TextXAlignment.Left
+PageTitle.ZIndex = 7
 
-local AccentDot = Instance.new("Frame", TopBar)
-AccentDot.AnchorPoint = Vector2.new(0,0.5); AccentDot.Position = UDim2.new(0,22,0.5,0); AccentDot.Size = UDim2.new(0,9,0,9); AccentDot.BackgroundColor3 = AccentColor; AccentDot.ZIndex = 7
-CollectionService:AddTag(AccentDot, "AccentFill"); applyCorner(AccentDot, 5)
-
-local TitleLabel = Instance.new("TextLabel", TopBar)
-TitleLabel.BackgroundTransparency = 1; TitleLabel.Position = UDim2.new(0,42,0,0); TitleLabel.Size = UDim2.new(0,420,1,0)
-TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.Text = "FOUF32 BUILD 0.21  •  Muscle Legends Master Hub"; TitleLabel.TextColor3 = Color3.fromRGB(240,250,248); TitleLabel.TextSize = 13; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.ZIndex = 7
+local PageSub = Instance.new("TextLabel", TopBar)
+PageSub.BackgroundTransparency = 1
+PageSub.Position = UDim2.new(0, 18, 0, 33)
+PageSub.Size = UDim2.new(1, -70, 0, 14)
+PageSub.Font = Enum.Font.GothamMedium
+PageSub.Text = "Настройки, язык и темы интерфейса"
+PageSub.TextColor3 = Color3.fromRGB(148, 163, 184)
+PageSub.TextSize = 10
+PageSub.TextXAlignment = Enum.TextXAlignment.Left
+PageSub.ZIndex = 7
 
 local CloseHeaderBtn = Instance.new("TextButton", TopBar)
-CloseHeaderBtn.AnchorPoint = Vector2.new(1, 0.5); CloseHeaderBtn.Position = UDim2.new(1, -15, 0.5, 0); CloseHeaderBtn.Size = UDim2.new(0, 26, 0, 26)
-CloseHeaderBtn.BackgroundColor3 = Color3.fromRGB(248, 113, 113); CloseHeaderBtn.BackgroundTransparency = 0; CloseHeaderBtn.Text = "X"; CloseHeaderBtn.TextColor3 = Color3.fromRGB(255, 255, 255); CloseHeaderBtn.Font = Enum.Font.GothamBold; CloseHeaderBtn.TextSize = 12; CloseHeaderBtn.ZIndex = 8
-applyCorner(CloseHeaderBtn, 6)
+CloseHeaderBtn.AnchorPoint = Vector2.new(1, 0.5)
+CloseHeaderBtn.Position = UDim2.new(1, -14, 0.5, 0)
+CloseHeaderBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseHeaderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+CloseHeaderBtn.BackgroundTransparency = 1
+CloseHeaderBtn.Text = "✕"
+CloseHeaderBtn.TextColor3 = Color3.fromRGB(148, 163, 184)
+CloseHeaderBtn.Font = Enum.Font.GothamBold
+CloseHeaderBtn.TextSize = 13
+CloseHeaderBtn.ZIndex = 8
+CloseHeaderBtn.AutoButtonColor = false
+CloseHeaderBtn.MouseEnter:Connect(function()
+    tw(CloseHeaderBtn, {TextColor3 = Color3.fromRGB(248, 113, 113)}, 0.15):Play()
+end)
+CloseHeaderBtn.MouseLeave:Connect(function()
+    tw(CloseHeaderBtn, {TextColor3 = Color3.fromRGB(148, 163, 184)}, 0.15):Play()
+end)
 
 -- ЕДИНАЯ ВЫГРУЗКА СКРИПТА: останавливает все while-циклы (через флаги Config),
 -- отключает все соединения и уничтожает GUI
 local function completeScriptUnload()
-    notify("Fouf32", t("Выгрузка скрипта Fouf32 build 0.21...", "Unloading Fouf32 build 0.21..."), 2)
+    notify("Vortex", t("Выгрузка скрипта Vortex 0.23...", "Unloading Vortex 0.23..."), 2)
 
     local loopFlags = {
         "AutoOpFarm", "AutoDumbbell", "AutoPushups", "AutoSitups", "AutoWeight",
@@ -1320,17 +1437,17 @@ local function completeScriptUnload()
     pcall(stopFlight)
     pcall(function() clearESP() end)
     pcall(function() ScreenGui:Destroy() end)
-    print("[Fouf32 Framework]: Unloaded successfully.")
+    print("[Vortex Framework]: Unloaded successfully.")
 end
-CloseHeaderBtn.MouseButton1Click:Connect(completeScriptUnload)
-
--- Перетаскивание
+-- Перетаскивание окна за шапку (контент или бренд)
 local dragging, dragStart, startPos = false, nil, nil
-TopBar.InputBegan:Connect(function(input)
+local function beginDrag(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true; dragStart = input.Position; startPos = MainFrame.Position
     end
-end)
+end
+TopBar.InputBegan:Connect(beginDrag)
+BrandHeader.InputBegan:Connect(beginDrag)
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
@@ -1338,20 +1455,22 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+        menuTargetPos = MainFrame.Position -- запоминаем позицию для анимаций
+    end
 end)
 
--- Подвал с описанием (Description Footer Bar)
+-- Подвал с описанием (Description Footer Bar) — только под контентом
 local DescFooterBar = Instance.new("Frame", MainFrame)
 DescFooterBar.Name = "DescFooterBar"
 DescFooterBar.BackgroundColor3 = currentTheme().bar
 DescFooterBar.BackgroundTransparency = 0
 DescFooterBar.BorderSizePixel = 0
-DescFooterBar.Position = UDim2.new(0, 0, 1, -28)
-DescFooterBar.Size = UDim2.new(1, 0, 0, 28)
+DescFooterBar.Position = UDim2.new(0, 190, 1, -28)
+DescFooterBar.Size = UDim2.new(1, -190, 0, 28)
 DescFooterBar.ZIndex = 8
 CollectionService:AddTag(DescFooterBar, "ThemeBar")
-applyCorner(DescFooterBar, 18)
 
 local DescTextLabel = Instance.new("TextLabel", DescFooterBar)
 DescTextLabel.BackgroundTransparency = 1
@@ -1361,26 +1480,25 @@ DescTextLabel.Font = Enum.Font.GothamMedium
 DescTextLabel.TextColor3 = Color3.fromRGB(94, 234, 212)
 DescTextLabel.TextSize = 10
 DescTextLabel.TextXAlignment = Enum.TextXAlignment.Left
-DescTextLabel.Text = "Fouf32 build 0.21: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
+DescTextLabel.Text = "Vortex 0.23: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
 CollectionService:AddTag(DescTextLabel, "AccentText")
 bindText(DescTextLabel, function()
-    return "Fouf32 build 0.21: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
+    return "Vortex 0.23: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
 end)
 
--- Сайдбар для 10 ПОНЯТНЫХ РАЗДЕЛОВ
+-- Сайдбар: полная высота под бренд-шапкой
 local Sidebar = Instance.new("ScrollingFrame", MainFrame)
-Sidebar.BackgroundColor3 = currentTheme().side; Sidebar.BackgroundTransparency = 0; Sidebar.BorderSizePixel = 0; Sidebar.Position = UDim2.new(0,0,0,50); Sidebar.Size = UDim2.new(0,185,1,-78); Sidebar.ZIndex = 5; Sidebar.ScrollBarThickness = 3; Sidebar.CanvasSize = UDim2.new(0,0,0, 10 * 36 + 20)
+Sidebar.BackgroundColor3 = currentTheme().side; Sidebar.BackgroundTransparency = 0; Sidebar.BorderSizePixel = 0; Sidebar.Position = UDim2.new(0,0,0,58); Sidebar.Size = UDim2.new(0,190,1,-58); Sidebar.ZIndex = 5; Sidebar.ScrollBarThickness = 3; Sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y; Sidebar.CanvasSize = UDim2.new(0,0,0,0)
 CollectionService:AddTag(Sidebar, "ThemeSide")
-applyCorner(Sidebar, 18)
 
 local SideLayout = Instance.new("UIListLayout", Sidebar)
-SideLayout.SortOrder = Enum.SortOrder.LayoutOrder; SideLayout.Padding = UDim.new(0,5)
+SideLayout.SortOrder = Enum.SortOrder.LayoutOrder; SideLayout.Padding = UDim.new(0,4)
 local SidePadding = Instance.new("UIPadding", Sidebar)
 SidePadding.PaddingTop = UDim.new(0,8); SidePadding.PaddingLeft = UDim.new(0,8); SidePadding.PaddingRight = UDim.new(0,8)
 
-local pages, tabButtons = {}, {}
+local pages, tabButtons, TabInfo, currentTab = {}, {}, {}, nil
 local PagesContainer = Instance.new("Frame", MainFrame)
-PagesContainer.BackgroundTransparency = 1; PagesContainer.Position = UDim2.new(0,195,0,56); PagesContainer.Size = UDim2.new(1,-205,1,-90); PagesContainer.ZIndex = 5
+PagesContainer.BackgroundTransparency = 1; PagesContainer.Position = UDim2.new(0,202,0,66); PagesContainer.Size = UDim2.new(1,-214,1,-102); PagesContainer.ZIndex = 5
 
 local function createPage(name)
     local page = Instance.new("ScrollingFrame", PagesContainer)
@@ -1405,39 +1523,80 @@ local petsPage        = createPage("Pets")
 local movementPage    = createPage("Movement")
 
 local function switchTab(tabName)
+    currentTab = tabName
     for name, page in pairs(pages) do page.Visible = (name == tabName) end
-    local theme = currentTheme()
-    for name, btn in pairs(tabButtons) do
-        if name == tabName then
-            tw(btn, {BackgroundColor3 = AccentColor, BackgroundTransparency = 0}, 0.2):Play()
-            btn.TextColor3 = Color3.fromRGB(10,15,15)
-        else
-            tw(btn, {BackgroundColor3 = theme.panel, BackgroundTransparency = 0}, 0.2):Play()
-            btn.TextColor3 = Color3.fromRGB(148,163,184)
-        end
+    for name, entry in pairs(tabButtons) do
+        local active = (name == tabName)
+        tw(entry.btn, {BackgroundTransparency = active and 0.9 or 1}, 0.2):Play()
+        entry.nameLbl.TextColor3 = active and Color3.fromRGB(241, 245, 249) or Color3.fromRGB(148, 163, 184)
+        entry.iconLbl.TextColor3 = active and AccentColor or Color3.fromRGB(148, 163, 184)
+    end
+    local info = TabInfo[tabName]
+    if info then
+        PageTitle.Text = resolveText(info.title)
+        PageSub.Text = resolveText(info.sub or "")
     end
 end
 
-local function createTabButton(displayName, internalName)
+local function createTabButton(icon, displayName, internalName, subTitle)
     local btn = Instance.new("TextButton", Sidebar)
-    btn.BackgroundColor3 = currentTheme().panel; btn.BackgroundTransparency = 0; btn.Size = UDim2.new(1,0,0,32); btn.AutoButtonColor = false; btn.Font = Enum.Font.GothamBold; btn.Text = "   "..displayName; btn.TextColor3 = Color3.fromRGB(148,163,184); btn.TextSize = 10; btn.TextXAlignment = Enum.TextXAlignment.Left; btn.ZIndex = 5
+    btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    btn.BackgroundTransparency = 1
+    btn.Size = UDim2.new(1, 0, 0, 34)
+    btn.AutoButtonColor = false
+    btn.Text = ""
+    btn.ZIndex = 5
     applyCorner(btn, 8)
+
+    local iconLbl = Instance.new("TextLabel", btn)
+    iconLbl.BackgroundTransparency = 1
+    iconLbl.Position = UDim2.new(0, 8, 0.5, -8)
+    iconLbl.Size = UDim2.new(0, 20, 0, 16)
+    iconLbl.Font = Enum.Font.GothamBold
+    iconLbl.Text = icon
+    iconLbl.TextSize = 13
+    iconLbl.TextColor3 = Color3.fromRGB(148, 163, 184)
+    iconLbl.ZIndex = 6
+
+    local nameLbl = Instance.new("TextLabel", btn)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Position = UDim2.new(0, 32, 0.5, -8)
+    nameLbl.Size = UDim2.new(1, -38, 0, 16)
+    nameLbl.Font = Enum.Font.GothamBold
+    nameLbl.Text = displayName
+    nameLbl.TextColor3 = Color3.fromRGB(148, 163, 184)
+    nameLbl.TextSize = 11
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    nameLbl.ZIndex = 6
+    bindText(nameLbl, function() return resolveText(displayName) end)
+
     btn.MouseButton1Click:Connect(function() switchTab(internalName) end)
-    tabButtons[internalName] = btn
+    tabButtons[internalName] = {btn = btn, iconLbl = iconLbl, nameLbl = nameLbl}
+    TabInfo[internalName] = {title = displayName, sub = subTitle}
     return btn
 end
 
--- 10 ПОНЯТНЫХ РАЗДЕЛОВ:
-createTabButton("1. ClickGUI & Config", "ClickGUI")
-createTabButton("2. Dashboard", "Dashboard")
-createTabButton("3. Auto Farm", "Training")
-createTabButton("4. Rocks & Gyms", "Rocks")
-createTabButton("5. Combat & Killaura", "Combat")
-createTabButton("6. Protection", "Protection")
-createTabButton("7. Teleports & Points", "Teleports")
-createTabButton("8. Automation & Eggs", "Automation")
-createTabButton("9. Pets & Inventory", "Pets")
-createTabButton("10. Movement & ESP", "Movement")
+-- Заголовок/подзаголовок страницы в шапке контента
+bindText(PageTitle, function()
+    local info = currentTab and TabInfo[currentTab]
+    return info and resolveText(info.title) or ""
+end)
+bindText(PageSub, function()
+    local info = currentTab and TabInfo[currentTab]
+    return info and resolveText(info.sub or "") or ""
+end)
+
+-- 10 разделов в стиле Silicate: иконка + короткое имя
+createTabButton("⚙", "ClickGUI & Config", "ClickGUI", "Настройки, язык и темы интерфейса")
+createTabButton("⌂", "Dashboard", "Dashboard", "Обзор статистики и прогресса")
+createTabButton("✦", "Auto Farm", "Training", "Тренажёры и авто-фарм")
+createTabButton("◆", "Rocks & Gyms", "Rocks", "Камни и спортзалы")
+createTabButton("⚔", "Combat", "Combat", "Kill Aura и охота на боссов")
+createTabButton("◉", "Protection", "Protection", "Защита и безопасность")
+createTabButton("✈", "Teleports", "Teleports", "Точки и телепорты")
+createTabButton("⚡", "Automation", "Automation", "Яйца и авто-действия")
+createTabButton("♡", "Pets", "Pets", "Питомцы и инвентарь")
+createTabButton("➤", "Movement", "Movement", "Движение и ESP")
 
 -- UI Компоненты с Индикатором Статуса [ВКЛ / ВЫКЛ]
 local accentToggles = {}
@@ -1445,21 +1604,20 @@ local accentToggles = {}
 local function bindTooltip(frame, descriptionText)
     frame.MouseEnter:Connect(function()
         if Config.EnableTooltips then
-            DescTextLabel.Text = "Fouf32 build 0.21: " .. tostring(resolveText(descriptionText))
+            DescTextLabel.Text = "Vortex 0.23: " .. tostring(resolveText(descriptionText))
         end
     end)
     frame.MouseLeave:Connect(function()
         if Config.EnableTooltips then
-            DescTextLabel.Text = "Fouf32 build 0.21: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
+            DescTextLabel.Text = "Vortex 0.23: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
         end
     end)
 end
 
 local function sectionLabel(page, text)
     local lbl = Instance.new("TextLabel", page)
-    lbl.BackgroundTransparency = 1; lbl.Size = UDim2.new(1,-10,0,20); lbl.Font = Enum.Font.GothamBold; lbl.Text = text; lbl.TextColor3 = Color3.fromRGB(94,234,212); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
-    CollectionService:AddTag(lbl, "AccentText")
-    bindText(lbl, function() return resolveText(text) end)
+    lbl.BackgroundTransparency = 1; lbl.Size = UDim2.new(1,-10,0,18); lbl.Font = Enum.Font.GothamBold; lbl.Text = string.upper(tostring(resolveText(text))); lbl.TextColor3 = Color3.fromRGB(110, 118, 129); lbl.TextSize = 9; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    bindText(lbl, function() return string.upper(tostring(resolveText(text))) end)
     return lbl
 end
 
@@ -1472,19 +1630,23 @@ local function createGlassPanel(page, height)
 end
 
 local function createButton(page, name, desc, callback)
-    local panel = createGlassPanel(page, 44)
+    local panel = createGlassPanel(page, 46)
     local btn = Instance.new("TextButton", panel)
     btn.BackgroundTransparency = 1; btn.Size = UDim2.new(1,0,1,0); btn.Text = ""; btn.ZIndex = 2
 
     local lbl = Instance.new("TextLabel", panel)
-    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0,12,0,5); lbl.Size = UDim2.new(1,-24,0,16)
+    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0,14,0,6); lbl.Size = UDim2.new(1,-50,0,16)
     lbl.Font = Enum.Font.GothamBold; lbl.Text = resolveText(name); lbl.TextColor3 = Color3.fromRGB(241,245,249); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
     bindText(lbl, function() return resolveText(name) end)
 
     local descLbl = Instance.new("TextLabel", panel)
-    descLbl.BackgroundTransparency = 1; descLbl.Position = UDim2.new(0,12,0,22); descLbl.Size = UDim2.new(1,-24,0,16)
+    descLbl.BackgroundTransparency = 1; descLbl.Position = UDim2.new(0,14,0,24); descLbl.Size = UDim2.new(1,-50,0,16)
     descLbl.Font = Enum.Font.Gotham; descLbl.Text = resolveText(desc); descLbl.TextColor3 = Color3.fromRGB(148,163,184); descLbl.TextSize = 9; descLbl.TextXAlignment = Enum.TextXAlignment.Left
     bindText(descLbl, function() return resolveText(desc) end)
+
+    local chev = Instance.new("TextLabel", panel)
+    chev.BackgroundTransparency = 1; chev.AnchorPoint = Vector2.new(1,0.5); chev.Position = UDim2.new(1,-16,0.5,0); chev.Size = UDim2.new(0,18,0,18)
+    chev.Font = Enum.Font.GothamBold; chev.Text = "›"; chev.TextColor3 = Color3.fromRGB(148,163,184); chev.TextSize = 16; chev.ZIndex = 3
 
     bindTooltip(btn, desc)
 
@@ -1503,36 +1665,26 @@ local function createToggle(page, name, desc, default, callback)
 
     local state = default
 
-    local statusBadge = Instance.new("TextLabel", btn)
-    statusBadge.BackgroundTransparency = 1
-    statusBadge.Position = UDim2.new(0, 12, 0, 5)
-    statusBadge.Size = UDim2.new(0, 50, 0, 16)
-    statusBadge.Font = Enum.Font.GothamBold
-    statusBadge.TextSize = 10
-    statusBadge.TextXAlignment = Enum.TextXAlignment.Left
-    statusBadge.TextColor3 = state and Color3.fromRGB(74, 222, 128) or Color3.fromRGB(148, 163, 184)
-    bindText(statusBadge, function()
-        return state and t("[ВКЛ]", "[ON]") or t("[ВЫКЛ]", "[OFF]")
-    end)
-
     local lbl = Instance.new("TextLabel", btn)
-    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0,62,0,5); lbl.Size = UDim2.new(0,280,0,16)
-    lbl.Font = Enum.Font.GothamBold; lbl.Text = resolveText(name); lbl.TextColor3 = state and Color3.fromRGB(255,255,255) or Color3.fromRGB(203,213,225); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0,14,0,7); lbl.Size = UDim2.new(1,-70,0,16)
+    lbl.Font = Enum.Font.GothamBold; lbl.Text = resolveText(name); lbl.TextColor3 = Color3.fromRGB(226,232,240); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
     bindText(lbl, function() return resolveText(name) end)
 
     local descLbl = Instance.new("TextLabel", btn)
-    descLbl.BackgroundTransparency = 1; descLbl.Position = UDim2.new(0,12,0,24); descLbl.Size = UDim2.new(0,330,0,16)
+    descLbl.BackgroundTransparency = 1; descLbl.Position = UDim2.new(0,14,0,26); descLbl.Size = UDim2.new(1,-70,0,16)
     descLbl.Font = Enum.Font.Gotham; descLbl.Text = resolveText(desc); descLbl.TextColor3 = Color3.fromRGB(148,163,184); descLbl.TextSize = 9; descLbl.TextXAlignment = Enum.TextXAlignment.Left
     bindText(descLbl, function() return resolveText(desc) end)
 
     local indicator = Instance.new("Frame", btn)
-    indicator.AnchorPoint = Vector2.new(1,0.5); indicator.Position = UDim2.new(1,-12,0.5,0); indicator.Size = UDim2.new(0,38,0,20)
+    indicator.AnchorPoint = Vector2.new(1,0.5); indicator.Position = UDim2.new(1,-14,0.5,0); indicator.Size = UDim2.new(0,38,0,20)
     indicator.BackgroundColor3 = state and AccentColor or Color3.fromRGB(51,65,85)
+    indicator.ZIndex = 3
     applyCorner(indicator, 10)
 
     local dot = Instance.new("Frame", indicator)
     dot.AnchorPoint = Vector2.new(0,0.5); dot.Position = state and UDim2.new(1,-17,0.5,0) or UDim2.new(0,3,0.5,0)
     dot.Size = UDim2.new(0,14,0,14); dot.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    dot.ZIndex = 4
     applyCorner(dot, 7)
 
     bindTooltip(clickArea, desc)
@@ -1540,9 +1692,6 @@ local function createToggle(page, name, desc, default, callback)
 
     clickArea.MouseButton1Click:Connect(function()
         state = not state
-        statusBadge.Text = state and t("[ВКЛ]", "[ON]") or t("[ВЫКЛ]", "[OFF]")
-        statusBadge.TextColor3 = state and Color3.fromRGB(74, 222, 128) or Color3.fromRGB(148, 163, 184)
-        lbl.TextColor3 = state and Color3.fromRGB(255,255,255) or Color3.fromRGB(203,213,225)
         tw(indicator, {BackgroundColor3 = state and AccentColor or Color3.fromRGB(51,65,85)}, 0.15):Play()
         tw(dot, {Position = state and UDim2.new(1,-17,0.5,0) or UDim2.new(0,3,0.5,0)}, 0.15):Play()
         callback(state)
@@ -1571,6 +1720,15 @@ local function createSlider(page, name, min, max, default, callback, colorAccent
     applyCorner(BarFill, 4)
     if not colorAccent then CollectionService:AddTag(BarFill, "AccentFill") end
 
+    local Knob = Instance.new("Frame", BarBG)
+    Knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    Knob.Position = UDim2.new((default-min)/(max-min), 0, 0.5, 0)
+    Knob.Size = UDim2.new(0, 14, 0, 14)
+    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Knob.BorderSizePixel = 0
+    Knob.ZIndex = 3
+    applyCorner(Knob, 7)
+
     bindTooltip(BarBG, desc or function()
         return t("Настройка параметра ", "Adjust parameter ") .. resolveText(name)
     end)
@@ -1584,6 +1742,7 @@ local function createSlider(page, name, min, max, default, callback, colorAccent
             local relX = math.clamp((mousePos.X - BarBG.AbsolutePosition.X)/BarBG.AbsoluteSize.X, 0, 1)
             local val = math.floor(min + (max-min)*relX)
             BarFill.Size = UDim2.new(relX,0,1,0)
+            Knob.Position = UDim2.new(relX, 0, 0.5, 0)
             valLbl.Text = tostring(val)
             callback(val)
         end
@@ -1649,22 +1808,7 @@ local function applyTheme(idx)
     end
 end
 
--- ОБРАБОТЧИКИ ВЫБОРА ЯЗЫКА С ВЫХОДОМ ИЗ МОДАЛЬНОГО ОКНА
-local function selectLanguage(lang)
-    Config.Language = lang
-    applyLanguage() -- живое обновление всех надписей UI
-    tw(LangModal, {Size = UDim2.new(0, 480, 0, 0), BackgroundTransparency = 1}, 0.2):Play()
-    task.delay(0.2, function()
-        LangModal.Visible = false
-        MainFrame.Visible = true
-        MainFrame.Size = UDim2.new(0,690,0,0)
-        tw(MainFrame, {Size = UDim2.new(0,690,0,520)}, 0.25, Enum.EasingStyle.Quart):Play()
-        notify("Fouf32 build 0.21", t("Язык успешно выбран! [Right Shift] — Меню", "Language set to English! [Right Shift] — Menu"), 4)
-    end)
-end
-
-RuBtn.MouseButton1Click:Connect(function() selectLanguage("RU") end)
-EnBtn.MouseButton1Click:Connect(function() selectLanguage("EN") end)
+-- Экран загрузки и анимации меню определены в конце файла (playLoadingSequence / openMenu / closeMenu)
 
 -- ============================================================
 -- 1. РАЗДЕЛ: CLICKGUI & CONFIG
@@ -1673,7 +1817,7 @@ sectionLabel(clickGuiPage, "LANGUAGE & THEME PRESETS")
 createButton(clickGuiPage, "Switch Language / Сменить Язык (RU / EN)", "Переключает язык интерфейса между Русским и English", function()
     Config.Language = (Config.Language == "RU") and "EN" or "RU"
     applyLanguage()
-    notify("Fouf32 Language", t("Язык изменен на Русский", "Language changed to English"), 3)
+    notify("Vortex Language", t("Язык изменен на Русский", "Language changed to English"), 3)
 end)
 
 createButton(clickGuiPage, "Switch Theme (Сменить Тему)", function()
@@ -1682,7 +1826,7 @@ createButton(clickGuiPage, "Switch Theme (Сменить Тему)", function()
 end, function()
     local nextIdx = (Config.ThemeIndex % #UIThemes) + 1
     applyTheme(nextIdx)
-    notify("Fouf32 Theme", t("Тема: ", "Theme: ") .. UIThemes[nextIdx].name, 2)
+    notify("Vortex Theme", t("Тема: ", "Theme: ") .. UIThemes[nextIdx].name, 2)
 end)
 
 local rSlider, gSlider, bSlider
@@ -1730,12 +1874,12 @@ createButton(clickGuiPage, "Optimize FPS (Smooth Plastic)", "Удаляет те
 end)
 
 -- Unload кнопка использует общую completeScriptUnload (определена выше, у шапки окна)
-createButton(clickGuiPage, "Unload & Terminate Fouf32", "Полная выгрузка скрипта Fouf32 build 0.21 и очистка памяти", completeScriptUnload)
+createButton(clickGuiPage, "Unload & Terminate Vortex", "Полная выгрузка скрипта Vortex 0.23 и очистка памяти", completeScriptUnload)
 
 -- ============================================================
 -- 2. РАЗДЕЛ: DASHBOARD
 -- ============================================================
-sectionLabel(dashboardPage, "FOUF32 PLAYER LIVE OVERVIEW")
+sectionLabel(dashboardPage, "Vortex • Player Live Overview")
 local StatsPanel = createGlassPanel(dashboardPage, 110)
 local StatsText = Instance.new("TextLabel", StatsPanel)
 StatsText.BackgroundTransparency = 1; StatsText.Position = UDim2.new(0, 12, 0, 10); StatsText.Size = UDim2.new(1, -24, 1, -20)
@@ -1767,7 +1911,7 @@ local function setCharacterScale(val)
             if hum:FindFirstChild("HeadScale") then hum.HeadScale.Value = val end
         end)
     end
-    notify("Fouf32 Size", "Масштаб установлен: " .. tostring(val) .. "x", 2)
+    notify("Vortex Size", "Масштаб установлен: " .. tostring(val) .. "x", 2)
 end
 
 createButton(dashboardPage, "Micro Size (0.1x)", "Делает персонажа незаметным мини-карликом", function() setCharacterScale(0.1) end)
@@ -1786,7 +1930,7 @@ sectionLabel(trainingPage, "🔥 AUTO OP - UNIVERSAL TURBO FAST FARM")
 createToggle(trainingPage, "Auto OP (Универсальный сумасшедший кликер)", "Сели за ЛЮБОЙ тренажер или взяли ЛЮБОЙ снаряд — мгновенно качает на предельной турбо-скорости!", Config.AutoOpFarm, function(v)
     Config.AutoOpFarm = v
     if v then
-        notify("Fouf32 Auto OP", "Auto OP включен! Просто сядьте на тренажер или возьмите снаряд!", 4)
+        notify("Vortex Auto OP", "Auto OP включен! Просто сядьте на тренажер или возьмите снаряд!", 4)
         task.spawn(function()
             while Config.AutoOpFarm do
                 local char = LocalPlayer.Character
@@ -1910,7 +2054,7 @@ createToggle(trainingPage, "Walk While Training (Ходить во время у
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
             LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Sit = false
         end
-        notify("Fouf32 Walk", "Свободная ходьба во время качания включена!", 2)
+        notify("Vortex Walk", "Свободная ходьба во время качания включена!", 2)
         -- Постоянный цикл: не дает игре усадить вас, пока вы держите снаряд.
         -- Тренажеры-сиденья (жим, присед и т.д.) не затрагиваются — снаряд в руках не экипирован.
         task.spawn(function()
@@ -2071,7 +2215,7 @@ end)
 createToggle(trainingPage, "ULTRA FAST INSTANT REP MODE (TURBO 100X)", "Ультра-скоростной режим: мгновенный спам ивентов качания без задержки!", Config.UltraFastRep, function(v)
     Config.UltraFastRep = v
     if v then
-        notify("Fouf32 Turbo Farm", "Ультра-скоростной фарм включен! (100x Rep Spam)", 3)
+        notify("Vortex Turbo Farm", "Ультра-скоростной фарм включен! (100x Rep Spam)", 3)
     end
 end)
 
@@ -2170,7 +2314,7 @@ for _, rData in ipairs(rockTiers) do
     end, function()
         Config.SelectedRockTier = rData[3]
         RockInfoLabel.Text = "Selected Rock Tier: " .. rData[1] .. " (" .. rData[2] .. ")"
-        notify("Fouf32 Rock", "Выбран камень: " .. rData[1], 2)
+        notify("Vortex Rock", "Выбран камень: " .. rData[1], 2)
     end)
 end
 
@@ -2187,19 +2331,19 @@ KillAuraStatusLabel.Text = "Kill Aura Mode: Bring To Me (Телепорт вра
 createButton(combatPage, "Mode 1: Bring Target To Me (Телепортировать врага к себе)", "Притягивает/телепортирует корпус врага прямо перед вашими кулаками и бьет!", function()
     Config.KillAuraMode = "Bring To Me"
     KillAuraStatusLabel.Text = "Kill Aura Mode: Bring To Me (Телепорт врагов к себе)"
-    notify("Fouf32 Killaura", "Режим: Притягивать врагов к себе и бить!", 2)
+    notify("Vortex Killaura", "Режим: Притягивать врагов к себе и бить!", 2)
 end)
 
 createButton(combatPage, "Mode 2: Magnet TP To Target (Телепортироваться к врагу)", "Мгновенно телепортирует вас за спину / в лицо врагу и наносит удары", function()
     Config.KillAuraMode = "Magnet TP to Target"
     KillAuraStatusLabel.Text = "Kill Aura Mode: Magnet TP to Target (Телепорт к врагу)"
-    notify("Fouf32 Killaura", "Режим: Телепортироваться к врагам и бить!", 2)
+    notify("Vortex Killaura", "Режим: Телепортироваться к врагам и бить!", 2)
 end)
 
 createButton(combatPage, "Mode 3: Orbit Target (Орбита вокруг цели)", "Вращается по кругу вокруг цели и наносит серии ударов", function()
     Config.KillAuraMode = "Orbit Target"
     KillAuraStatusLabel.Text = "Kill Aura Mode: Orbit Target (Орбита вокруг цели)"
-    notify("Fouf32 Killaura", "Режим: Орбита вокруг врагов!", 2)
+    notify("Vortex Killaura", "Режим: Орбита вокруг врагов!", 2)
 end)
 
 createToggle(combatPage, "Enable Kill Aura (Auto Hit & Teleport)", "Активирует Kill Aura: бьет, телепортирует врагов прямо к вам или телепортируется к ним!", Config.KillAura, function(v)
@@ -2296,7 +2440,7 @@ createButton(combatPage, "Select Nearest Player as Target", "Выбирает б
     if nearestP then
         Config.SelectedTargetPlayer = nearestP
         TargetInfoLbl.Text = "Selected Target: " .. nearestP.Name
-        notify("Fouf32 Target", "Выбран цель: " .. nearestP.Name, 2)
+        notify("Vortex Target", "Выбран цель: " .. nearestP.Name, 2)
     end
 end)
 
@@ -2305,7 +2449,7 @@ createButton(combatPage, "Bring Selected Target to Me", "Притягивает 
         pcall(function()
             Config.SelectedTargetPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
         end)
-        notify("Fouf32 Target", "Игрок притянут к вам!", 2)
+        notify("Vortex Target", "Игрок притянут к вам!", 2)
     end
 end)
 
@@ -2447,7 +2591,7 @@ end
 createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авто-фарм Босса: позиция у босса + без урона по вам + быстрая атака!", Config.AutoKillBoss, function(v)
     Config.AutoKillBoss = v
     if v then
-        notify("Fouf32 Boss", t("Авто-фарм Босса включен! Наведение...", "Boss auto farm enabled! Targeting..."), 3)
+        notify("Vortex Boss", t("Авто-фарм Босса включен! Наведение...", "Boss auto farm enabled! Targeting..."), 3)
         task.spawn(function()
             local notifiedNoBoss = false
             local lastTargetName = nil
@@ -2477,7 +2621,7 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                         notifiedNoBoss = false
                         if lastTargetName ~= bossModel.Name then
                             lastTargetName = bossModel.Name
-                            notify("Fouf32 Boss", t("Цель захвачена: ", "Target acquired: ") .. bossModel.Name, 3)
+                            notify("Vortex Boss", t("Цель захвачена: ", "Target acquired: ") .. bossModel.Name, 3)
                         end
 
                         local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or myChar:FindFirstChild("Punch")
@@ -2506,7 +2650,7 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                     else
                         lastTargetName = nil
                         if not notifiedNoBoss then
-                            notify("Fouf32 Boss", t("Ожидание спавна Босса на карте...", "Waiting for boss spawn..."), 3)
+                            notify("Vortex Boss", t("Ожидание спавна Босса на карте...", "Waiting for boss spawn..."), 3)
                             notifiedNoBoss = true
                         end
                         task.wait(1.5)
@@ -2585,10 +2729,10 @@ end)
 createButton(protectionPage, "Teleport to Sky Safe Zone", "Спавнит небесную платформу и телепортирует вас туда", function()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
-        local p = Workspace:FindFirstChild("Fouf32_SafePlatform")
+        local p = Workspace:FindFirstChild("Vortex_SafePlatform")
         if not p then
             p = Instance.new("Part")
-            p.Name = "Fouf32_SafePlatform"
+            p.Name = "Vortex_SafePlatform"
             p.Size = Vector3.new(60, 2, 60)
             p.Position = Vector3.new(0, 5000, 0)
             p.Anchored = true
@@ -2597,7 +2741,7 @@ createButton(protectionPage, "Teleport to Sky Safe Zone", "Спавнит неб
             p.Parent = Workspace
         end
         safeTeleport(CFrame.new(0, 5005, 0))
-        notify("Fouf32 Safe Zone", "Успешный телепорт на небесную платформу!", 3)
+        notify("Vortex Safe Zone", "Успешный телепорт на небесную платформу!", 3)
     end
 end)
 
@@ -2639,16 +2783,16 @@ createButton(teleportsPage, "Save Current Position as Waypoint", "Сохраня
         Config.SavedWaypoint = LocalPlayer.Character.HumanoidRootPart.CFrame
         local p = Config.SavedWaypoint.Position
         WaypointLabel.Text = string.format("Saved Waypoint: (%.0f, %.0f, %.0f)", p.X, p.Y, p.Z)
-        notify("Fouf32 Waypoint", "Позиция успешно сохранена!", 2)
+        notify("Vortex Waypoint", "Позиция успешно сохранена!", 2)
     end
 end)
 
 createButton(teleportsPage, "Teleport to Saved Waypoint", "Телепортирует на ранее сохраненную точку", function()
     if Config.SavedWaypoint then
         safeTeleport(Config.SavedWaypoint)
-        notify("Fouf32 Waypoint", "Телепортирован на сохраненную точку!", 2)
+        notify("Vortex Waypoint", "Телепортирован на сохраненную точку!", 2)
     else
-        notify("Fouf32 Waypoint", "Нет сохраненной точки!", 2)
+        notify("Vortex Waypoint", "Нет сохраненной точки!", 2)
     end
 end)
 
@@ -2666,7 +2810,7 @@ createButton(teleportsPage, "Teleport to Strongest Player", "Телепорти�
     end
     if topP and topP.Character and topP.Character:FindFirstChild("HumanoidRootPart") then
         safeTeleport(topP.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
-        notify("Fouf32 TP", "Телепортирован к топ-игроку: " .. topP.Name, 2)
+        notify("Vortex TP", "Телепортирован к топ-игроку: " .. topP.Name, 2)
     end
 end)
 
@@ -2781,14 +2925,14 @@ end)
 
 createToggle(automationPage, "Stay In Place After Rebirth (Не телепортовать на спавн)", "Сохраняет вашу позицию до перерождения и возвращает вас обратно после него", Config.StayAfterRebirth, function(v)
     Config.StayAfterRebirth = v
-    notify("Fouf32 Rebirth", v
+    notify("Vortex Rebirth", v
         and t("После ребирта вы останетесь на месте!", "After rebirth you will stay in place!")
         or t("После ребирта будет обычный телепорт на спавн.", "Normal spawn teleport after rebirth."), 3)
 end)
 
 createButton(automationPage, "Manual Rebirth (Переродиться прямо сейчас)", "Принудительно запрашивает перерождение на сервере через все каналы", function()
     triggerRebirth()
-    notify("Fouf32 Rebirth", t("Запрос на перерождение отправлен!", "Rebirth requested!"), 2)
+    notify("Vortex Rebirth", t("Запрос на перерождение отправлен!", "Rebirth requested!"), 2)
 end)
 
 sectionLabel(automationPage, "CHESTS & ORBS MAGNET")
@@ -2950,12 +3094,12 @@ local hatchState = {running = false, cancel = false}
 local function hatchBatch(count)
     if hatchState.running then
         hatchState.cancel = true
-        notify("Fouf32 Hatch", t("Массовое вылупление останавливается...", "Stopping mass hatch..."), 2)
+        notify("Vortex Hatch", t("Массовое вылупление останавливается...", "Stopping mass hatch..."), 2)
         return
     end
     local n, err = validateHatchCount(count)
     if not n then
-        notify("Fouf32 Hatch", err, 5)
+        notify("Vortex Hatch", err, 5)
         return
     end
 
@@ -3009,7 +3153,7 @@ local function hatchBatch(count)
         if failReason then
             msg = msg .. " — " .. failReason
         end
-        notify("Fouf32 Hatch", msg, 5)
+        notify("Vortex Hatch", msg, 5)
     end)
 end
 
@@ -3023,7 +3167,7 @@ createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-отк
     if v then
         if hatchState.running then
             Config.AutoCrystal = false
-            notify("Fouf32 Hatch", t("Идёт массовое вылупление — сначала остановите его (Stop).",
+            notify("Vortex Hatch", t("Идёт массовое вылупление — сначала остановите его (Stop).",
                 "Mass hatch is running — stop it first (Stop)."), 4)
             return
         end
@@ -3044,7 +3188,7 @@ createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-отк
                         msg = t("Авто-вылупление остановлено: ремоут openCrystalRemote не найден.",
                             "Auto hatch stopped: openCrystalRemote not found.")
                     end
-                    notify("Fouf32 Hatch", msg, 5)
+                    notify("Vortex Hatch", msg, 5)
                     break
                 end
                 task.wait(Config.HatchDelay)
@@ -3069,9 +3213,9 @@ end)
 createButton(automationPage, "Stop Mass Hatch", "Останавливает идущее массовое вылупление", function()
     if hatchState.running then
         hatchState.cancel = true
-        notify("Fouf32 Hatch", t("Останавливаем массовое вылупление...", "Stopping mass hatch..."), 2)
+        notify("Vortex Hatch", t("Останавливаем массовое вылупление...", "Stopping mass hatch..."), 2)
     else
-        notify("Fouf32 Hatch", t("Сейчас ничего не открывается.", "Nothing is hatching right now."), 2)
+        notify("Vortex Hatch", t("Сейчас ничего не открывается.", "Nothing is hatching right now."), 2)
     end
 end)
 
@@ -3095,20 +3239,20 @@ sectionLabel(petsPage, "PET MANAGEMENT ENGINE")
 createButton(petsPage, "Auto Evolve All Pets", "Автоматически объединяет одинаковых питомцев для эволюции", function()
     local ev = getMuscleEvent()
     if ev then ev:FireServer("evolvePetAll") end
-    notify("Fouf32 Pets", "Запрос на эволюцию отправлен!", 2)
+    notify("Vortex Pets", "Запрос на эволюцию отправлен!", 2)
 end)
 
 createButton(petsPage, "Equip Best Pets", "Автоматически надевает лучших питомцев в инвентаре", function()
     local ev = getMuscleEvent()
     if ev then ev:FireServer("equipBestPets") end
-    notify("Fouf32 Pets", "Лучшие питомцы экипированы!", 2)
+    notify("Vortex Pets", "Лучшие питомцы экипированы!", 2)
 end)
 
 -- ============================================================
 -- 10. РАЗДЕЛ: MOVEMENT & ESP
 -- ============================================================
 sectionLabel(movementPage, "FLIGHT & SPEED ENGINE")
-createToggle(movementPage, "Fly Mode (WASD + Shift/Space)", "Режим свободного полета Fouf32", Config.FlyEnabled, function(v)
+createToggle(movementPage, "Fly Mode (WASD + Shift/Space)", "Режим свободного полета Vortex", Config.FlyEnabled, function(v)
     Config.FlyEnabled = v
     if v then startFlight() else stopFlight() end
 end)
@@ -3196,7 +3340,7 @@ createToggle(movementPage, "Player NameTags ESP", "Показывает имен
     Config.PlayerESP = v
     if v then
         if Drawing == nil or type(Drawing.new) ~= "function" then
-            notify("Fouf32 ESP", "Этот инжектор не поддерживает Drawing — ESP недоступен", 4)
+            notify("Vortex ESP", "Этот инжектор не поддерживает Drawing — ESP недоступен", 4)
             Config.PlayerESP = false
             return
         end
@@ -3278,7 +3422,7 @@ createButton(movementPage, "Rejoin Same Server", "Перезайти на это
 end)
 
 createButton(movementPage, "Server Hop (Random Server)", "Подключиться к случайному серверу", function()
-    notify("Fouf32 Server", "Поиск сервера...", 2)
+    notify("Vortex Server", "Поиск сервера...", 2)
     pcall(function()
         local sfUrl = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
         local req = HttpService:JSONDecode(game:HttpGet(sfUrl))
@@ -3295,34 +3439,49 @@ end)
 
 createButton(movementPage, "Copy JobID to Clipboard", "Копирует ID текущего сервера в буфер обмена", function()
     pcall(function() setclipboard(tostring(game.JobId)) end)
-    notify("Fouf32 Server", "JobID скопирован в буфер!", 2)
+    notify("Vortex Server", "JobID скопирован в буфер!", 2)
 end)
 
 -- ============================================================
--- МЕНЮ И КЛАВИША ЗАКРЫТИЯ (Right Shift)
+-- ЗАГРУЗКА, АНИМАЦИИ ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ И КЛАВИША (Right Shift)
 -- ============================================================
 switchTab("ClickGUI")
 
-local guiVisible, isAnimating = true, false
+local loadingDone = false
 
-local function toggleMenu()
-    if isAnimating then return end
-    if LangModal.Visible then return end -- стартовое окно выбора языка еще открыто
+local function openMenu()
+    if guiVisible or isAnimating then return end
     isAnimating = true
-    guiVisible = not guiVisible
-    if guiVisible then
-        MainFrame.Visible = true
-        MainFrame.Size = UDim2.new(0,690,0,0)
-        local anim = tw(MainFrame, {Size = UDim2.new(0,690,0,520)}, 0.25, Enum.EasingStyle.Quart)
-        anim:Play()
-        task.delay(0.25, function() isAnimating = false end)
-    else
-        local anim = tw(MainFrame, {Size = UDim2.new(0,690,0,0)}, 0.2, Enum.EasingStyle.Quart)
-        anim:Play()
-        task.delay(0.2, function() MainFrame.Visible = false; isAnimating = false end)
-    end
+    guiVisible = true
+    MainFrame.Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 22)
+    menuScale.Scale = 0.94
+    MainFrame.Visible = true
+    tw(MainFrame, {Position = menuTargetPos}, 0.32, Enum.EasingStyle.Quint):Play()
+    local s = tw(menuScale, {Scale = 1}, 0.32, Enum.EasingStyle.Quint)
+    s:Play()
+    s.Completed:Connect(function() isAnimating = false end)
 end
 
+local function closeMenu()
+    if not guiVisible or isAnimating then return end
+    isAnimating = true
+    guiVisible = false
+    tw(MainFrame, {Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 22)}, 0.2, Enum.EasingStyle.Quad):Play()
+    local s = tw(menuScale, {Scale = 0.94}, 0.2, Enum.EasingStyle.Quad)
+    s:Play()
+    s.Completed:Connect(function()
+        MainFrame.Visible = false
+        MainFrame.Position = menuTargetPos
+        isAnimating = false
+    end)
+end
+
+local function toggleMenu()
+    if not loadingDone then return end
+    if guiVisible then closeMenu() else openMenu() end
+end
+
+CloseHeaderBtn.MouseButton1Click:Connect(closeMenu)
 OpenBtn.MouseButton1Click:Connect(toggleMenu)
 
 local mainKeyConn = UserInputService.InputBegan:Connect(function(input, gp)
@@ -3333,5 +3492,41 @@ local mainKeyConn = UserInputService.InputBegan:Connect(function(input, gp)
 end)
 table.insert(ScriptConnections, mainKeyConn)
 
-print("[Fouf32 STAGE Z]: ЗАГРУЗКА ЗАВЕРШЕНА — окно языка должно быть на экране (меню: RightShift)")
-print("[Fouf32 Glass UI Engine v0.21]: Muscle Legends Hub loaded successfully!")
+-- Экран загрузки: прогресс-бар + статусы, затем плавный вход в меню
+local function playLoadingSequence()
+    local steps = {
+        t("Инициализация ядра...", "Initializing core..."),
+        t("Загрузка модулей...", "Loading modules..."),
+        t("Подготовка интерфейса...", "Preparing interface..."),
+        t("Готово! Открываем меню...", "Ready! Opening menu..."),
+    }
+    local total = 2.4
+    local startT = tick()
+    while (tick() - startT) < total do
+        local p = math.clamp((tick() - startT) / total, 0, 1)
+        LoadBarFill.Size = UDim2.new(p, 0, 1, 0)
+        LoadPercent.Text = math.floor(p * 100) .. "%"
+        local idx = math.min(#steps, math.floor(p * (#steps - 1)) + 1)
+        LoadStatus.Text = steps[idx]
+        task.wait(0.03)
+    end
+    LoadBarFill.Size = UDim2.new(1, 0, 1, 0)
+    LoadPercent.Text = "100%"
+    LoadStatus.Text = steps[#steps]
+    task.wait(0.45)
+
+    -- плавный уход экрана загрузки
+    tw(LoadModal, {Position = UDim2.new(LoadModal.Position.X.Scale, LoadModal.Position.X.Offset, LoadModal.Position.Y.Scale, LoadModal.Position.Y.Offset - 26)}, 0.3, Enum.EasingStyle.Quint):Play()
+    local out = tw(LoadScale, {Scale = 0.9}, 0.3, Enum.EasingStyle.Quint)
+    out:Play()
+    out.Completed:Wait()
+    LoadModal.Visible = false
+    loadingDone = true
+    openMenu()
+    notify("Vortex 0.23", t("Загрузка завершена! Меню: [Right Shift]",
+        "Loaded! Menu: [Right Shift]"), 5)
+end
+task.spawn(playLoadingSequence)
+
+print("[Vortex STAGE Z]: ЗАГРУЗКА ЗАВЕРШЕНА — экран загрузки анимирован, меню откроется автоматически (меню: RightShift)")
+print("[Vortex Glass UI Engine v0.23]: Muscle Legends Hub loaded successfully!")
