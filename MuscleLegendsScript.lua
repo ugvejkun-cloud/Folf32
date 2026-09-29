@@ -39,28 +39,38 @@ local Camera = Workspace.CurrentCamera
 -- СИСТЕМА АВТОРИЗАЦИИ / WHITELIST (GITHUB AUTH)
 -- ============================================================
 local WHITELIST_URL = "https://raw.githubusercontent.com/ugvejkun-cloud/Folf32/main/whitelist.json"
-local ENABLE_WHITELIST = false
+local ENABLE_WHITELIST = true
 
 local function checkPlayerWhitelist()
     if not ENABLE_WHITELIST then return true end
-    
-    local success, response = pcall(function()
-        return game:HttpGet(WHITELIST_URL, true)
-    end)
-    
-    if success and response and #response > 0 then
-        local ok, data = pcall(function() return HttpService:JSONDecode(response) end)
-        if ok and type(data) == "table" then
-            for _, name in ipairs(data) do
-                if string.lower(tostring(name)) == string.lower(LocalPlayer.Name) or string.lower(tostring(name)) == "all" then
-                    return true
+
+    local playerName = string.lower(LocalPlayer.Name)
+
+    -- До 3 попыток: raw.githubusercontent иногда отдает 429/таймаут
+    for attempt = 1, 3 do
+        local success, response = pcall(function()
+            return game:HttpGet(WHITELIST_URL, true)
+        end)
+        if success and response and #response > 0 then
+            local ok, data = pcall(function() return HttpService:JSONDecode(response) end)
+            if ok and type(data) == "table" then
+                for _, name in ipairs(data) do
+                    local n = string.lower(tostring(name))
+                    if n == playerName or n == "all" then
+                        return true
+                    end
                 end
+                return false -- список загружен, игрока в нем нет
             end
         end
+        task.wait(1)
     end
+
+    -- Резерв для владельца, если GitHub совсем недоступен
     if LocalPlayer.Name == "Tvinkilp" or LocalPlayer.Name == "User" then
         return true
     end
+    warn("[Fouf32 Auth]: не удалось загрузить whitelist.json (попыток: 3)")
     return false
 end
 
@@ -96,6 +106,8 @@ end)
 
 -- Хранилище подключений для полной выгрузки (Unload)
 local ScriptConnections = {}
+-- Forward-декларация: определяется позже в секции ESP, но нужна в completeScriptUnload
+local clearESP
 
 -- ============================================================
 -- ГЛОБАЛЬНЫЙ КОНФИГ FOUF32 BUILD 0.21
@@ -200,6 +212,138 @@ local function t(ruText, enText)
         return enText or ruText
     end
     return ruText
+end
+
+-- ============================================================
+-- ЖИВАЯ ЛОКАЛИЗАЦИЯ UI: словарь RU -> EN + ре-применение
+-- ============================================================
+local LangDict = {
+    ["Переключает язык интерфейса между Русским и English"] = "Switches the interface language between Russian and English",
+    ["Красный цвет интерфейса"] = "Interface red color",
+    ["Зеленый цвет интерфейса"] = "Interface green color",
+    ["Синий цвет интерфейса"] = "Interface blue color",
+    ["Пульсирующая неоновая рамка меню"] = "Pulsing neon menu frame",
+    ["Интенсивность размытия стекла"] = "Glass blur intensity",
+    ["Отображение описания функций внизу экрана"] = "Show feature descriptions at the bottom of the screen",
+    ["Удаляет текстуры карты для увеличения FPS"] = "Removes map textures to boost FPS",
+    ["Полная выгрузка скрипта Fouf32 build 0.21 и очистка памяти"] = "Fully unload Fouf32 build 0.21 and free memory",
+    ["Делает персонажа незаметным мини-карликом"] = "Makes your character a tiny unnoticed dwarf",
+    ["Стандартный человеческий размер"] = "Standard human size",
+    ["Большой накачанный персонаж"] = "Big muscular character",
+    ["Огромный титан на всю карту"] = "Huge titan across the whole map",
+    ["Колоссальный гигант"] = "Colossal giant",
+    ["Точная настройка масштаба персонажа (1x - 30x)"] = "Fine-tune character scale (1x - 30x)",
+    ["Auto OP (Универсальный сумасшедший кликер)"] = "Auto OP (Universal Crazy Clicker)",
+    ["Сели за ЛЮБОЙ тренажер или взяли ЛЮБОЙ снаряд — мгновенно качает на предельной турбо-скорости!"] = "Sit on ANY machine or grab ANY equipment — instantly trains at max turbo speed!",
+    ["Авто-фарм Силы через Гантели"] = "Auto farm Strength with Dumbbells",
+    ["Авто-фарм Силы через Отжимания"] = "Auto farm Strength with Pushups",
+    ["Авто-фарм Силы через Пресс"] = "Auto farm Strength with Situps",
+    ["Авто-фарм Силы через Штангу"] = "Auto farm Strength with Barbell",
+    ["Авто-удары по груше/воздуху для прокачки"] = "Auto punches on the bag/air for training",
+    ["Автоматически чередует все снаряды для максимальной прокачки"] = "Automatically cycles all equipment for maximum training",
+    ["Walk While Training (Ходить во время упражнения)"] = "Walk While Training (Move During Exercise)",
+    ["Позволяет свободно ходить со штангой, гантелями или во время выполнения упражнений!"] = "Allows you to walk freely with a barbell, dumbbells or during exercises!",
+    ["GYM MACHINES AUTO-FARM (БЛИЖАЙШИЙ ТРЕНАЖЕР)"] = "GYM MACHINES AUTO-FARM (NEAREST MACHINE)",
+    ["Auto Bench Press (Жим лежа)"] = "Auto Bench Press",
+    ["Садится на ближайший жим лежа 1 раз и качает грудь!"] = "Sits on the nearest bench press once and trains chest!",
+    ["Auto Squat Rack (Приседания)"] = "Auto Squat Rack (Squats)",
+    ["Садится на ближайшую стойку приседаний 1 раз и качает ноги!"] = "Sits on the nearest squat rack once and trains legs!",
+    ["Auto Treadmill (Беговая дорожка)"] = "Auto Treadmill (Running Track)",
+    ["Встает на ближайшую беговую дорожку 1 раз и качает ловкость!"] = "Steps on the nearest treadmill once and trains agility!",
+    ["Auto Pull-ups (Подтягивания)"] = "Auto Pull-ups",
+    ["Встает к ближайшему турнику 1 раз и подтягивается!"] = "Moves to the nearest pull-up bar once and does pull-ups!",
+    ["Auto Boulder Throw (Бросок валуна)"] = "Auto Boulder Throw",
+    ["Подходит к валуну 1 раз и качает броски!"] = "Approaches the boulder once and trains throwing!",
+    ["Auto Rock Farm (Камень)"] = "Auto Rock Farm (Rock)",
+    ["Телепортируется к ближайшему камню 1 раз и непрерывно бьет!"] = "Teleports to the nearest rock once and hits it continuously!",
+    ["Ультра-скоростной режим: мгновенный спам ивентов качания без задержки!"] = "Ultra-fast mode: instant training event spam with no delay!",
+    ["Ускоритель фарма: количество отправляемых пакетов качания за один раз (до 100x)"] = "Farm booster: number of training packets sent per tick (up to 100x)",
+    ["Задержка между повторами (0 = мгновенно)"] = "Delay between reps (0 = instant)",
+    ["Телепортируется к камню 1 раз и непрерывно бьет!"] = "Teleports to the rock once and hits it continuously!",
+    ["Телепортируется на беговую дорожку 1 раз и качает ловкость!"] = "Teleports to the treadmill once and trains agility!",
+    ["SELECT ROCK TIER (ТОЧНЫЕ ТРЕБОВАНИЯ)"] = "SELECT ROCK TIER (EXACT REQUIREMENTS)",
+    ["Mode 1: Bring Target To Me (Телепортировать врага к себе)"] = "Mode 1: Bring Target To Me (Teleport Enemy To You)",
+    ["Притягивает/телепортирует корпус врага прямо перед вашими кулаками и бьет!"] = "Pulls/teleports the enemy body right in front of your fists and hits!",
+    ["Mode 2: Magnet TP To Target (Телепортироваться к врагу)"] = "Mode 2: Magnet TP To Target (Teleport To Enemy)",
+    ["Мгновенно телепортирует вас за спину / в лицо врагу и наносит удары"] = "Instantly teleports you behind/in front of the enemy and strikes",
+    ["Mode 3: Orbit Target (Орбита вокруг цели)"] = "Mode 3: Orbit Target (Circle Around Target)",
+    ["Вращается по кругу вокруг цели и наносит серии ударов"] = "Orbits around the target and lands hit combos",
+    ["Активирует Kill Aura: бьет, телепортирует врагов прямо к вам или телепортируется к ним!"] = "Activates Kill Aura: hits, teleports enemies to you or you to them!",
+    ["Радиус в студах для обнаружения и телепортации врагов"] = "Radius in studs for detecting and teleporting enemies",
+    ["Задержка ударов в миллисекундах"] = "Strike delay in milliseconds",
+    ["Количество отправляемых пакетов ударов за итерацию"] = "Number of hit packets sent per iteration",
+    ["Выбирает ближайшего к вам игрока в качестве цели"] = "Selects the nearest player to you as a target",
+    ["Притягивает выбранного игрока прямо к вашим кулакам"] = "Pulls the selected player right to your fists",
+    ["Непрерывно бьет и телепортирует выбранного игрока"] = "Continuously hits and teleports the selected player",
+    ["Зацикленный авто-телепорт по всем игрокам сервера и их уничтожение"] = "Looped auto-teleport across all server players and their elimination",
+    ["Авто-вход на Brawl турниры сервера и немедленная победа"] = "Auto-joins server Brawl tournaments and wins instantly",
+    ["Авто-фарм Босса: позиция у босса + без урона по вам + быстрая атака!"] = "Auto boss farm: positioned at the boss + no damage to you + fast attacks!",
+    ["Количество ударов по боссу за один цикл"] = "Number of hits on the boss per cycle",
+    ["Отключает коллизии урона персонажа (защита от чужих ударов)"] = "Disables damage collisions for your character (protection from enemy hits)",
+    ["Автоматически телепортирует в небесную зону безопасности при падении HP ниже 25%"] = "Automatically teleports to the sky safe zone when HP drops below 25%",
+    ["Запрет падений и станов"] = "Prevents ragdoll and stuns",
+    ["Отключает отбрасывание при ударах"] = "Disables knockback from hits",
+    ["Спавнит небесную платформу и телепортирует вас туда"] = "Spawns a sky platform and teleports you there",
+    ["Сохраняет вашу текущую позицию в память"] = "Saves your current position to memory",
+    ["Телепортирует на ранее сохраненную точку"] = "Teleports to the previously saved point",
+    ["Телепортирует к игроку с максимальной силой на сервере"] = "Teleports to the strongest player on the server",
+    ["Auto Rebirth (Бесконечный авто-ребирт)"] = "Auto Rebirth (Infinite Auto-Rebirth)",
+    ["Автоматически выполняет перерождение сразу при достижении нужного количества силы"] = "Automatically rebirths as soon as the required strength is reached",
+    ["Manual Rebirth (Переродиться прямо сейчас)"] = "Manual Rebirth (Rebirth Right Now)",
+    ["Принудительно запрашивает перерождение на сервере через все каналы"] = "Forcefully requests a rebirth on the server via all channels",
+    ["Авто-телепорт по всем сундукам карты и их сбор"] = "Auto-teleports to all map chests and collects them",
+    ["Автоматически притягивает/собирает сферы со всей карты"] = "Automatically attracts/collects orbs from across the map",
+    ["Авто-открытие кристалла с питомцами (авто-телепорт вплотную)"] = "Auto-opens pet crystals (auto-teleport up close)",
+    ["Автоматически объединяет одинаковых питомцев для эволюции"] = "Automatically merges identical pets for evolution",
+    ["Автоматически надевает лучших питомцев в инвентаре"] = "Automatically equips the best pets in your inventory",
+    ["Режим свободного полета Fouf32"] = "Fouf32 free flight mode",
+    ["Скорость полета в воздухе"] = "Flight speed in the air",
+    ["Изменение скорости ходьбы"] = "Change walk speed",
+    ["Значение скорости ходьбы"] = "Walk speed value",
+    ["Изменение высоты прыжка"] = "Change jump height",
+    ["Сила высоты прыжка"] = "Jump power value",
+    ["Настройка гравитации игрового мира"] = "Game world gravity setting",
+    ["Проход сквозь стены и объекты"] = "Walk through walls and objects",
+    ["Бесконечные прыжки в воздухе"] = "Infinite jumps in the air",
+    ["Авто-прыжок при касании земли"] = "Auto-jump when touching the ground",
+    ["Режим наблюдения от первого/третьего лица за выбранной целью"] = "First/third person spectate mode for the selected target",
+    ["Показывает имена и дистанцию до игроков"] = "Shows names and distance to players",
+    ["Убирает тени на карте и включает день"] = "Removes map shadows and sets daytime",
+    ["Угол обзора камеры"] = "Camera field of view",
+    ["Перезайти на этот же сервер"] = "Rejoin this same server",
+    ["Подключиться к случайному серверу"] = "Connect to a random server",
+    ["Копирует ID текущего сервера в буфер обмена"] = "Copies the current server ID to clipboard",
+}
+
+local TextBindings = {}
+
+-- value: строка ИЛИ функция, возвращающая строку (для динамических надписей)
+local function resolveText(value)
+    if type(value) == "function" then
+        local ok, res = pcall(value)
+        value = (ok and res) or ""
+    end
+    if Config.Language == "EN" and type(value) == "string" then
+        local en = LangDict[value]
+        if en then return en end
+    end
+    return value
+end
+
+-- Регистрирует TextLabel/TextButton для живого обновления при смене языка
+local function bindText(inst, getter)
+    table.insert(TextBindings, {inst = inst, get = getter})
+    pcall(function() inst.Text = getter() end)
+end
+
+local function applyLanguage()
+    for _, binding in ipairs(TextBindings) do
+        local inst = binding.inst
+        if inst and inst.Parent then
+            local ok, txt = pcall(binding.get)
+            if ok then inst.Text = txt end
+        end
+    end
 end
 
 local AccentColor = Color3.fromRGB(45, 212, 191)
@@ -774,17 +918,7 @@ EnBtn.Font = Enum.Font.GothamBold
 EnBtn.TextSize = 13
 applyCorner(EnBtn, 10)
 
-RuBtn.MouseButton1Click:Connect(function()
-    Config.Language = "RU"
-    LangModal.Visible = false
-    if MainFrame then MainFrame.Visible = true end
-end)
-
-EnBtn.MouseButton1Click:Connect(function()
-    Config.Language = "EN"
-    LangModal.Visible = false
-    if MainFrame then MainFrame.Visible = true end
-end)
+-- Обработчики кнопок языка подключены ниже (selectLanguage) — см. конец секции UI
 
 -- ============================================================
 -- КНОПКА ОТКРЫТИЯ НА ЭКРАНЕ FOUF32
@@ -858,8 +992,8 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -345, 0.5, -260)
 MainFrame.Size = UDim2.new(0, 690, 0, 520)
 MainFrame.Active = true
-MainFrame.Visible = true
-LangModal.Visible = false
+MainFrame.Visible = false -- стартовое окно языка поверх меню
+LangModal.Visible = true
 MainFrame.ClipsDescendants = true
 applyCorner(MainFrame, 18)
 local MainStroke = applyStroke(MainFrame, AccentColor, 0.3, 1.5)
@@ -895,12 +1029,33 @@ CloseHeaderBtn.AnchorPoint = Vector2.new(1, 0.5); CloseHeaderBtn.Position = UDim
 CloseHeaderBtn.BackgroundColor3 = Color3.fromRGB(248, 113, 113); CloseHeaderBtn.BackgroundTransparency = 0.3; CloseHeaderBtn.Text = "X"; CloseHeaderBtn.TextColor3 = Color3.fromRGB(255, 255, 255); CloseHeaderBtn.Font = Enum.Font.GothamBold; CloseHeaderBtn.TextSize = 12; CloseHeaderBtn.ZIndex = 8
 applyCorner(CloseHeaderBtn, 6)
 
+-- ЕДИНАЯ ВЫГРУЗКА СКРИПТА: останавливает все while-циклы (через флаги Config),
+-- отключает все соединения и уничтожает GUI
 local function completeScriptUnload()
     notify("Fouf32", t("Выгрузка скрипта Fouf32 build 0.21...", "Unloading Fouf32 build 0.21..."), 2)
+
+    local loopFlags = {
+        "AutoOpFarm", "AutoDumbbell", "AutoPushups", "AutoSitups", "AutoWeight",
+        "AutoPunch", "AutoMultiTool", "AutoBenchPress", "AutoSquat",
+        "AutoTreadmillMachine", "AutoPullups", "AutoBoulder", "AutoRockMachine",
+        "AutoRock", "AutoTreadmill", "KillAura", "TargetLoopKill", "AutoKillServer",
+        "AutoBrawl", "AutoKillBoss", "AntiRagdoll", "AutoRebirth", "AutoCollectOrbs",
+        "AutoCrystal", "PlayerESP", "FlyEnabled", "WalkWhileTraining", "AntiHit",
+        "AutoSafeTPLowHP", "SpeedHack", "JumpPowerHack", "Noclip", "InfJump",
+        "Bhop", "FullBright", "SpectateTarget", "AntiKnockback", "AntiAFK",
+        "UltraFastRep", "AutoKillBoss",
+    }
+    for _, flagName in ipairs(loopFlags) do
+        Config[flagName] = false
+    end
+
     for _, conn in ipairs(ScriptConnections) do
         pcall(function() conn:Disconnect() end)
     end
-    stopFlight()
+    ScriptConnections = {}
+
+    pcall(stopFlight)
+    pcall(function() clearESP() end)
     pcall(function() ScreenGui:Destroy() end)
     print("[Fouf32 Framework]: Unloaded successfully.")
 end
@@ -944,6 +1099,9 @@ DescTextLabel.TextSize = 10
 DescTextLabel.TextXAlignment = Enum.TextXAlignment.Left
 DescTextLabel.Text = "Fouf32 build 0.21: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
 CollectionService:AddTag(DescTextLabel, "AccentText")
+bindText(DescTextLabel, function()
+    return "Fouf32 build 0.21: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
+end)
 
 -- Сайдбар для 10 ПОНЯТНЫХ РАЗДЕЛОВ
 local Sidebar = Instance.new("ScrollingFrame", MainFrame)
@@ -1021,7 +1179,7 @@ local accentToggles = {}
 local function bindTooltip(frame, descriptionText)
     frame.MouseEnter:Connect(function()
         if Config.EnableTooltips then
-            DescTextLabel.Text = "Fouf32 build 0.21: " .. tostring(descriptionText)
+            DescTextLabel.Text = "Fouf32 build 0.21: " .. tostring(resolveText(descriptionText))
         end
     end)
     frame.MouseLeave:Connect(function()
@@ -1035,6 +1193,7 @@ local function sectionLabel(page, text)
     local lbl = Instance.new("TextLabel", page)
     lbl.BackgroundTransparency = 1; lbl.Size = UDim2.new(1,-10,0,20); lbl.Font = Enum.Font.GothamBold; lbl.Text = text; lbl.TextColor3 = Color3.fromRGB(94,234,212); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
     CollectionService:AddTag(lbl, "AccentText")
+    bindText(lbl, function() return resolveText(text) end)
     return lbl
 end
 
@@ -1052,11 +1211,13 @@ local function createButton(page, name, desc, callback)
 
     local lbl = Instance.new("TextLabel", panel)
     lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0,12,0,5); lbl.Size = UDim2.new(1,-24,0,16)
-    lbl.Font = Enum.Font.GothamBold; lbl.Text = name; lbl.TextColor3 = Color3.fromRGB(241,245,249); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Font = Enum.Font.GothamBold; lbl.Text = resolveText(name); lbl.TextColor3 = Color3.fromRGB(241,245,249); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    bindText(lbl, function() return resolveText(name) end)
 
     local descLbl = Instance.new("TextLabel", panel)
     descLbl.BackgroundTransparency = 1; descLbl.Position = UDim2.new(0,12,0,22); descLbl.Size = UDim2.new(1,-24,0,16)
-    descLbl.Font = Enum.Font.Gotham; descLbl.Text = desc; descLbl.TextColor3 = Color3.fromRGB(148,163,184); descLbl.TextSize = 9; descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    descLbl.Font = Enum.Font.Gotham; descLbl.Text = resolveText(desc); descLbl.TextColor3 = Color3.fromRGB(148,163,184); descLbl.TextSize = 9; descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    bindText(descLbl, function() return resolveText(desc) end)
 
     bindTooltip(btn, desc)
 
@@ -1082,16 +1243,20 @@ local function createToggle(page, name, desc, default, callback)
     statusBadge.Font = Enum.Font.GothamBold
     statusBadge.TextSize = 10
     statusBadge.TextXAlignment = Enum.TextXAlignment.Left
-    statusBadge.Text = state and t("[ВКЛ]", "[ON]") or t("[ВЫКЛ]", "[OFF]")
     statusBadge.TextColor3 = state and Color3.fromRGB(74, 222, 128) or Color3.fromRGB(148, 163, 184)
+    bindText(statusBadge, function()
+        return state and t("[ВКЛ]", "[ON]") or t("[ВЫКЛ]", "[OFF]")
+    end)
 
     local lbl = Instance.new("TextLabel", btn)
     lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0,62,0,5); lbl.Size = UDim2.new(0,280,0,16)
-    lbl.Font = Enum.Font.GothamBold; lbl.Text = name; lbl.TextColor3 = state and Color3.fromRGB(255,255,255) or Color3.fromRGB(203,213,225); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Font = Enum.Font.GothamBold; lbl.Text = resolveText(name); lbl.TextColor3 = state and Color3.fromRGB(255,255,255) or Color3.fromRGB(203,213,225); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    bindText(lbl, function() return resolveText(name) end)
 
     local descLbl = Instance.new("TextLabel", btn)
     descLbl.BackgroundTransparency = 1; descLbl.Position = UDim2.new(0,12,0,24); descLbl.Size = UDim2.new(0,330,0,16)
-    descLbl.Font = Enum.Font.Gotham; descLbl.Text = desc; descLbl.TextColor3 = Color3.fromRGB(148,163,184); descLbl.TextSize = 9; descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    descLbl.Font = Enum.Font.Gotham; descLbl.Text = resolveText(desc); descLbl.TextColor3 = Color3.fromRGB(148,163,184); descLbl.TextSize = 9; descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    bindText(descLbl, function() return resolveText(desc) end)
 
     local indicator = Instance.new("Frame", btn)
     indicator.AnchorPoint = Vector2.new(1,0.5); indicator.Position = UDim2.new(1,-12,0.5,0); indicator.Size = UDim2.new(0,38,0,20)
@@ -1122,7 +1287,8 @@ local function createSlider(page, name, min, max, default, callback, colorAccent
     local sliderFrame = createGlassPanel(page, 56)
     local lbl = Instance.new("TextLabel", sliderFrame)
     lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0,12,0,6); lbl.Size = UDim2.new(0,250,0,16)
-    lbl.Font = Enum.Font.GothamBold; lbl.Text = name; lbl.TextColor3 = Color3.fromRGB(241,245,249); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Font = Enum.Font.GothamBold; lbl.Text = resolveText(name); lbl.TextColor3 = Color3.fromRGB(241,245,249); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    bindText(lbl, function() return resolveText(name) end)
 
     local valLbl = Instance.new("TextLabel", sliderFrame)
     valLbl.BackgroundTransparency = 1; valLbl.Position = UDim2.new(1,-70,0,6); valLbl.Size = UDim2.new(0,58,0,16)
@@ -1138,7 +1304,9 @@ local function createSlider(page, name, min, max, default, callback, colorAccent
     applyCorner(BarFill, 4)
     if not colorAccent then CollectionService:AddTag(BarFill, "AccentFill") end
 
-    bindTooltip(BarBG, desc or (t("Настройка параметра ", "Adjust parameter ") .. name))
+    bindTooltip(BarBG, desc or function()
+        return t("Настройка параметра ", "Adjust parameter ") .. resolveText(name)
+    end)
 
     local sdragging = false
     BarBG.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sdragging = true end end)
@@ -1169,7 +1337,9 @@ local function createColorSwatchGrid(page, presets, onPick, size)
         applyCorner(swatch, size/2)
         local sStroke = applyStroke(swatch, Color3.fromRGB(255,255,255), 0.6, 1.5)
 
-        bindTooltip(swatch, t("Применить цветовой пресет: ", "Apply color preset: ") .. preset.name)
+        bindTooltip(swatch, function()
+            return t("Применить цветовой пресет: ", "Apply color preset: ") .. preset.name
+        end)
 
         swatch.MouseButton1Click:Connect(function()
             onPick(preset.color)
@@ -1186,12 +1356,13 @@ local function applyAccent(newColor)
     for _, inst in ipairs(CollectionService:GetTagged("AccentStroke")) do tw(inst, {Color = newColor}, 0.25):Play() end
     for _, inst in ipairs(CollectionService:GetTagged("AccentFill")) do tw(inst, {BackgroundColor3 = newColor}, 0.25):Play() end
     for _, inst in ipairs(CollectionService:GetTagged("AccentText")) do tw(inst, {TextColor3 = newColor}, 0.25):Play() end
-    for _, t in ipairs(accentToggles) do if t.getState() then tw(t.indicator, {BackgroundColor3 = newColor}, 0.25):Play() end end
+    for _, tog in ipairs(accentToggles) do if tog.getState() then tw(tog.indicator, {BackgroundColor3 = newColor}, 0.25):Play() end end
 end
 
 -- ОБРАБОТЧИКИ ВЫБОРА ЯЗЫКА С ВЫХОДОМ ИЗ МОДАЛЬНОГО ОКНА
 local function selectLanguage(lang)
     Config.Language = lang
+    applyLanguage() -- живое обновление всех надписей UI
     tw(LangModal, {Size = UDim2.new(0, 480, 0, 0), BackgroundTransparency = 1}, 0.2):Play()
     task.delay(0.2, function()
         LangModal.Visible = false
@@ -1211,6 +1382,7 @@ EnBtn.MouseButton1Click:Connect(function() selectLanguage("EN") end)
 sectionLabel(clickGuiPage, "LANGUAGE & THEME PRESETS")
 createButton(clickGuiPage, "Switch Language / Сменить Язык (RU / EN)", "Переключает язык интерфейса между Русским и English", function()
     Config.Language = (Config.Language == "RU") and "EN" or "RU"
+    applyLanguage()
     notify("Fouf32 Language", t("Язык изменен на Русский", "Language changed to English"), 3)
 end)
 
@@ -1258,32 +1430,7 @@ createButton(clickGuiPage, "Optimize FPS (Smooth Plastic)", "Удаляет те
     notify("FPS Boost", "Текстуры карты оптимизированы!", 2)
 end)
 
-local function completeScriptUnload()
-    for _, conn in pairs(ScriptConnections) do
-        pcall(function() conn:Disconnect() end)
-    end
-    ScriptConnections = {}
-    Config.AutoDumbbell = false
-    Config.AutoPushups = false
-    Config.AutoSitups = false
-    Config.AutoWeight = false
-    Config.AutoPunch = false
-    Config.AutoMultiTool = false
-    Config.AutoBenchPress = false
-    Config.AutoSquat = false
-    Config.AutoTreadmillMachine = false
-    Config.AutoPullups = false
-    Config.AutoBoulder = false
-    Config.AutoRockMachine = false
-    Config.KillAura = false
-    Config.AutoKillBoss = false
-    Config.AutoKillServer = false
-    Config.PlayerESP = false
-    Config.FlyEnabled = false
-    if ScreenGui then pcall(function() ScreenGui:Destroy() end) end
-    notify("Fouf32 Unload", "Скрипт Fouf32 успешно выгружен!", 3)
-end
-
+-- Unload кнопка использует общую completeScriptUnload (определена выше, у шапки окна)
 createButton(clickGuiPage, "Unload & Terminate Fouf32", "Полная выгрузка скрипта Fouf32 build 0.21 и очистка памяти", completeScriptUnload)
 
 -- ============================================================
@@ -1465,110 +1612,133 @@ createToggle(trainingPage, "Walk While Training (Ходить во время у
             LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Sit = false
         end
         notify("Fouf32 Walk", "Свободная ходьба во время качания включена!", 2)
+        -- Постоянный цикл: не дает игре усадить вас, пока вы держите снаряд.
+        -- Тренажеры-сиденья (жим, присед и т.д.) не затрагиваются — снаряд в руках не экипирован.
+        task.spawn(function()
+            while Config.WalkWhileTraining do
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Sit and char:FindFirstChildOfClass("Tool") then
+                    hum.Sit = false
+                end
+                task.wait(0.2)
+            end
+        end)
     end
 end)
 
 sectionLabel(trainingPage, "GYM MACHINES AUTO-FARM (БЛИЖАЙШИЙ ТРЕНАЖЕР)")
 
+-- Общий движок фарма на тренажере:
+--  * заново ищет машину, если она уничтожена/не найдена при включении
+--  * возвращает к тренажеру, если игрока унесло дальше 40 стадов
+--  * повторно садится на сиденье, если игрок встал (для тренажеров с Seat)
+--  * каждый цикл шлет interact + rep
+local function startMachineFarm(configKey, keywords)
+    task.spawn(function()
+        local mModel, lastFind, machineHasSeat = nil, 0, false
+        while Config[configKey] do
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            local seated = hum and (hum.Sit or hum.SeatPart ~= nil)
+
+            if (tick() - lastFind) > 1.5 then
+                local needFind = false
+                if not mModel or not mModel.Parent then
+                    needFind = true
+                elseif hrp then
+                    local okPos, modelPos = pcall(function() return mModel:GetPivot().Position end)
+                    if okPos and (modelPos - hrp.Position).Magnitude > 40 then
+                        needFind = true
+                    elseif machineHasSeat and not seated then
+                        needFind = true
+                    end
+                end
+                if needFind then
+                    mModel = useGymMachine(keywords)
+                    machineHasSeat = false
+                    if mModel and mModel.Parent then
+                        pcall(function()
+                            for _, child in pairs(mModel:GetDescendants()) do
+                                if child:IsA("Seat") then machineHasSeat = true; break end
+                            end
+                        end)
+                    end
+                    lastFind = tick()
+                end
+            end
+
+            local ev = getMuscleEvent()
+            if ev then
+                if mModel and mModel.Parent then
+                    pcall(function() ev:FireServer("interact", mModel) end)
+                end
+                local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
+                for _ = 1, count do
+                    ev:FireServer("rep")
+                end
+            end
+            task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
+        end
+    end)
+end
+
 createToggle(trainingPage, "Auto Bench Press (Жим лежа)", "Садится на ближайший жим лежа 1 раз и качает грудь!", Config.AutoBenchPress, function(v)
     Config.AutoBenchPress = v
     if v then
-        local mModel = useGymMachine({"bench", "benchpress", "bench press"})
-        task.spawn(function()
-            while Config.AutoBenchPress do
-                local ev = getMuscleEvent()
-                if ev then
-                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
-                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
-                    for i = 1, count do ev:FireServer("rep") end
-                end
-                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
-            end
-        end)
+        startMachineFarm("AutoBenchPress", {"bench", "benchpress", "bench press"})
     end
 end)
 
 createToggle(trainingPage, "Auto Squat Rack (Приседания)", "Садится на ближайшую стойку приседаний 1 раз и качает ноги!", Config.AutoSquat, function(v)
     Config.AutoSquat = v
     if v then
-        local mModel = useGymMachine({"squat", "squatrack", "squat rack"})
-        task.spawn(function()
-            while Config.AutoSquat do
-                local ev = getMuscleEvent()
-                if ev then
-                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
-                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
-                    for i = 1, count do ev:FireServer("rep") end
-                end
-                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
-            end
-        end)
+        startMachineFarm("AutoSquat", {"squat", "squatrack", "squat rack"})
     end
 end)
 
 createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Встает на ближайшую беговую дорожку 1 раз и качает ловкость!", Config.AutoTreadmillMachine, function(v)
     Config.AutoTreadmillMachine = v
     if v then
-        local mModel = useGymMachine({"treadmill", "tread"})
-        task.spawn(function()
-            while Config.AutoTreadmillMachine do
-                local ev = getMuscleEvent()
-                if ev then
-                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
-                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
-                    for i = 1, count do ev:FireServer("rep") end
-                end
-                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
-            end
-        end)
+        startMachineFarm("AutoTreadmillMachine", {"treadmill", "tread"})
     end
 end)
 
 createToggle(trainingPage, "Auto Pull-ups (Подтягивания)", "Встает к ближайшему турнику 1 раз и подтягивается!", Config.AutoPullups, function(v)
     Config.AutoPullups = v
     if v then
-        local mModel = useGymMachine({"pullup", "pull-up", "pull up", "bar"})
-        task.spawn(function()
-            while Config.AutoPullups do
-                local ev = getMuscleEvent()
-                if ev then
-                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
-                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
-                    for i = 1, count do ev:FireServer("rep") end
-                end
-                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
-            end
-        end)
+        startMachineFarm("AutoPullups", {"pullup", "pull-up", "pull up", "bar"})
     end
 end)
 
 createToggle(trainingPage, "Auto Boulder Throw (Бросок валуна)", "Подходит к валуну 1 раз и качает броски!", Config.AutoBoulder, function(v)
     Config.AutoBoulder = v
     if v then
-        local mModel = useGymMachine({"boulder", "boulderthrow", "boulder throw"})
-        task.spawn(function()
-            while Config.AutoBoulder do
-                local ev = getMuscleEvent()
-                if ev then
-                    if mModel then pcall(function() ev:FireServer("interact", mModel) end) end
-                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
-                    for i = 1, count do ev:FireServer("rep") end
-                end
-                task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
-            end
-        end)
+        startMachineFarm("AutoBoulder", {"boulder", "boulderthrow", "boulder throw"})
     end
 end)
 
 createToggle(trainingPage, "Auto Rock Farm (Камень)", "Телепортируется к ближайшему камню 1 раз и непрерывно бьет!", Config.AutoRockMachine, function(v)
     Config.AutoRockMachine = v
     if v then
-        local rPart = getTargetRockPart("Any")
-        if rPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.lookAt(rPart.Position + Vector3.new(0, 2, 4), rPart.Position)
-        end
         task.spawn(function()
+            local rockPart, lastScan, lastTP = nil, 0, 0
             while Config.AutoRockMachine do
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if (tick() - lastScan) > 2 then
+                        rockPart = getTargetRockPart("Any")
+                        lastScan = tick()
+                    end
+                    if rockPart and rockPart.Parent and (tick() - lastTP) > 2
+                        and (rockPart.Position - hrp.Position).Magnitude > 8 then
+                        hrp.CFrame = CFrame.lookAt(rockPart.Position + Vector3.new(0, 2, 4), rockPart.Position)
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        lastTP = tick()
+                    end
+                end
                 trainTool("Punch")
                 task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
             end
@@ -1603,14 +1773,24 @@ RockInfoLabel.Text = "Selected Rock Tier: Any"
 createToggle(rocksPage, "Auto Farm Selected Rock", "Телепортируется к камню 1 раз и непрерывно бьет!", Config.AutoRock, function(v)
     Config.AutoRock = v
     if v then
-        local rPart = getTargetRockPart(Config.SelectedRockTier)
-        if rPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.lookAt(rPart.Position + Vector3.new(0, 2, 4), rPart.Position)
-            LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        end
         task.spawn(function()
+            local rockPart, lastScan, lastTP = nil, 0, 0
             while Config.AutoRock do
                 local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if (tick() - lastScan) > 2 then
+                        rockPart = getTargetRockPart(Config.SelectedRockTier)
+                        lastScan = tick()
+                    end
+                    if rockPart and rockPart.Parent and (tick() - lastTP) > 2
+                        and (rockPart.Position - hrp.Position).Magnitude > 8 then
+                        hrp.CFrame = CFrame.lookAt(rockPart.Position + Vector3.new(0, 2, 4), rockPart.Position)
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        lastTP = tick()
+                    end
+                end
+
                 if char and char:FindFirstChildOfClass("Humanoid") then
                     local hum = char:FindFirstChildOfClass("Humanoid")
                     local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or char:FindFirstChild("Punch")
@@ -1637,12 +1817,22 @@ end)
 createToggle(rocksPage, "Auto Treadmill Farm (Agility)", "Телепортируется на беговую дорожку 1 раз и качает ловкость!", Config.AutoTreadmill, function(v)
     Config.AutoTreadmill = v
     if v then
-        local machine = findNearestMachine({"treadmill", "tread"})
-        if machine and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            safeTeleport(machine.CFrame * CFrame.new(0, 3, 0))
-        end
         task.spawn(function()
+            local treadPart, lastScan, lastTP = nil, 0, 0
             while Config.AutoTreadmill do
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if not treadPart or not treadPart.Parent or (tick() - lastScan) > 5 then
+                        treadPart = findNearestMachine({"treadmill", "tread"})
+                        lastScan = tick()
+                    end
+                    if treadPart and treadPart.Parent and (tick() - lastTP) > 2
+                        and (treadPart.Position - hrp.Position).Magnitude > 8 then
+                        safeTeleport(treadPart.CFrame * CFrame.new(0, 3, 0))
+                        lastTP = tick()
+                    end
+                end
                 local ev = getMuscleEvent()
                 if ev then ev:FireServer("rep") end
                 task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
@@ -1653,7 +1843,9 @@ end)
 
 sectionLabel(rocksPage, "SELECT ROCK TIER (ТОЧНЫЕ ТРЕБОВАНИЯ)")
 for _, rData in ipairs(rockTiers) do
-    createButton(rocksPage, rData[1] .. " [" .. rData[2] .. "]", "Выбрать " .. rData[1] .. " для фарминга", function()
+    createButton(rocksPage, rData[1] .. " [" .. rData[2] .. "]", function()
+        return t("Выбрать ", "Select ") .. rData[1] .. t(" для фарминга", " for farming")
+    end, function()
         Config.SelectedRockTier = rData[3]
         RockInfoLabel.Text = "Selected Rock Tier: " .. rData[1] .. " (" .. rData[2] .. ")"
         notify("Fouf32 Rock", "Выбран камень: " .. rData[1], 2)
@@ -2006,6 +2198,7 @@ createToggle(protectionPage, "Godmode / Anti-Hit", "Отключает колл�
                 end
             end
         end)
+        table.insert(ScriptConnections, antiConn)
     else
         if antiConn then antiConn:Disconnect() end
         if LocalPlayer.Character then
@@ -2078,7 +2271,9 @@ local locationDisplayList = {
 }
 
 for _, loc in ipairs(locationDisplayList) do
-    createButton(teleportsPage, loc[1] .. " [" .. loc[2] .. "]", "Безопасный умный телепорт на " .. loc[1], function()
+    createButton(teleportsPage, loc[1] .. " [" .. loc[2] .. "]", function()
+        return t("Безопасный умный телепорт на ", "Safe smart teleport to ") .. loc[1]
+    end, function()
         smartTeleportToIsland(loc[1])
     end)
 end
@@ -2251,7 +2446,9 @@ createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-отк
 end)
 
 for _, crystalName in ipairs(crystalsList) do
-    createButton(automationPage, crystalName, "Выбрать " .. crystalName .. " для крутки", function()
+    createButton(automationPage, crystalName, function()
+        return t("Выбрать ", "Select ") .. crystalName .. t(" для крутки", " to open")
+    end, function()
         Config.SelectedCrystal = crystalName
         notify("Egg Selected", "Активный кристалл: " .. crystalName, 2)
     end)
@@ -2347,36 +2544,77 @@ createToggle(movementPage, "Spectate Target Player", "Режим наблюде�
     end
 end)
 
-local espDrawings = {}
-local function clearESP()
-    for _, drawing in pairs(espDrawings) do
+local espDrawings = {} -- [Player] = Drawing.Text — создается один раз и переиспользуется
+
+-- Определяется как присваивание: forward-декларация есть в начале скрипта
+-- (нужна внутри completeScriptUnload)
+clearESP = function()
+    for playerKey, drawing in pairs(espDrawings) do
         if drawing then
             pcall(function() drawing.Visible = false end)
-            pcall(function() drawing:Destroy() end)
             pcall(function() drawing:Remove() end)
         end
+        espDrawings[playerKey] = nil
     end
-    espDrawings = {}
 end
 
 createToggle(movementPage, "Player NameTags ESP", "Показывает имена и дистанцию до игроков", Config.PlayerESP, function(v)
     Config.PlayerESP = v
     if v then
+        if Drawing == nil or type(Drawing.new) ~= "function" then
+            notify("Fouf32 ESP", "Этот инжектор не поддерживает Drawing — ESP недоступен", 4)
+            Config.PlayerESP = false
+            return
+        end
         task.spawn(function()
             while Config.PlayerESP do
-                clearESP()
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
-                        local hrp = p.Character.HumanoidRootPart
-                        local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-                        if onScreen then
-                            local txt = Drawing.new("Text")
-                            txt.Text = p.Name .. " [" .. math.floor((hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude) .. "m]"
-                            txt.Size = 14; txt.Center = true; txt.Outline = true; txt.Color = AccentColor; txt.Position = Vector2.new(pos.X, pos.Y - 25); txt.Visible = true
-                            table.insert(espDrawings, txt)
+                local myChar = LocalPlayer.Character
+                local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                local seen = {}
+
+                if myHrp then
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer then
+                            local c = p.Character
+                            local hrp = c and c:FindFirstChild("HumanoidRootPart")
+                            local hum = c and c:FindFirstChildOfClass("Humanoid")
+                            if hrp and hum and hum.Health > 0 then
+                                seen[p] = true
+                                local d = espDrawings[p]
+                                if not d then
+                                    local ok, newDrawing = pcall(function()
+                                        local obj = Drawing.new("Text")
+                                        obj.Size = 14
+                                        obj.Center = true
+                                        obj.Outline = true
+                                        return obj
+                                    end)
+                                    if ok and newDrawing then
+                                        d = newDrawing
+                                        espDrawings[p] = d
+                                    end
+                                end
+                                if d then
+                                    local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                                    d.Text = p.Name .. " [" .. math.floor((hrp.Position - myHrp.Position).Magnitude) .. "m]"
+                                    d.Position = Vector2.new(pos.X, pos.Y - 25)
+                                    d.Color = AccentColor
+                                    d.Visible = onScreen
+                                end
+                            end
                         end
                     end
                 end
+
+                -- чистим рисунки игроков, которых больше нет на сервере / они мертвы
+                for p, d in pairs(espDrawings) do
+                    if not seen[p] then
+                        pcall(function() d.Visible = false end)
+                        pcall(function() d:Remove() end)
+                        espDrawings[p] = nil
+                    end
+                end
+
                 task.wait(0.1)
             end
             clearESP()
@@ -2435,17 +2673,18 @@ local guiVisible, isAnimating = true, false
 
 local function toggleMenu()
     if isAnimating then return end
+    if LangModal.Visible then return end -- стартовое окно выбора языка еще открыто
     isAnimating = true
     guiVisible = not guiVisible
     if guiVisible then
         MainFrame.Visible = true
         MainFrame.Size = UDim2.new(0,690,0,0)
-        local t = tw(MainFrame, {Size = UDim2.new(0,690,0,520)}, 0.25, Enum.EasingStyle.Quart)
-        t:Play()
+        local anim = tw(MainFrame, {Size = UDim2.new(0,690,0,520)}, 0.25, Enum.EasingStyle.Quart)
+        anim:Play()
         task.delay(0.25, function() isAnimating = false end)
     else
-        local t = tw(MainFrame, {Size = UDim2.new(0,690,0,0)}, 0.2, Enum.EasingStyle.Quart)
-        t:Play()
+        local anim = tw(MainFrame, {Size = UDim2.new(0,690,0,0)}, 0.2, Enum.EasingStyle.Quart)
+        anim:Play()
         task.delay(0.2, function() MainFrame.Visible = false; isAnimating = false end)
     end
 end
