@@ -45,6 +45,7 @@ local function checkPlayerWhitelist()
     if not ENABLE_WHITELIST then return true end
 
     local playerName = string.lower(LocalPlayer.Name)
+    print("[Fouf32 STAGE A]: авторизация игрока '" .. LocalPlayer.Name .. "'")
 
     -- До 3 попыток: raw.githubusercontent иногда отдает 429/таймаут
     for attempt = 1, 3 do
@@ -57,17 +58,23 @@ local function checkPlayerWhitelist()
                 for _, name in ipairs(data) do
                     local n = string.lower(tostring(name))
                     if n == playerName or n == "all" then
+                        print("[Fouf32 STAGE B]: whitelist OK (попытка " .. attempt .. ")")
                         return true
                     end
                 end
+                print("[Fouf32 STAGE B]: ник '" .. LocalPlayer.Name .. "' НЕ найден в whitelist.json")
                 return false -- список загружен, игрока в нем нет
             end
+            warn("[Fouf32 Auth]: JSON некорректен (попытка " .. attempt .. ")")
+        else
+            warn("[Fouf32 Auth]: HttpGet whitelist не удался (попытка " .. attempt .. "): " .. tostring(response))
         end
-        task.wait(1)
+        task.wait(0.5)
     end
 
     -- Резерв для владельца, если GitHub совсем недоступен
     if LocalPlayer.Name == "Tvinkilp" or LocalPlayer.Name == "User" then
+        print("[Fouf32 STAGE B]: резервный доступ владельца")
         return true
     end
     warn("[Fouf32 Auth]: не удалось загрузить whitelist.json (попыток: 3)")
@@ -85,6 +92,8 @@ if not checkPlayerWhitelist() then
     warn("[Fouf32 Auth]: Доступ запрещен для игрока " .. LocalPlayer.Name)
     return
 end
+
+print("[Fouf32 STAGE C]: whitelist пройден, создаю интерфейс...")
 
 -- Защита от повторного запуска Fouf32
 local FRAMEWORK_NAME = "Fouf32_MuscleLegends_Master"
@@ -836,6 +845,7 @@ ScreenGui.Name = FRAMEWORK_NAME
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Enabled = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+print("[Fouf32 STAGE D]: ScreenGui создан")
 
 pcall(function()
     if syn and syn.protect_gui then
@@ -994,6 +1004,7 @@ MainFrame.Size = UDim2.new(0, 690, 0, 520)
 MainFrame.Active = true
 MainFrame.Visible = false -- стартовое окно языка поверх меню
 LangModal.Visible = true
+print("[Fouf32 STAGE E]: главное окно построено, показано окно языка")
 MainFrame.ClipsDescendants = true
 applyCorner(MainFrame, 18)
 local MainStroke = applyStroke(MainFrame, AccentColor, 0.3, 1.5)
@@ -2699,4 +2710,5 @@ local mainKeyConn = UserInputService.InputBegan:Connect(function(input, gp)
 end)
 table.insert(ScriptConnections, mainKeyConn)
 
+print("[Fouf32 STAGE Z]: ЗАГРУЗКА ЗАВЕРШЕНА — окно языка должно быть на экране (меню: RightShift)")
 print("[Fouf32 Glass UI Engine v0.21]: Muscle Legends Hub loaded successfully!")
