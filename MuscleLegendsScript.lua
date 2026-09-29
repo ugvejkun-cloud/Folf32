@@ -198,6 +198,10 @@ pcall(function()
     end
 end)
 
+-- Весь дальнейший код GUI — внутри pcall: при ошибке строительства
+-- она будет показана на бейдже с точной строкой файла, а не молча убьёт скрипт.
+local _guiOk, _guiErr = pcall(function()
+
 -- Хранилище подключений для полной выгрузки (Unload)
 local ScriptConnections = {}
 -- Forward-декларация: определяется позже в секции ESP, но нужна в completeScriptUnload
@@ -4518,3 +4522,12 @@ end)
 
 print("[Vortex STAGE Z]: ЗАГРУЗКА ЗАВЕРШЕНА — экран загрузки анимирован, меню откроется автоматически (меню: RightShift)")
 print("[Vortex Glass UI Engine v0.23]: Muscle Legends Hub loaded successfully!")
+
+end)
+
+if not _guiOk then
+    local msg = tostring(_guiErr)
+    warn("[Vortex GUI BUILD ERROR]: " .. msg)
+    print("[Vortex GUI BUILD ERROR]: " .. msg)
+    bootSet("[Vortex] BUILD ERROR: " .. msg, Color3.fromRGB(255, 90, 90))
+end
