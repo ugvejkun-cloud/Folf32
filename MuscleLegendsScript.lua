@@ -135,6 +135,51 @@ end
 
 print("[Vortex STAGE C]: whitelist пройден, создаю интерфейс...")
 
+-- РАННИЙ ВИДИМЫЙ МАРКЕР: появляется сразу после whitelist, независимо от дальнейших ошибок.
+-- Если его нет на экране — скрипт не прошёл авторизацию или не выполнился.
+local bootGuiRef, bootLabelRef = nil, nil
+pcall(function()
+    local bootGui = Instance.new("ScreenGui")
+    bootGui.Name = "VortexBoot"
+    bootGui.ResetOnSpawn = false
+    bootGui.DisplayOrder = 100
+    local boot = Instance.new("TextLabel", bootGui)
+    boot.Name = "BootLabel"
+    boot.AnchorPoint = Vector2.new(0.5, 0)
+    boot.Position = UDim2.new(0.5, 0, 0.08, 0)
+    boot.Size = UDim2.new(0, 420, 0, 40)
+    boot.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+    boot.BackgroundTransparency = 0.15
+    boot.BorderSizePixel = 0
+    boot.Font = Enum.Font.GothamBold
+    boot.TextSize = 13
+    boot.TextColor3 = Color3.fromRGB(201, 180, 255)
+    boot.Text = "[Vortex] whitelist OK — building UI..."
+    local c = Instance.new("UICorner", boot)
+    c.CornerRadius = UDim.new(0, 8)
+    local okParent = false
+    if typeof(gethui) == "function" then pcall(function() bootGui.Parent = gethui() okParent = true end) end
+    if not okParent then pcall(function() bootGui.Parent = CoreGui okParent = true end) end
+    if not okParent then pcall(function() bootGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end) end
+    bootGuiRef, bootLabelRef = bootGui, boot
+    print("[Vortex STAGE C2]: boot-marker parented=" .. tostring(bootGui.Parent))
+end)
+
+local function bootSet(text, color)
+    pcall(function()
+        if bootLabelRef then
+            bootLabelRef.Text = text
+            if color then bootLabelRef.TextColor3 = color end
+        end
+    end)
+end
+
+local function bootDone()
+    pcall(function()
+        if bootGuiRef then bootGuiRef:Destroy() bootGuiRef, bootLabelRef = nil, nil end
+    end)
+end
+
 -- Защита от повторного запуска Vortex
 local FRAMEWORK_NAME = "Vortex_MuscleLegends_Master"
 pcall(function()
@@ -1231,6 +1276,7 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Enabled = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 print("[Vortex STAGE D]: ScreenGui создан")
+bootSet("[Vortex] ScreenGui created, building widgets...")
 
 pcall(function()
     if syn and syn.protect_gui then
@@ -1470,6 +1516,7 @@ MainFrame.Active = true
 MainFrame.Visible = false -- пока идёт экран загрузки
 LoadModal.Visible = true
 print("[Vortex STAGE E]: главное окно построено, показан экран загрузки")
+bootSet("[Vortex] UI built — starting load animation...")
 MainFrame.ClipsDescendants = true
 CollectionService:AddTag(MainFrame, "ThemeWindow")
 applyCorner(MainFrame, 18)
@@ -4356,6 +4403,8 @@ local function openMenu()
     local s = tw(menuScale, {Scale = 1}, 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
     s:Play()
     s.Completed:Connect(function() isAnimating = false end)
+    bootSet("[Vortex] menu OPEN — marker will vanish in 2s")
+    task.delay(2, bootDone)
 end
 
 local function closeMenu()
@@ -4460,6 +4509,9 @@ task.delay(8, function()
         if not (MainFrame.Visible and guiVisible) and not OpenBtn.Visible then
             warn("[Vortex STAGE Z]: меню не отображается — показываю кнопку OpenBtn")
             OpenBtn.Visible = true
+        end
+        if not (MainFrame.Visible and guiVisible) then
+            bootSet("[Vortex] FAILED: menu not visible (open F9, send log)", Color3.fromRGB(255,90,90))
         end
     end)
 end)
