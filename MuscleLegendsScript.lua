@@ -180,10 +180,17 @@ local Config = {
 
     -- Фарминг & Автоматизация
     AutoRebirth       = false,
+    StayAfterRebirth  = true,   -- после ребирта возвращаться на исходную точку (не спавн)
     AutoChest         = false,
     AutoCrystal       = false,
     SelectedCrystal   = "Blue Crystal",
+    HatchCount        = 50,     -- сколько яиц открывать за один Mass Hatch (1..500)
+    HatchDelay        = 0.12,   -- задержка между открытиями яиц (сек)
+    HatchPower        = false,  -- флаг живости массового вылупления (гасится при Unload)
     AutoCollectOrbs   = false,
+
+    -- Тема окна (сначала — сплошной чёрный)
+    ThemeIndex        = 1,
 
     -- Питомцы
     AutoEvolvePets    = false,
@@ -322,6 +329,24 @@ local LangDict = {
     ["Перезайти на этот же сервер"] = "Rejoin this same server",
     ["Подключиться к случайному серверу"] = "Connect to a random server",
     ["Копирует ID текущего сервера в буфер обмена"] = "Copies the current server ID to clipboard",
+    ["Switch Theme (Сменить Тему)"] = "Switch Theme",
+    ["Stay In Place After Rebirth (Не телепортовать на спавн)"] = "Stay In Place After Rebirth",
+    ["Сохраняет вашу позицию до перерождения и возвращает вас обратно после него"] = "Saves your position before rebirth and returns you there after it",
+    ["MASS EGG HATCHER (ДО 500 ЗА РАЗ)"] = "MASS EGG HATCHER (UP TO 500 AT ONCE)",
+    ["Eggs Per Batch (1-500)"] = "Eggs Per Batch (1-500)",
+    ["Сколько яиц открывать за один Mass Hatch (максимум 500)"] = "How many eggs to open per Mass Hatch (max 500)",
+    ["Авто-открытие выбранного кристалла пока включено (остановка при отказе сервера)"] = "Auto-opens the selected crystal while enabled (stops on server denial)",
+    ["MASS HATCH (открыть выбранное количество)"] = "MASS HATCH (open selected amount)",
+    ["Быстро открывает до 500 яиц подряд с проверкой мест в инвентаре и валюты"] = "Quickly opens up to 500 eggs in a row, checking inventory slots and currency",
+    ["Hatch x10"] = "Hatch x10",
+    ["Быстро открывает 10 яиц подряд"] = "Quickly opens 10 eggs in a row",
+    ["Hatch x1"] = "Hatch x1",
+    ["Открывает одно яйцо"] = "Opens one egg",
+    ["Stop Mass Hatch"] = "Stop Mass Hatch",
+    ["Останавливает идущее массовое вылупление"] = "Stops the running mass hatch",
+    ["CRYSTAL SELECTOR (ВЫБОР ЯЙЦА)"] = "CRYSTAL SELECTOR",
+    ["Встает на ближайшую беговую дорожку и качает ловкость!"] = "Steps onto the nearest treadmill and trains agility!",
+    ["Активирует Kill Aura: бьет, телепортирует врагов прямо к вам или телепортируется к ним!"] = "Enables Kill Aura: hits enemies, dashes to them or pulls them into your fists!",
 }
 
 local TextBindings = {}
@@ -355,9 +380,10 @@ local function applyLanguage()
     end
 end
 
-local AccentColor = Color3.fromRGB(45, 212, 191)
+local AccentColor = Color3.fromRGB(236, 236, 240) -- по умолчанию — серебро на чёрном
 
 local AccentPresets = {
+    {name = "Silver",  color = Color3.fromRGB(236, 236, 240)},
     {name = "Teal",    color = Color3.fromRGB(45, 212, 191)},
     {name = "Purple",  color = Color3.fromRGB(168, 85, 247)},
     {name = "Red",     color = Color3.fromRGB(248, 113, 113)},
@@ -367,6 +393,19 @@ local AccentPresets = {
     {name = "Amber",   color = Color3.fromRGB(251, 191, 36)},
     {name = "Slate",   color = Color3.fromRGB(148, 163, 184)},
 }
+
+-- Темы окна: сплошные (непрозрачные) фоны. Первая тема — "Black" по умолчанию.
+local UIThemes = {
+    {name = "Black",     window = Color3.fromRGB(12, 12, 14),    panel = Color3.fromRGB(22, 22, 25),    bar = Color3.fromRGB(16, 16, 18),    side = Color3.fromRGB(14, 14, 16),    accent = Color3.fromRGB(236, 236, 240)},
+    {name = "Slate",     window = Color3.fromRGB(17, 20, 24),    panel = Color3.fromRGB(26, 30, 36),    bar = Color3.fromRGB(20, 24, 28),    side = Color3.fromRGB(18, 21, 26),    accent = Color3.fromRGB(148, 163, 184)},
+    {name = "Midnight",  window = Color3.fromRGB(10, 13, 22),    panel = Color3.fromRGB(18, 23, 38),    bar = Color3.fromRGB(13, 17, 28),    side = Color3.fromRGB(11, 14, 24),    accent = Color3.fromRGB(96, 165, 250)},
+    {name = "Crimson",   window = Color3.fromRGB(18, 11, 12),    panel = Color3.fromRGB(30, 19, 20),    bar = Color3.fromRGB(22, 14, 15),    side = Color3.fromRGB(16, 10, 11),    accent = Color3.fromRGB(248, 113, 113)},
+    {name = "Cyberpunk", window = Color3.fromRGB(8, 12, 16),     panel = Color3.fromRGB(20, 26, 30),    bar = Color3.fromRGB(10, 15, 18),    side = Color3.fromRGB(10, 15, 18),    accent = Color3.fromRGB(45, 212, 191)},
+}
+
+local function currentTheme()
+    return UIThemes[Config.ThemeIndex] or UIThemes[1]
+end
 
 local rockTiers = {
     {"Tiny Rock", "0 Rebirths / 0 Str", "tiny"},
@@ -425,6 +464,113 @@ local function getMuscleEvent()
     return LocalPlayer:FindFirstChild("muscleEvent") or ReplicatedStorage:FindFirstChild("muscleEvent")
 end
 
+-- Ленивый доступ к ремоутам папки ReplicatedStorage.rEvents
+local function getREvent(name)
+    local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
+    if not rEvents then return nil end
+    local r = rEvents:FindFirstChild(name)
+    if r then return r end
+    r = rEvents:WaitForChild(name, 5)
+    return r
+end
+
+-- Модуль GlobalFunctions игры (проверка требований тренажёров и т.п.)
+local _globalFunctions = nil
+local function getGlobalFunctions()
+    if _globalFunctions ~= nil then return _globalFunctions or nil end
+    local ok, mod = pcall(function()
+        local shared = ReplicatedStorage:WaitForChild("shared", 5)
+        local modules = shared and shared:WaitForChild("modules", 5)
+        return require(modules.GlobalFunctions)
+    end)
+    _globalFunctions = ok and mod or false
+    return _globalFunctions or nil
+end
+
+-- Текущий занятый тренажёр (значение Value у LocalPlayer.machineInUse)
+local function getMachineInUse()
+    local v = LocalPlayer:FindFirstChild("machineInUse")
+    if v then return v.Value end
+    return nil
+end
+
+local function leaveMachine()
+    pcall(function()
+        local remote = getREvent("machineInteractRemote")
+        if remote and remote:IsA("RemoteFunction") then
+            remote:InvokeServer("leaveMachine")
+        end
+    end)
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.Sit = false end
+    end)
+end
+
+-- ============================================================
+-- ИНВЕНТАРЬ ПИТОМЦЕВ: количество, вместимость, свободные места
+-- ============================================================
+local CAPACITY_SEARCH_NAMES = {
+    "ItemCapacity", "itemCapacity", "Capacity", "capacity",
+    "MaxItems", "maxItems", "PetCapacity", "petCapacity",
+    "MaxPets", "maxPets", "StorageSize", "storageSize",
+}
+
+local function countOwnedPets()
+    local n = 0
+    local pf = LocalPlayer:FindFirstChild("petsFolder")
+    if pf then
+        for _, rarityFolder in pairs(pf:GetChildren()) do
+            n = n + #rarityFolder:GetChildren()
+        end
+    end
+    return n
+end
+
+local function detectItemCapacity()
+    local ls = LocalPlayer:FindFirstChild("leaderstats")
+    for _, name in ipairs(CAPACITY_SEARCH_NAMES) do
+        local child = LocalPlayer:FindFirstChild(name)
+        if child and child:IsA("ValueBase") then
+            local v = tonumber(child.Value)
+            if v and v > 0 then return v end
+        end
+        local leaderChild = ls and ls:FindFirstChild(name)
+        if leaderChild and leaderChild:IsA("ValueBase") then
+            local v = tonumber(leaderChild.Value)
+            if v and v > 0 then return v end
+        end
+        local attr = LocalPlayer:GetAttribute(name)
+        if attr ~= nil then
+            local v = tonumber(attr)
+            if v and v > 0 then return v end
+        end
+    end
+    return nil
+end
+
+-- free, owned, capacity (capacity/free = nil, если вместимость найти не удалось)
+local function freePetSlots()
+    local owned = countOwnedPets()
+    local cap = detectItemCapacity()
+    if cap then
+        return math.max(0, cap - owned), owned, cap
+    end
+    return nil, owned, nil
+end
+
+-- Баланс валюты: "Gems" (по умолчанию) или "Tokens"
+local function getCurrency(kind)
+    local name = (kind == "Tokens") and "Tokens" or "Gems"
+    local v = LocalPlayer:FindFirstChild(name)
+    if v and v:IsA("ValueBase") then return tonumber(v.Value) or 0 end
+    local ls = LocalPlayer:FindFirstChild("leaderstats")
+    v = ls and ls:FindFirstChild(name)
+    if v and v:IsA("ValueBase") then return tonumber(v.Value) or 0 end
+    return nil
+end
+
 -- ============================================================
 -- ПОИСК И НАДЕЖНЫЙ ФАРМ КАМНЯ (Rock Farming Engine)
 -- ============================================================
@@ -464,11 +610,11 @@ end
 -- ============================================================
 -- НАДЕЖНОЕ ОТКРЫТИЕ КРИСТАЛЛОВ / ЯИЦ
 -- ============================================================
-local function hatchCrystal(crystalName)
+local function teleportToCrystal(crystalName)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local myHrp = char.HumanoidRootPart
-    
+
     local crystalObj = nil
     for _, v in pairs(Workspace:GetDescendants()) do
         if (v:IsA("Model") or v:IsA("BasePart")) and (string.find(string.lower(v.Name), string.lower(crystalName)) or v.Name == crystalName) then
@@ -476,19 +622,48 @@ local function hatchCrystal(crystalName)
             if crystalObj then break end
         end
     end
-    
+
     if crystalObj then
         pcall(function()
             myHrp.CFrame = crystalObj.CFrame * CFrame.new(0, 2, 3)
         end)
     end
-    
+end
+
+-- Одно открытие кристалла. Возвращает:
+--   true,  petName, rarity  — выпал питомец
+--   false, "denied"         — сервер отказал (инвентарь полон / не хватает валюты)
+--   false, "noremote"       — ремоут openCrystalRemote не найден
+local function openCrystalOnce(crystalName)
+    local remote = nil
+    pcall(function()
+        remote = getREvent("openCrystalRemote")
+    end)
+    if remote and remote:IsA("RemoteFunction") then
+        local ok, pet, rarity = pcall(function()
+            return remote:InvokeServer("openCrystal", crystalName)
+        end)
+        if ok then
+            if type(pet) == "string" then return true, pet, rarity end
+            return false, "denied"
+        end
+        return false, "invokefail"
+    end
+
+    -- Фолбэк: muscleEvent (старая схема, только если ремоута нет вовсе)
     local ev = getMuscleEvent()
     if ev then
-        ev:FireServer("openCrystal", crystalName)
-        ev:FireServer("crys", crystalName)
-        ev:FireServer("openEgg", crystalName)
+        pcall(function() ev:FireServer("openCrystal", crystalName) end)
+        pcall(function() ev:FireServer("crys", crystalName) end)
+        pcall(function() ev:FireServer("openEgg", crystalName) end)
+        return true, nil, nil
     end
+    return false, "noremote"
+end
+
+local function hatchCrystal(crystalName)
+    teleportToCrystal(crystalName)
+    return openCrystalOnce(crystalName)
 end
 
 -- ============================================================
@@ -570,69 +745,140 @@ local function smartTeleportToIsland(islandName)
 end
 
 -- Поиск ближайшего тренажера по ключевым словам
-local function findNearestMachine(machineKeywords)
+-- Сначала смотрим в игровые папки (machinesFolder / Treadmills),
+-- затем — общий обход Workspace. blacklist: модель -> время блокировки.
+local function findNearestMachine(machineKeywords, blacklist)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil, nil end
     local myPos = char.HumanoidRootPart.Position
     local bestPart, bestModel, minDist = nil, nil, math.huge
 
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") or obj:IsA("BasePart") or obj:IsA("Seat") then
-            local objName = string.lower(obj.Name)
-            for _, kw in ipairs(machineKeywords) do
-                if string.find(objName, string.lower(kw)) then
-                    local part = obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
-                    if part then
-                        local dist = (part.Position - myPos).Magnitude
-                        if dist < minDist then
-                            minDist = dist
-                            bestPart = part
-                            bestModel = obj:IsA("Model") and obj or obj.Parent
-                        end
+    local wantTread = false
+    for _, kw in ipairs(machineKeywords) do
+        if string.find(string.lower(kw), "tread") then wantTread = true end
+    end
+
+    local function tryObject(obj)
+        if blacklist and blacklist[obj] and blacklist[obj] > tick() then return end
+        local objName = string.lower(obj.Name)
+        local matched = false
+        for _, kw in ipairs(machineKeywords) do
+            if string.find(objName, string.lower(kw)) then matched = true break end
+        end
+        if matched then
+            local part = nil
+            if wantTread and obj:IsA("Model") then
+                part = obj:FindFirstChild("treadmillPart")
+            end
+            part = part or (obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")))
+            if part then
+                local dist = (part.Position - myPos).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    bestPart = part
+                    if obj:IsA("Model") then
+                        bestModel = obj
+                    elseif obj.Parent and obj.Parent ~= Workspace and obj.Parent:IsA("Model") then
+                        bestModel = obj.Parent
+                    else
+                        bestModel = nil
                     end
                 end
+            end
+        end
+    end
+
+    -- 1) Игровые папки с тренажёрами
+    local folderNames = {"machinesFolder", "Machines", "Treadmills"}
+    local foundInFolders = false
+    for _, fName in ipairs(folderNames) do
+        local folder = Workspace:FindFirstChild(fName)
+        if folder then
+            for _, m in pairs(folder:GetChildren()) do
+                if m:IsA("Model") or m:IsA("BasePart") then
+                    foundInFolders = true
+                    tryObject(m)
+                end
+            end
+        end
+    end
+
+    -- 2) Если в папках ничего не нашли — общий обход
+    if not foundInFolders or not bestPart then
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") or obj:IsA("BasePart") then
+                tryObject(obj)
             end
         end
     end
     return bestPart, bestModel
 end
 
--- Использование тренажера (посадка на сиденье / взаимодействие без гантели)
-local function useGymMachine(machineKeywords)
+-- Сиденье тренажёра (для машин из machinesFolder PrimaryPart и есть Seat)
+local function getMachineSeat(model)
+    if not model then return nil end
+    if model:IsA("Seat") then return model end
+    local pp = model.PrimaryPart
+    if pp and pp:IsA("Seat") then return pp end
+    local s = model:FindFirstChildWhichIsA("Seat", true)
+    return s
+end
+
+-- Серверное подключение к тренажёру: machineInteractRemote:InvokeServer("useMachine", seat)
+local function engageMachine(machineModel, seat)
     local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    local myHrp = char.HumanoidRootPart
-    local myHum = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp or not seat then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
 
-    local machinePart, machineModel = findNearestMachine(machineKeywords)
-    if machinePart then
-        local seat = nil
-        if machinePart:IsA("Seat") then
-            seat = machinePart
-        elseif machineModel then
-            for _, child in pairs(machineModel:GetDescendants()) do
-                if child:IsA("Seat") then seat = child; break end
-            end
-        end
-
-        local targetPart = seat or machinePart
-        myHrp.CFrame = targetPart.CFrame + Vector3.new(0, 1.5, 0)
-        myHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-
-        if seat then
-            pcall(function()
-                if firetouchinterest then
-                    firetouchinterest(myHrp, seat, 0)
-                    task.wait(0.05)
-                    firetouchinterest(myHrp, seat, 1)
-                else
-                    myHum.Sit = true
-                end
-            end)
-        end
-        return machineModel
+    -- если уже сидим на другом тренажёре — сначала встаём
+    local inUse = getMachineInUse()
+    if inUse and inUse ~= seat then
+        leaveMachine()
+        task.wait(0.15)
     end
-    return nil
+
+    -- телепорт строго над сиденьем (несколько попыток, как требует сервер)
+    for _ = 1, 3 do
+        pcall(function()
+            hrp.CFrame = seat.CFrame * CFrame.new(0, 5, 0)
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        end)
+        task.wait(0.05)
+    end
+
+    local remote = getREvent("machineInteractRemote")
+    if remote and remote:IsA("RemoteFunction") then
+        local ok, res = pcall(function() return remote:InvokeServer("useMachine", seat) end)
+        if ok and res == true then
+            local t0 = tick()
+            while getMachineInUse() ~= seat and tick() - t0 < 0.8 do
+                task.wait(0.03)
+            end
+            if getMachineInUse() == seat then return true end
+        end
+        if ok and res == false then
+            -- сервер отказал (требования не выполнены / занято)
+            return false
+        end
+    end
+
+    -- Фолбэк без ремоута: обычная посадка
+    if seat:IsA("Seat") and hum then
+        pcall(function() hum.Sit = true end)
+        task.wait(0.15)
+        if hum.Sit or hum.SeatPart then return true end
+        if firetouchinterest then
+            pcall(function()
+                firetouchinterest(hrp, seat, 0)
+                task.wait(0.05)
+                firetouchinterest(hrp, seat, 1)
+            end)
+            task.wait(0.15)
+            if hum.Sit or hum.SeatPart then return true end
+        end
+    end
+    return machineModel ~= nil
 end
 
 -- Экуип и тренировки
@@ -875,9 +1121,10 @@ local LangModal = Instance.new("Frame", ScreenGui)
 LangModal.Name = "LangModal"
 LangModal.Size = UDim2.new(0, 480, 0, 260)
 LangModal.Position = UDim2.new(0.5, -240, 0.5, -130)
-LangModal.BackgroundColor3 = Color3.fromRGB(10, 14, 18)
-LangModal.BackgroundTransparency = 0.15
+LangModal.BackgroundColor3 = currentTheme().window
+LangModal.BackgroundTransparency = 0
 LangModal.ZIndex = 20
+CollectionService:AddTag(LangModal, "ThemeWindow")
 applyCorner(LangModal, 16)
 local langStroke = applyStroke(LangModal, AccentColor, 0.2, 2)
 CollectionService:AddTag(langStroke, "AccentStroke")
@@ -909,7 +1156,7 @@ RuBtn.Name = "RuBtn"
 RuBtn.Size = UDim2.new(0, 190, 0, 48)
 RuBtn.Position = UDim2.new(0, 35, 0, 160)
 RuBtn.BackgroundColor3 = AccentColor
-RuBtn.BackgroundTransparency = 0.2
+RuBtn.BackgroundTransparency = 0
 RuBtn.Text = "🇷🇺 Русский Язык"
 RuBtn.TextColor3 = Color3.fromRGB(10, 15, 15)
 RuBtn.Font = Enum.Font.GothamBold
@@ -920,8 +1167,8 @@ local EnBtn = Instance.new("TextButton", LangModal)
 EnBtn.Name = "EnBtn"
 EnBtn.Size = UDim2.new(0, 190, 0, 48)
 EnBtn.Position = UDim2.new(1, -225, 0, 160)
-EnBtn.BackgroundColor3 = Color3.fromRGB(30, 41, 59)
-EnBtn.BackgroundTransparency = 0.2
+EnBtn.BackgroundColor3 = currentTheme().panel
+EnBtn.BackgroundTransparency = 0
 EnBtn.Text = "🇬🇧 English"
 EnBtn.TextColor3 = Color3.fromRGB(240, 250, 248)
 EnBtn.Font = Enum.Font.GothamBold
@@ -937,14 +1184,15 @@ local OpenBtn = Instance.new("TextButton", ScreenGui)
 OpenBtn.Name = "Fouf32_OpenBtn"
 OpenBtn.Size = UDim2.new(0, 160, 0, 40)
 OpenBtn.Position = UDim2.new(0, 15, 0.35, 0)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(12, 16, 20)
-OpenBtn.BackgroundTransparency = 0.3
+OpenBtn.BackgroundColor3 = currentTheme().window
+OpenBtn.BackgroundTransparency = 0
 OpenBtn.Text = "FOUF32 BUILD 0.21"
 OpenBtn.TextColor3 = Color3.fromRGB(240, 250, 248)
 OpenBtn.TextSize = 11
 OpenBtn.Font = Enum.Font.GothamBold
 OpenBtn.Active = true
 OpenBtn.Draggable = true
+CollectionService:AddTag(OpenBtn, "ThemeWindow")
 applyCorner(OpenBtn, 10)
 local openBtnStroke = applyStroke(OpenBtn, AccentColor, 0.4, 1.5)
 CollectionService:AddTag(openBtnStroke, "AccentStroke")
@@ -960,9 +1208,10 @@ OnScreenHUD.Size = UDim2.new(0, 220, 0, 120)
 OnScreenHUD.Visible = Config.ShowOnScreenHUD
 
 local HUDPanel = Instance.new("Frame", OnScreenHUD)
-HUDPanel.BackgroundColor3 = Color3.fromRGB(12, 16, 20)
-HUDPanel.BackgroundTransparency = 0.3
+HUDPanel.BackgroundColor3 = currentTheme().window
+HUDPanel.BackgroundTransparency = 0
 HUDPanel.Size = UDim2.new(1, 0, 1, 0)
+CollectionService:AddTag(HUDPanel, "ThemeWindow")
 applyCorner(HUDPanel, 12)
 local HUDStroke = applyStroke(HUDPanel, AccentColor, 0.4, 1.5)
 CollectionService:AddTag(HUDStroke, "AccentStroke")
@@ -996,8 +1245,8 @@ table.insert(ScriptConnections, hudConn)
 -- ============================================================
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
-MainFrame.BackgroundColor3 = Color3.fromRGB(8, 12, 16)
-MainFrame.BackgroundTransparency = 0.25
+MainFrame.BackgroundColor3 = currentTheme().window
+MainFrame.BackgroundTransparency = 0
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -345, 0.5, -260)
 MainFrame.Size = UDim2.new(0, 690, 0, 520)
@@ -1006,26 +1255,29 @@ MainFrame.Visible = false -- стартовое окно языка поверх
 LangModal.Visible = true
 print("[Fouf32 STAGE E]: главное окно построено, показано окно языка")
 MainFrame.ClipsDescendants = true
+CollectionService:AddTag(MainFrame, "ThemeWindow")
 applyCorner(MainFrame, 18)
 local MainStroke = applyStroke(MainFrame, AccentColor, 0.3, 1.5)
 CollectionService:AddTag(MainStroke, "AccentStroke")
 
 local GlassLayer1 = Instance.new("Frame", MainFrame)
-GlassLayer1.Size = UDim2.new(1,0,1,0); GlassLayer1.BackgroundColor3 = Color3.fromRGB(255,255,255); GlassLayer1.BackgroundTransparency = 0.96; GlassLayer1.BorderSizePixel = 0; GlassLayer1.ZIndex = 0; applyCorner(GlassLayer1, 18)
+GlassLayer1.Size = UDim2.new(1,0,1,0); GlassLayer1.BackgroundColor3 = Color3.fromRGB(255,255,255); GlassLayer1.BackgroundTransparency = 1; GlassLayer1.BorderSizePixel = 0; GlassLayer1.ZIndex = 0; applyCorner(GlassLayer1, 18)
 
 local GlassLayer2 = Instance.new("Frame", MainFrame)
-GlassLayer2.Size = UDim2.new(1,0,1,0); GlassLayer2.BackgroundColor3 = Color3.fromRGB(10,20,22); GlassLayer2.BackgroundTransparency = 0.4; GlassLayer2.BorderSizePixel = 0; GlassLayer2.ZIndex = 0; applyCorner(GlassLayer2, 18)
+GlassLayer2.Size = UDim2.new(1,0,1,0); GlassLayer2.BackgroundColor3 = Color3.fromRGB(14,14,16); GlassLayer2.BackgroundTransparency = 0.4; GlassLayer2.BorderSizePixel = 0; GlassLayer2.ZIndex = 0; applyCorner(GlassLayer2, 18)
 
 local BgOverlay = Instance.new("Frame", MainFrame)
-BgOverlay.Size = UDim2.new(1,0,1,0); BgOverlay.BackgroundColor3 = Color3.fromRGB(5,8,10); BgOverlay.BackgroundTransparency = 0.4; BgOverlay.BorderSizePixel = 0; BgOverlay.ZIndex = 2; applyCorner(BgOverlay, 18)
+BgOverlay.Size = UDim2.new(1,0,1,0); BgOverlay.BackgroundColor3 = Color3.fromRGB(5,8,10); BgOverlay.BackgroundTransparency = 1; BgOverlay.BorderSizePixel = 0; BgOverlay.ZIndex = 2; applyCorner(BgOverlay, 18)
 
 -- Шапка
 local TopBar = Instance.new("Frame", MainFrame)
-TopBar.BackgroundColor3 = Color3.fromRGB(10,15,18); TopBar.BackgroundTransparency = 0.35; TopBar.Size = UDim2.new(1,0,0,50); TopBar.BorderSizePixel = 0; TopBar.Active = true; TopBar.ZIndex = 6
+TopBar.BackgroundColor3 = currentTheme().bar; TopBar.BackgroundTransparency = 0; TopBar.Size = UDim2.new(1,0,0,50); TopBar.BorderSizePixel = 0; TopBar.Active = true; TopBar.ZIndex = 6
+CollectionService:AddTag(TopBar, "ThemeBar")
 applyCorner(TopBar, 18)
 
 local TopCover = Instance.new("Frame", TopBar)
-TopCover.BackgroundColor3 = Color3.fromRGB(10,15,18); TopCover.BackgroundTransparency = 0.35; TopCover.BorderSizePixel = 0; TopCover.Position = UDim2.new(0,0,1,-12); TopCover.Size = UDim2.new(1,0,0,12); TopCover.ZIndex = 6
+TopCover.BackgroundColor3 = currentTheme().bar; TopCover.BackgroundTransparency = 0; TopCover.BorderSizePixel = 0; TopCover.Position = UDim2.new(0,0,1,-12); TopCover.Size = UDim2.new(1,0,0,12); TopCover.ZIndex = 6
+CollectionService:AddTag(TopCover, "ThemeBar")
 
 local AccentDot = Instance.new("Frame", TopBar)
 AccentDot.AnchorPoint = Vector2.new(0,0.5); AccentDot.Position = UDim2.new(0,22,0.5,0); AccentDot.Size = UDim2.new(0,9,0,9); AccentDot.BackgroundColor3 = AccentColor; AccentDot.ZIndex = 7
@@ -1037,7 +1289,7 @@ TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.Text = "FOUF32 BUILD 0.21  �
 
 local CloseHeaderBtn = Instance.new("TextButton", TopBar)
 CloseHeaderBtn.AnchorPoint = Vector2.new(1, 0.5); CloseHeaderBtn.Position = UDim2.new(1, -15, 0.5, 0); CloseHeaderBtn.Size = UDim2.new(0, 26, 0, 26)
-CloseHeaderBtn.BackgroundColor3 = Color3.fromRGB(248, 113, 113); CloseHeaderBtn.BackgroundTransparency = 0.3; CloseHeaderBtn.Text = "X"; CloseHeaderBtn.TextColor3 = Color3.fromRGB(255, 255, 255); CloseHeaderBtn.Font = Enum.Font.GothamBold; CloseHeaderBtn.TextSize = 12; CloseHeaderBtn.ZIndex = 8
+CloseHeaderBtn.BackgroundColor3 = Color3.fromRGB(248, 113, 113); CloseHeaderBtn.BackgroundTransparency = 0; CloseHeaderBtn.Text = "X"; CloseHeaderBtn.TextColor3 = Color3.fromRGB(255, 255, 255); CloseHeaderBtn.Font = Enum.Font.GothamBold; CloseHeaderBtn.TextSize = 12; CloseHeaderBtn.ZIndex = 8
 applyCorner(CloseHeaderBtn, 6)
 
 -- ЕДИНАЯ ВЫГРУЗКА СКРИПТА: останавливает все while-циклы (через флаги Config),
@@ -1054,7 +1306,7 @@ local function completeScriptUnload()
         "AutoCrystal", "PlayerESP", "FlyEnabled", "WalkWhileTraining", "AntiHit",
         "AutoSafeTPLowHP", "SpeedHack", "JumpPowerHack", "Noclip", "InfJump",
         "Bhop", "FullBright", "SpectateTarget", "AntiKnockback", "AntiAFK",
-        "UltraFastRep", "AutoKillBoss",
+        "UltraFastRep", "AutoKillBoss", "HatchPower",
     }
     for _, flagName in ipairs(loopFlags) do
         Config[flagName] = false
@@ -1092,12 +1344,13 @@ end)
 -- Подвал с описанием (Description Footer Bar)
 local DescFooterBar = Instance.new("Frame", MainFrame)
 DescFooterBar.Name = "DescFooterBar"
-DescFooterBar.BackgroundColor3 = Color3.fromRGB(10, 15, 18)
-DescFooterBar.BackgroundTransparency = 0.3
+DescFooterBar.BackgroundColor3 = currentTheme().bar
+DescFooterBar.BackgroundTransparency = 0
 DescFooterBar.BorderSizePixel = 0
 DescFooterBar.Position = UDim2.new(0, 0, 1, -28)
 DescFooterBar.Size = UDim2.new(1, 0, 0, 28)
 DescFooterBar.ZIndex = 8
+CollectionService:AddTag(DescFooterBar, "ThemeBar")
 applyCorner(DescFooterBar, 18)
 
 local DescTextLabel = Instance.new("TextLabel", DescFooterBar)
@@ -1116,7 +1369,8 @@ end)
 
 -- Сайдбар для 10 ПОНЯТНЫХ РАЗДЕЛОВ
 local Sidebar = Instance.new("ScrollingFrame", MainFrame)
-Sidebar.BackgroundColor3 = Color3.fromRGB(10,15,18); Sidebar.BackgroundTransparency = 0.5; Sidebar.BorderSizePixel = 0; Sidebar.Position = UDim2.new(0,0,0,50); Sidebar.Size = UDim2.new(0,185,1,-78); Sidebar.ZIndex = 5; Sidebar.ScrollBarThickness = 3; Sidebar.CanvasSize = UDim2.new(0,0,0, 10 * 36 + 20)
+Sidebar.BackgroundColor3 = currentTheme().side; Sidebar.BackgroundTransparency = 0; Sidebar.BorderSizePixel = 0; Sidebar.Position = UDim2.new(0,0,0,50); Sidebar.Size = UDim2.new(0,185,1,-78); Sidebar.ZIndex = 5; Sidebar.ScrollBarThickness = 3; Sidebar.CanvasSize = UDim2.new(0,0,0, 10 * 36 + 20)
+CollectionService:AddTag(Sidebar, "ThemeSide")
 applyCorner(Sidebar, 18)
 
 local SideLayout = Instance.new("UIListLayout", Sidebar)
@@ -1152,12 +1406,13 @@ local movementPage    = createPage("Movement")
 
 local function switchTab(tabName)
     for name, page in pairs(pages) do page.Visible = (name == tabName) end
+    local theme = currentTheme()
     for name, btn in pairs(tabButtons) do
         if name == tabName then
-            tw(btn, {BackgroundColor3 = AccentColor, BackgroundTransparency = 0.15}, 0.2):Play()
+            tw(btn, {BackgroundColor3 = AccentColor, BackgroundTransparency = 0}, 0.2):Play()
             btn.TextColor3 = Color3.fromRGB(10,15,15)
         else
-            tw(btn, {BackgroundColor3 = Color3.fromRGB(20,26,30), BackgroundTransparency = 0.4}, 0.2):Play()
+            tw(btn, {BackgroundColor3 = theme.panel, BackgroundTransparency = 0}, 0.2):Play()
             btn.TextColor3 = Color3.fromRGB(148,163,184)
         end
     end
@@ -1165,7 +1420,7 @@ end
 
 local function createTabButton(displayName, internalName)
     local btn = Instance.new("TextButton", Sidebar)
-    btn.BackgroundColor3 = Color3.fromRGB(20,26,30); btn.BackgroundTransparency = 0.4; btn.Size = UDim2.new(1,0,0,32); btn.AutoButtonColor = false; btn.Font = Enum.Font.GothamBold; btn.Text = "   "..displayName; btn.TextColor3 = Color3.fromRGB(148,163,184); btn.TextSize = 10; btn.TextXAlignment = Enum.TextXAlignment.Left; btn.ZIndex = 5
+    btn.BackgroundColor3 = currentTheme().panel; btn.BackgroundTransparency = 0; btn.Size = UDim2.new(1,0,0,32); btn.AutoButtonColor = false; btn.Font = Enum.Font.GothamBold; btn.Text = "   "..displayName; btn.TextColor3 = Color3.fromRGB(148,163,184); btn.TextSize = 10; btn.TextXAlignment = Enum.TextXAlignment.Left; btn.ZIndex = 5
     applyCorner(btn, 8)
     btn.MouseButton1Click:Connect(function() switchTab(internalName) end)
     tabButtons[internalName] = btn
@@ -1210,7 +1465,8 @@ end
 
 local function createGlassPanel(page, height)
     local panel = Instance.new("Frame", page)
-    panel.BackgroundColor3 = Color3.fromRGB(20,26,30); panel.BackgroundTransparency = 0.35; panel.Size = UDim2.new(1,-10,0,height)
+    panel.BackgroundColor3 = currentTheme().panel; panel.BackgroundTransparency = 0; panel.Size = UDim2.new(1,-10,0,height)
+    CollectionService:AddTag(panel, "ThemePanel")
     applyCorner(panel, 10); applyStroke(panel, Color3.fromRGB(255,255,255), 0.9, 1)
     return panel
 end
@@ -1233,8 +1489,8 @@ local function createButton(page, name, desc, callback)
     bindTooltip(btn, desc)
 
     btn.MouseButton1Click:Connect(function()
-        tw(panel, {BackgroundColor3 = AccentColor, BackgroundTransparency = 0.2}, 0.1):Play()
-        task.delay(0.15, function() tw(panel, {BackgroundColor3 = Color3.fromRGB(20,26,30), BackgroundTransparency = 0.35}, 0.15):Play() end)
+        tw(panel, {BackgroundColor3 = AccentColor, BackgroundTransparency = 0}, 0.1):Play()
+        task.delay(0.15, function() tw(panel, {BackgroundColor3 = currentTheme().panel, BackgroundTransparency = 0}, 0.15):Play() end)
         callback()
     end)
     return panel
@@ -1370,6 +1626,29 @@ local function applyAccent(newColor)
     for _, tog in ipairs(accentToggles) do if tog.getState() then tw(tog.indicator, {BackgroundColor3 = newColor}, 0.25):Play() end end
 end
 
+-- Применение темы окна (сплошные фоны, без прозрачности)
+local function applyTheme(idx)
+    if not UIThemes[idx] then idx = 1 end
+    Config.ThemeIndex = idx
+    local theme = UIThemes[idx]
+    for _, inst in ipairs(CollectionService:GetTagged("ThemeWindow")) do
+        tw(inst, {BackgroundColor3 = theme.window, BackgroundTransparency = 0}, 0.25):Play()
+    end
+    for _, inst in ipairs(CollectionService:GetTagged("ThemeBar")) do
+        tw(inst, {BackgroundColor3 = theme.bar, BackgroundTransparency = 0}, 0.25):Play()
+    end
+    for _, inst in ipairs(CollectionService:GetTagged("ThemeSide")) do
+        tw(inst, {BackgroundColor3 = theme.side, BackgroundTransparency = 0}, 0.25):Play()
+    end
+    for _, inst in ipairs(CollectionService:GetTagged("ThemePanel")) do
+        tw(inst, {BackgroundColor3 = theme.panel, BackgroundTransparency = 0}, 0.25):Play()
+    end
+    applyAccent(theme.accent)
+    for name, page in pairs(pages) do
+        if page.Visible then switchTab(name) end
+    end
+end
+
 -- ОБРАБОТЧИКИ ВЫБОРА ЯЗЫКА С ВЫХОДОМ ИЗ МОДАЛЬНОГО ОКНА
 local function selectLanguage(lang)
     Config.Language = lang
@@ -1395,6 +1674,15 @@ createButton(clickGuiPage, "Switch Language / Сменить Язык (RU / EN)"
     Config.Language = (Config.Language == "RU") and "EN" or "RU"
     applyLanguage()
     notify("Fouf32 Language", t("Язык изменен на Русский", "Language changed to English"), 3)
+end)
+
+createButton(clickGuiPage, "Switch Theme (Сменить Тему)", function()
+    return t("Текущая тема: ", "Current theme: ") .. UIThemes[Config.ThemeIndex].name
+        .. t(" — нажмите для следующей (Black → Slate → Midnight → Crimson → Cyberpunk)", " — click for next (Black → Slate → Midnight → Crimson → Cyberpunk)")
+end, function()
+    local nextIdx = (Config.ThemeIndex % #UIThemes) + 1
+    applyTheme(nextIdx)
+    notify("Fouf32 Theme", t("Тема: ", "Theme: ") .. UIThemes[nextIdx].name, 2)
 end)
 
 local rSlider, gSlider, bSlider
@@ -1641,57 +1929,80 @@ end)
 sectionLabel(trainingPage, "GYM MACHINES AUTO-FARM (БЛИЖАЙШИЙ ТРЕНАЖЕР)")
 
 -- Общий движок фарма на тренажере:
---  * заново ищет машину, если она уничтожена/не найдена при включении
---  * возвращает к тренажеру, если игрока унесло дальше 40 стадов
---  * повторно садится на сиденье, если игрок встал (для тренажеров с Seat)
---  * каждый цикл шлет interact + rep
-local function startMachineFarm(configKey, keywords)
+--  * серверное подключение: machineInteractRemote:InvokeServer("useMachine", seat)
+--  * rep шлётся с аргументом-сиденьем: muscleEvent:FireServer("rep", seat)
+--  * чёрный список отказавших машин (60 сек), автоматический re-engage при разрыве
+--  * для беговых дорожек (isTreadmill=true): просто стоит на treadmillPart
+local function startMachineFarm(configKey, keywords, isTreadmill)
     task.spawn(function()
-        local mModel, lastFind, machineHasSeat = nil, 0, false
+        local mModel, mSeat, lastFind = nil, nil, 0
+        local blacklist = {}
         while Config[configKey] do
             local char = LocalPlayer.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            local seated = hum and (hum.Sit or hum.SeatPart ~= nil)
+            if hrp then
+                local now = tick()
+                local inUse = getMachineInUse()
 
-            if (tick() - lastFind) > 1.5 then
                 local needFind = false
                 if not mModel or not mModel.Parent then
                     needFind = true
-                elseif hrp then
-                    local okPos, modelPos = pcall(function() return mModel:GetPivot().Position end)
-                    if okPos and (modelPos - hrp.Position).Magnitude > 40 then
-                        needFind = true
-                    elseif machineHasSeat and not seated then
-                        needFind = true
+                elseif (not isTreadmill) and mSeat ~= nil and inUse ~= mSeat then
+                    needFind = true -- связь с тренажёром потеряна — переподключаемся
+                elseif (now - lastFind) > 1.5 then
+                    local okPos, mPos = pcall(function() return mModel:GetPivot().Position end)
+                    if okPos and (mPos - hrp.Position).Magnitude > 40 then
+                        needFind = true -- унесло дальше 40 стадов — возвращаемся
+                    else
+                        lastFind = now
                     end
                 end
-                if needFind then
-                    mModel = useGymMachine(keywords)
-                    machineHasSeat = false
-                    if mModel and mModel.Parent then
-                        pcall(function()
-                            for _, child in pairs(mModel:GetDescendants()) do
-                                if child:IsA("Seat") then machineHasSeat = true; break end
-                            end
-                        end)
-                    end
-                    lastFind = tick()
-                end
-            end
 
-            local ev = getMuscleEvent()
-            if ev then
-                if mModel and mModel.Parent then
-                    pcall(function() ev:FireServer("interact", mModel) end)
+                if needFind and (now - lastFind) > 0.5 then
+                    local part, model = findNearestMachine(keywords, blacklist)
+                    mModel = model or part
+                    mSeat = nil
+                    if mModel then
+                        if isTreadmill then
+                            mSeat = part
+                        else
+                            mSeat = getMachineSeat(mModel)
+                            if not mSeat and part and part:IsA("Seat") then mSeat = part end
+                            if mSeat then
+                                local okEngage = engageMachine(mModel, mSeat)
+                                if not okEngage then
+                                    blacklist[mModel] = now + 60
+                                    mModel, mSeat = nil, nil
+                                end
+                            end
+                        end
+                    end
+                    lastFind = now
                 end
-                local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
-                for _ = 1, count do
-                    ev:FireServer("rep")
+
+                -- Позиционирование на беговой дорожке (сервер даёт ловкость за сам факт стояния)
+                if isTreadmill and mModel and mSeat and mSeat.Parent then
+                    pcall(function()
+                        hrp.CFrame = mSeat.CFrame * CFrame.new(0, mSeat.Size.Y / 2 + 3, 0)
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    end)
+                end
+
+                local ev = getMuscleEvent()
+                if ev and mModel and mModel.Parent then
+                    local count = Config.UltraFastRep and (Config.FastRepMultiplier * 5) or Config.FastRepMultiplier
+                    for _ = 1, count do
+                        if (not isTreadmill) and mSeat then
+                            ev:FireServer("rep", mSeat)
+                        else
+                            ev:FireServer("rep")
+                        end
+                    end
                 end
             end
             task.wait(Config.TrainDelay > 0 and Config.TrainDelay or 0.05)
         end
+        pcall(leaveMachine)
     end)
 end
 
@@ -1709,10 +2020,10 @@ createToggle(trainingPage, "Auto Squat Rack (Приседания)", "Садит
     end
 end)
 
-createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Встает на ближайшую беговую дорожку 1 раз и качает ловкость!", Config.AutoTreadmillMachine, function(v)
+createToggle(trainingPage, "Auto Treadmill (Беговая дорожка)", "Встает на ближайшую беговую дорожку и качает ловкость!", Config.AutoTreadmillMachine, function(v)
     Config.AutoTreadmillMachine = v
     if v then
-        startMachineFarm("AutoTreadmillMachine", {"treadmill", "tread"})
+        startMachineFarm("AutoTreadmillMachine", {"treadmill", "tread"}, true)
     end
 end)
 
@@ -1929,9 +2240,13 @@ createToggle(combatPage, "Enable Kill Aura (Auto Hit & Teleport)", "Активи
                                         end
 
                                         if Config.KillAuraMode == "Bring To Me" then
+                                            -- сервер не позволяет двигать чужого игрока —
+                                            -- телепортируемся сами вплотную перед целью и бьём
                                             pcall(function()
-                                                oHrp.CFrame = myHrp.CFrame * CFrame.new(0, 0, -2.5)
-                                                oHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                                myHrp.CFrame = CFrame.lookAt(
+                                                    oHrp.Position - oHrp.CFrame.LookVector * 2.5 + Vector3.new(0, 1, 0),
+                                                    oHrp.Position)
+                                                myHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                             end)
                                         elseif Config.KillAuraMode == "Magnet TP to Target" then
                                             safeTeleport(oHrp.CFrame * CFrame.new(0, 0, 2.5))
@@ -2060,73 +2375,83 @@ end)
 
 sectionLabel(combatPage, "LEGEND BOSS KILLER ENGINE (GODMODE & FAST ATTACK)")
 
+local BOSS_TARGET_FOLDERS = {
+    "bossFolder", "BossFolder", "Bosses", "Boss",
+    "enemies", "Enemies", "mobs", "Mobs",
+    "battleIsland", "BattleIsland", "warriors", "Warriors",
+}
+local BOSS_NAME_KEYWORDS = {
+    "boss", "босс", "evil", "king", "warrior", "brute", "titan",
+    "champion", "monster", "giant", "fighter", "bandit", "enemy",
+    "warlord", "overlord", "chief", "colossus", "juggernaut", "million",
+}
+local BOSS_NAME_EXCLUDES = {
+    "statue", "portal", "gate", "leaderboard", "display", "decor",
+    "island", "beach", "gym", "ring", "quest", "trainer", "merchant",
+    "vendor", "shop", "guide", "villager", "pet", "animal", "rock",
+    "bench", "squat", "tread", "pull", "boulder", "dummy",
+}
+
 local function getActiveBoss()
-    local candidateFolders = {
-        Workspace:FindFirstChild("bossFolder"),
-        Workspace:FindFirstChild("BossFolder"),
-        Workspace:FindFirstChild("Bosses"),
-        Workspace:FindFirstChild("Boss"),
-        Workspace:FindFirstChild("npcs"),
-        ReplicatedStorage:FindFirstChild("bossFolder")
-    }
-    for _, folder in ipairs(candidateFolders) do
+    local char = LocalPlayer.Character
+    local myPos = char and char:FindFirstChild("HumanoidRootPart") and char.HumanoidRootPart.Position
+    local bestModel, bestHum, bestHrp, bestDist = nil, nil, nil, math.huge
+
+    local function consider(obj)
+        if not obj:IsA("Model") then return end
+        if Players:GetPlayerFromCharacter(obj) then return end
+        local n = string.lower(obj.Name)
+        for _, ex in ipairs(BOSS_NAME_EXCLUDES) do
+            if string.find(n, ex) then return end
+        end
+        local hum = obj:FindFirstChildOfClass("Humanoid")
+        local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart")
+            or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
+        if hum and hum.Health > 0 and hrp then
+            local dist = myPos and (hrp.Position - myPos).Magnitude or 0
+            if dist < bestDist then
+                bestModel, bestHum, bestHrp, bestDist = obj, hum, hrp, dist
+            end
+        end
+    end
+
+    local function nameMatches(n)
+        for _, kw in ipairs(BOSS_NAME_KEYWORDS) do
+            if string.find(n, kw) then return true end
+        end
+        return false
+    end
+
+    -- 1) Игровые папки с врагами / боссами (внутри — любые живые модели)
+    for _, fName in ipairs(BOSS_TARGET_FOLDERS) do
+        local folder = Workspace:FindFirstChild(fName)
         if folder then
-            for _, obj in pairs(folder:GetChildren()) do
-                if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
-                    local hum = obj:FindFirstChildOfClass("Humanoid")
-                    local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
-                    if hum and hum.Health > 0 and hrp then
-                        return obj, hum, hrp
-                    end
-                end
+            for _, obj in pairs(folder:GetDescendants()) do
+                consider(obj)
             end
         end
     end
 
-    for _, obj in pairs(Workspace:GetChildren()) do
-        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
-            local n = string.lower(obj.Name)
-            local isExcluded = string.find(n, "statue") or string.find(n, "portal") or string.find(n, "gate") 
-                or string.find(n, "leaderboard") or string.find(n, "display") or string.find(n, "decor") 
-                or string.find(n, "island") or string.find(n, "beach") or string.find(n, "gym") or string.find(n, "ring")
-
-            if not isExcluded then
-                if string.find(n, "boss") or string.find(n, "босс") or string.find(n, "evil") or string.find(n, "king") then
-                    local hum = obj:FindFirstChildOfClass("Humanoid")
-                    local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
-                    if hum and hum.Health > 0 and hrp then
-                        return obj, hum, hrp
-                    end
-                end
+    -- 2) Модели с ключевыми словами в имени по всему Workspace
+    if not bestModel then
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") and nameMatches(string.lower(obj.Name)) then
+                consider(obj)
             end
         end
     end
 
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
-            local n = string.lower(obj.Name)
-            if (string.find(n, "boss") or string.find(n, "босс") or string.find(n, "evil")) 
-               and not string.find(n, "statue") 
-               and not string.find(n, "portal") 
-               and not string.find(n, "display") 
-               and not string.find(n, "leaderboard") then
-                local hum = obj:FindFirstChildOfClass("Humanoid")
-                local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
-                if hum and hum.Health > 0 and hrp then
-                    return obj, hum, hrp
-                end
-            end
-        end
-    end
-    return nil, nil, nil
+    return bestModel, bestHum, bestHrp
 end
 
 createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авто-фарм Босса: позиция у босса + без урона по вам + быстрая атака!", Config.AutoKillBoss, function(v)
     Config.AutoKillBoss = v
     if v then
-        notify("Fouf32 Boss", "Авто-фарм Босса включен! Наведение...", 3)
+        notify("Fouf32 Boss", t("Авто-фарм Босса включен! Наведение...", "Boss auto farm enabled! Targeting..."), 3)
         task.spawn(function()
             local notifiedNoBoss = false
+            local lastTargetName = nil
+            local cachedBoss, cachedHum, cachedHrp, lastSearch = nil, nil, nil, 0
             while Config.AutoKillBoss do
                 local myChar = LocalPlayer.Character
                 if myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar:FindFirstChildOfClass("Humanoid") then
@@ -2139,9 +2464,22 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                     myHum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
                     myHum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
 
-                    local bossModel, bossHum, bossHrp = getActiveBoss()
-                    if bossModel and bossHrp and bossHum and bossHum.Health > 0 then
+                    -- пересканировать мир не чаще раза в секунду (кэш цели)
+                    if (tick() - lastSearch) > 1
+                        or not cachedBoss or not cachedBoss.Parent
+                        or not cachedHum or cachedHum.Health <= 0 then
+                        cachedBoss, cachedHum, cachedHrp = getActiveBoss()
+                        lastSearch = tick()
+                    end
+                    local bossModel, bossHum, bossHrp = cachedBoss, cachedHum, cachedHrp
+
+                    if bossModel and bossModel.Parent and bossHrp and bossHum and bossHum.Health > 0 then
                         notifiedNoBoss = false
+                        if lastTargetName ~= bossModel.Name then
+                            lastTargetName = bossModel.Name
+                            notify("Fouf32 Boss", t("Цель захвачена: ", "Target acquired: ") .. bossModel.Name, 3)
+                        end
+
                         local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or myChar:FindFirstChild("Punch")
                         if punch and punch.Parent == LocalPlayer.Backpack then
                             myHum:EquipTool(punch)
@@ -2166,8 +2504,9 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                             end
                         end)
                     else
+                        lastTargetName = nil
                         if not notifiedNoBoss then
-                            notify("Fouf32 Boss", "Ожидание спавна Босса на карте...", 3)
+                            notify("Fouf32 Boss", t("Ожидание спавна Босса на карте...", "Waiting for boss spawn..."), 3)
                             notifiedNoBoss = true
                         end
                         task.wait(1.5)
@@ -2336,56 +2675,91 @@ end)
 -- ============================================================
 sectionLabel(automationPage, "REBIRTH ENGINE (MUSCLE LEGENDS)")
 
-local function triggerRebirth()
-    -- 1. Стандартный muscleEvent
-    local ev = getMuscleEvent()
-    if ev then
-        pcall(function() ev:FireServer("rebirthRequest") end)
-        pcall(function() ev:FireServer("rebirth") end)
-        pcall(function() ev:FireServer("requestRebirth") end)
-    end
+-- Сохранение позиции перед ребиртом и возврат после телепорта на спавн
+local rebirthRestoreActive = false
 
-    -- 2. Поиск в LocalPlayer (Muscle Legends иногда кладет muscleEvent прямо в игрока)
+local function savePositionForRebirth()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    return hrp and hrp.CFrame or nil
+end
+
+local function restorePositionAfterRebirth(savedCF)
+    if not Config.StayAfterRebirth or not savedCF then return end
+    if rebirthRestoreActive then return end
+    rebirthRestoreActive = true
+    task.spawn(function()
+        local t0 = tick()
+        while tick() - t0 < 8 do
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hrp and hum and hum.Health > 0 then
+                local dist = (hrp.Position - savedCF.Position).Magnitude
+                if dist > 15 then
+                    pcall(function()
+                        hrp.CFrame = savedCF
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                    end)
+                    task.wait(0.4)
+                else
+                    rebirthRestoreActive = false
+                    return
+                end
+            end
+            task.wait(0.2)
+        end
+        rebirthRestoreActive = false
+    end)
+end
+
+local function triggerRebirth()
+    local savedCF = savePositionForRebirth()
+    local done = false
+
+    -- 1. Канонический ремоут игры: rEvents.rebirthRemote:InvokeServer("rebirthRequest")
     pcall(function()
-        if LocalPlayer:FindFirstChild("muscleEvent") then
-            LocalPlayer.muscleEvent:FireServer("rebirthRequest")
-            LocalPlayer.muscleEvent:FireServer("rebirth")
+        local rb = getREvent("rebirthRemote")
+        if rb and rb:IsA("RemoteFunction") then
+            local res = rb:InvokeServer("rebirthRequest")
+            if res == true then done = true end
         end
     end)
 
-    -- 3. rEvents в ReplicatedStorage (Все комбинации RemoteEvent и RemoteFunction)
-    pcall(function()
-        local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
-        if rEvents then
-            for _, child in pairs(rEvents:GetChildren()) do
-                local cName = string.lower(child.Name)
-                if string.find(cName, "rebirth") then
-                    if child:IsA("RemoteEvent") then
-                        pcall(function() child:FireServer() end)
-                        pcall(function() child:FireServer("rebirthRequest") end)
-                        pcall(function() child:FireServer("rebirth") end)
-                    elseif child:IsA("RemoteFunction") then
-                        pcall(function() child:InvokeServer() end)
-                        pcall(function() child:InvokeServer("rebirthRequest") end)
-                        pcall(function() child:InvokeServer("rebirth") end)
+    -- 2. Фолбэк: muscleEvent
+    if not done then
+        local ev = getMuscleEvent()
+        if ev then
+            pcall(function() ev:FireServer("rebirthRequest") end)
+            pcall(function() ev:FireServer("rebirth") end)
+            pcall(function() ev:FireServer("requestRebirth") end)
+        end
+    end
+
+    -- 3. Остальные ремоуты с "rebirth" в имени (только если основной не ответил)
+    if not done then
+        pcall(function()
+            local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
+            if rEvents then
+                for _, child in pairs(rEvents:GetChildren()) do
+                    if string.find(string.lower(child.Name), "rebirth") then
+                        if child:IsA("RemoteFunction") and child.Name ~= "rebirthRemote" then
+                            pcall(function() child:InvokeServer("rebirthRequest") end)
+                        elseif child:IsA("RemoteEvent") then
+                            pcall(function() child:FireServer("rebirthRequest") end)
+                        end
                     end
                 end
             end
-        end
-    end)
+        end)
+    end
 
-    -- 4. Глобальный поиск любых ремоутов с именем rebirth по всему ReplicatedStorage и Workspace
-    pcall(function()
-        for _, item in pairs(ReplicatedStorage:GetDescendants()) do
-            if item:IsA("RemoteEvent") and string.find(string.lower(item.Name), "rebirth") then
-                pcall(function() item:FireServer() end)
-                pcall(function() item:FireServer("rebirthRequest") end)
-            elseif item:IsA("RemoteFunction") and string.find(string.lower(item.Name), "rebirth") then
-                pcall(function() item:InvokeServer() end)
-                pcall(function() item:InvokeServer("rebirthRequest") end)
-            end
-        end
-    end)
+    -- Возврат на исходную точку вместо спавна
+    if Config.StayAfterRebirth then
+        restorePositionAfterRebirth(savedCF)
+    end
+    return done
 end
 
 createToggle(automationPage, "Auto Rebirth (Бесконечный авто-ребирт)", "Автоматически выполняет перерождение сразу при достижении нужного количества силы", Config.AutoRebirth, function(v)
@@ -2393,16 +2767,28 @@ createToggle(automationPage, "Auto Rebirth (Бесконечный авто-ре
     if v then
         task.spawn(function()
             while Config.AutoRebirth do
-                triggerRebirth()
-                task.wait(0.2)
+                local char = LocalPlayer.Character
+                local busy = (char and char:GetAttribute("IsRebirthing") == true)
+                    or (LocalPlayer:GetAttribute("LastMapCFrame") ~= nil)
+                if not busy then
+                    triggerRebirth()
+                end
+                task.wait(0.4)
             end
         end)
     end
 end)
 
+createToggle(automationPage, "Stay In Place After Rebirth (Не телепортовать на спавн)", "Сохраняет вашу позицию до перерождения и возвращает вас обратно после него", Config.StayAfterRebirth, function(v)
+    Config.StayAfterRebirth = v
+    notify("Fouf32 Rebirth", v
+        and t("После ребирта вы останетесь на месте!", "After rebirth you will stay in place!")
+        or t("После ребирта будет обычный телепорт на спавн.", "Normal spawn teleport after rebirth."), 3)
+end)
+
 createButton(automationPage, "Manual Rebirth (Переродиться прямо сейчас)", "Принудительно запрашивает перерождение на сервере через все каналы", function()
     triggerRebirth()
-    notify("Fouf32 Rebirth", "Запрос на перерождение отправлен!", 2)
+    notify("Fouf32 Rebirth", t("Запрос на перерождение отправлен!", "Rebirth requested!"), 2)
 end)
 
 sectionLabel(automationPage, "CHESTS & ORBS MAGNET")
@@ -2443,27 +2829,264 @@ createToggle(automationPage, "Auto Collect Map Orbs", "Автоматическ�
     end
 end)
 
-sectionLabel(automationPage, "AUTO CRYSTAL & EGG HATCHER (FIXED)")
-createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-открытие кристалла с питомцами (авто-телепорт вплотную)", Config.AutoCrystal, function(v)
+sectionLabel(automationPage, "MASS EGG HATCHER (ДО 500 ЗА РАЗ)")
+
+-- Динамический каталог кристаллов из самой игры (обновления не ломают список)
+local function getCrystalCatalog()
+    local names = {}
+    pcall(function()
+        local shared = ReplicatedStorage:WaitForChild("shared", 5)
+        local catalogs = shared and shared:WaitForChild("catalogs", 5)
+        local prices = catalogs and catalogs:WaitForChild("crystalPrices", 5)
+        if prices then
+            for _, entry in pairs(prices:GetChildren()) do
+                table.insert(names, entry.Name)
+            end
+        end
+    end)
+    table.sort(names)
+    if #names == 0 then names = crystalsList end
+    return names
+end
+
+local function listContains(list, value)
+    for _, v in ipairs(list) do
+        if v == value then return true end
+    end
+    return false
+end
+
+local crystalCatalog = getCrystalCatalog()
+if not listContains(crystalCatalog, Config.SelectedCrystal) then
+    Config.SelectedCrystal = crystalCatalog[1] or "Blue Crystal"
+end
+
+local function getCrystalPrice(name)
+    local ok, price, kind = pcall(function()
+        local shared = ReplicatedStorage:FindFirstChild("shared")
+        local catalogs = shared and shared:FindFirstChild("catalogs")
+        local prices = catalogs and catalogs:FindFirstChild("crystalPrices")
+        local entry = prices and prices:FindFirstChild(name)
+        if not entry then return nil, nil end
+        local p = entry:FindFirstChild("price")
+        local k = entry:FindFirstChild("priceType")
+        return p and tonumber(p.Value) or nil, k and k.Value or "Gems"
+    end)
+    if ok then return price, kind end
+    return nil, nil
+end
+
+-- Статус-строка: кристалл / места в инвентаре / гемы / текущее количество
+local HatchStatusPanel = createGlassPanel(automationPage, 34)
+local HatchStatusLabel = Instance.new("TextLabel", HatchStatusPanel)
+HatchStatusLabel.BackgroundTransparency = 1
+HatchStatusLabel.Position = UDim2.new(0, 12, 0, 0)
+HatchStatusLabel.Size = UDim2.new(1, -24, 1, 0)
+HatchStatusLabel.Font = Enum.Font.GothamBold
+HatchStatusLabel.TextColor3 = Color3.fromRGB(241, 245, 249)
+HatchStatusLabel.TextSize = 11
+HatchStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local function refreshHatchStatus()
+    local free, owned, cap = freePetSlots()
+    local gems = getCurrency("Gems") or 0
+    local slotText
+    if free then
+        slotText = t("места: ", "slots: ") .. owned .. "/" .. cap
+            .. t(" (свободно ", " (free ") .. free .. ")"
+    else
+        slotText = t("петов: ", "pets: ") .. owned
+            .. t(" (вместимость неизвестна — ограничение по отказу сервера)", " (capacity unknown — server denial will stop us)")
+    end
+    HatchStatusLabel.Text = t("Кристалл: ", "Crystal: ") .. Config.SelectedCrystal
+        .. " | " .. slotText
+        .. " | " .. t("Гемы: ", "Gems: ") .. tostring(gems)
+        .. " | " .. t("Открыть: ", "Hatch: ") .. tostring(Config.HatchCount)
+end
+
+-- Проверка количества перед массовым открытием: 1..500, места в инвентаре, валюта
+local function validateHatchCount(count)
+    count = math.floor(tonumber(count) or 0)
+    if count < 1 then
+        return nil, t("Минимум — 1 яйцо!", "Minimum is 1 egg!")
+    end
+    if count > 500 then
+        return nil, t("Максимум — 500 яиц за один раз!", "Maximum is 500 eggs at once!")
+    end
+
+    local free, owned, cap = freePetSlots()
+    if free and count > free then
+        return nil, string.format(
+            t("Свободно только %d мест (занято %d из %d), а запрошено %d! Уменьшите количество.",
+              "Only %d free slots (used %d of %d) but %d requested! Reduce the amount."),
+            free, owned, cap, count)
+    end
+
+    local price, kind = getCrystalPrice(Config.SelectedCrystal)
+    if price and price > 0 then
+        local balance = getCurrency(kind)
+        if balance then
+            if balance < price then
+                return nil, string.format(
+                    t("Не хватает валюты: нужно %d %s, у вас %d.",
+                      "Not enough currency: need %d %s, you have %d."),
+                    price, kind or "Gems", balance)
+            end
+            local affordable = math.floor(balance / price)
+            if count > affordable then
+                return nil, string.format(
+                    t("Хватит только на %d из %d яиц (цена %d %s, баланс %d).",
+                      "Enough for only %d of %d eggs (price %d %s, balance %d)."),
+                    affordable, count, price, kind or "Gems", balance)
+            end
+        end
+    end
+    return count, nil
+end
+
+-- Массовое вылупление: count яиц подряд (отмена — повторным нажатием или Stop)
+local hatchState = {running = false, cancel = false}
+
+local function hatchBatch(count)
+    if hatchState.running then
+        hatchState.cancel = true
+        notify("Fouf32 Hatch", t("Массовое вылупление останавливается...", "Stopping mass hatch..."), 2)
+        return
+    end
+    local n, err = validateHatchCount(count)
+    if not n then
+        notify("Fouf32 Hatch", err, 5)
+        return
+    end
+
+    if Config.AutoCrystal then
+        Config.AutoCrystal = false -- сначала гасим авто-режим, чтобы не дублировать открытия
+    end
+    hatchState.running = true
+    hatchState.cancel = false
+    Config.HatchPower = true
+    task.spawn(function()
+        local opened = 0
+        local failReason = nil
+        local lastPetText = nil
+        if n >= 10 then
+            pcall(teleportToCrystal, Config.SelectedCrystal)
+        end
+        for _ = 1, n do
+            if hatchState.cancel or not Config.HatchPower then
+                failReason = t("остановлено пользователем", "stopped by user")
+                break
+            end
+            local ok, petOrReason, rarity = openCrystalOnce(Config.SelectedCrystal)
+            if ok then
+                opened = opened + 1
+                if type(petOrReason) == "string" then
+                    lastPetText = petOrReason .. (rarity and (" (" .. tostring(rarity) .. ")") or "")
+                end
+            else
+                if petOrReason == "denied" then
+                    failReason = t("сервер отказал: инвентарь полон или не хватает валюты",
+                        "server denied: inventory full or not enough currency")
+                elseif petOrReason == "invokefail" then
+                    failReason = t("ошибка вызова openCrystalRemote",
+                        "openCrystalRemote call failed")
+                else
+                    failReason = t("ремоут openCrystalRemote не найден",
+                        "openCrystalRemote not found")
+                end
+                break
+            end
+            if opened % 25 == 0 then refreshHatchStatus() end
+            task.wait(Config.HatchDelay)
+        end
+        hatchState.running = false
+        Config.HatchPower = false
+        refreshHatchStatus()
+        local msg = string.format(t("Открыто яиц: %d из %d", "Eggs opened: %d of %d"), opened, n)
+        if lastPetText then
+            msg = msg .. " | " .. t("последний: ", "last: ") .. lastPetText
+        end
+        if failReason then
+            msg = msg .. " — " .. failReason
+        end
+        notify("Fouf32 Hatch", msg, 5)
+    end)
+end
+
+createSlider(automationPage, "Eggs Per Batch (1-500)", 1, 500, Config.HatchCount, function(v)
+    Config.HatchCount = math.floor(v)
+    refreshHatchStatus()
+end, nil, "Сколько яиц открывать за один Mass Hatch (максимум 500)")
+
+createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-открытие выбранного кристалла пока включено (остановка при отказе сервера)", Config.AutoCrystal, function(v)
     Config.AutoCrystal = v
     if v then
+        if hatchState.running then
+            Config.AutoCrystal = false
+            notify("Fouf32 Hatch", t("Идёт массовое вылупление — сначала остановите его (Stop).",
+                "Mass hatch is running — stop it first (Stop)."), 4)
+            return
+        end
+        pcall(teleportToCrystal, Config.SelectedCrystal)
         task.spawn(function()
             while Config.AutoCrystal do
-                hatchCrystal(Config.SelectedCrystal)
-                task.wait(0.3)
+                local ok, reason = openCrystalOnce(Config.SelectedCrystal)
+                if not ok then
+                    Config.AutoCrystal = false
+                    local msg
+                    if reason == "denied" then
+                        msg = t("Авто-вылупление остановлено: сервер отказал (инвентарь полон / нет валюты).",
+                            "Auto hatch stopped: server denied (inventory full / no currency).")
+                    elseif reason == "invokefail" then
+                        msg = t("Авто-вылупление остановлено: ошибка вызова openCrystalRemote.",
+                            "Auto hatch stopped: openCrystalRemote call failed.")
+                    else
+                        msg = t("Авто-вылупление остановлено: ремоут openCrystalRemote не найден.",
+                            "Auto hatch stopped: openCrystalRemote not found.")
+                    end
+                    notify("Fouf32 Hatch", msg, 5)
+                    break
+                end
+                task.wait(Config.HatchDelay)
             end
+            refreshHatchStatus()
         end)
     end
 end)
 
-for _, crystalName in ipairs(crystalsList) do
+createButton(automationPage, "MASS HATCH (открыть выбранное количество)", "Быстро открывает до 500 яиц подряд с проверкой мест в инвентаре и валюты", function()
+    hatchBatch(Config.HatchCount)
+end)
+
+createButton(automationPage, "Hatch x10", "Быстро открывает 10 яиц подряд", function()
+    hatchBatch(10)
+end)
+
+createButton(automationPage, "Hatch x1", "Открывает одно яйцо", function()
+    hatchBatch(1)
+end)
+
+createButton(automationPage, "Stop Mass Hatch", "Останавливает идущее массовое вылупление", function()
+    if hatchState.running then
+        hatchState.cancel = true
+        notify("Fouf32 Hatch", t("Останавливаем массовое вылупление...", "Stopping mass hatch..."), 2)
+    else
+        notify("Fouf32 Hatch", t("Сейчас ничего не открывается.", "Nothing is hatching right now."), 2)
+    end
+end)
+
+sectionLabel(automationPage, "CRYSTAL SELECTOR (ВЫБОР ЯЙЦА)")
+for _, crystalName in ipairs(crystalCatalog) do
     createButton(automationPage, crystalName, function()
         return t("Выбрать ", "Select ") .. crystalName .. t(" для крутки", " to open")
     end, function()
         Config.SelectedCrystal = crystalName
-        notify("Egg Selected", "Активный кристалл: " .. crystalName, 2)
+        refreshHatchStatus()
+        notify("Egg Selected", t("Активный кристалл: ", "Active crystal: ") .. crystalName, 2)
     end)
 end
+
+refreshHatchStatus()
 
 -- ============================================================
 -- 9. РАЗДЕЛ: PETS & INVENTORY
