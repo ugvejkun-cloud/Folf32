@@ -130,6 +130,13 @@ local Config = {
     BgOpacity         = 25,
     GlassIntensity    = 75,
     EnableTooltips    = true,
+    GuiScale          = 1,      -- масштаб окна GUI (0.7 - 1.5)
+
+    -- Визуальные эффекты (Visuals)
+    SkyMode           = "Default", -- Default / Night / Sunset / Neon / Cosmic
+    TrailEnabled      = false,
+    TrailLifetime     = 0.6,    -- длина следа за персонажем (сек)
+    JumpRing          = false,  -- круг под ногами при прыжке
 
     -- Тренировки
     AutoOpFarm        = false,
@@ -228,6 +235,11 @@ local function t(ruText, enText)
         return enText or ruText
     end
     return ruText
+end
+
+-- Текст для HUD/тостов: ВСЕГДА английский, независимо от языка интерфейса
+local function tn(ruText, enText)
+    return enText or ruText
 end
 
 -- ============================================================
@@ -381,6 +393,13 @@ local LangDict = {
     ["Продаёт всех питомцев раритета Common, освобождая места для кристаллов"] = "Sells all Common-rarity pets to free up slots for crystals",
     ["Задержка между открытиями (0.01 сек)"] = "Open delay (0.01 sec)",
     ["12 = 0.12 секунды между открытиями (диапазон 0.05–1.00)"] = "12 = 0.12 seconds between openings (range 0.05–1.00)",
+    ["Сохраняет все настройки Vortex в буфер обмена"] = "Saves all Vortex settings to the clipboard",
+    ["Загружает настройки Vortex из буфера обмена"] = "Loads Vortex settings from the clipboard",
+    ["Яркий след за персонажем (цвет акцента интерфейса)"] = "Bright trail behind your character (interface accent color)",
+    ["Длина затухания следа (0.2 - 2.0 секунды)"] = "Trail fade length (0.2 - 2.0 seconds)",
+    ["Неоновое кольцо под ногами при каждом прыжке"] = "Neon ring under your feet on every jump",
+    ["Владелец и разработчик скрипта Vortex"] = "Owner and developer of the Vortex script",
+    ["Нажмите, чтобы скопировать Discord владельца в буфер обмена"] = "Click to copy the owner's Discord to clipboard",
 }
 
 local TextBindings = {}
@@ -479,8 +498,8 @@ local function applyStroke(inst, color, transparency, thickness)
     return s
 end
 
-local function tw(inst, props, dur, style)
-    return TweenService:Create(inst, TweenInfo.new(dur or 0.2, style or Enum.EasingStyle.Quad), props)
+local function tw(inst, props, dur, style, direction)
+    return TweenService:Create(inst, TweenInfo.new(dur or 0.2, style or Enum.EasingStyle.Quad, direction or Enum.EasingDirection.Out), props)
 end
 
 local function notify(title, message, duration)
@@ -745,17 +764,19 @@ end
 -- УМНЫЙ ТЕЛЕПОРТ Vortex (Smart Teleport Engine)
 -- ============================================================
 local islandDatabase = {
-    ["Spawn Beach"]             = {pos = Vector3.new(0, 10, 0),       keywords = {"spawn", "beach"}},
-    ["Tiny Island"]              = {pos = Vector3.new(-39, 10, 1860),  keywords = {"tiny"}},
-    ["Legend Beach"]            = {pos = Vector3.new(0, 10, -4000),   keywords = {"legend beach"}},
-    ["Frost Gym (5 Rebirths)"]  = {pos = Vector3.new(-2569, 12, -474), keywords = {"frost", "frozen"}},
-    ["Mythic Gym (15 Reb)"]     = {pos = Vector3.new(2250, 12, 1070),  keywords = {"mythic"}},
-    ["Jungle Gym (60 Reb)"]     = {pos = Vector3.new(-2500, 15, 2350), keywords = {"jungle"}},
-    ["Industrial Gym (150 Reb)"]= {pos = Vector3.new(-4560, 995, -3000),keywords = {"industrial"}},
-    ["Eternal Gym (300 Reb)"]   = {pos = Vector3.new(-6730, 12, -1280),keywords = {"eternal"}},
-    ["Legend Gym (3K Reb)"]     = {pos = Vector3.new(4400, 995, -4000),keywords = {"legend gym"}},
-    ["Muscle King Gym (30K)"]   = {pos = Vector3.new(-8550, 20, -5700),keywords = {"muscle king"}},
-    ["Overcharged Gym (100K)"]  = {pos = Vector3.new(-7050, 20, -1350),keywords = {"overcharged"}}
+    ["Spawn Beach"]      = {pos = Vector3.new(0, 10, 0),       keywords = {"spawn", "beach"}},
+    ["Tiny Island"]      = {pos = Vector3.new(-39, 10, 1860),  keywords = {"tiny"}},
+    ["Legend Beach"]     = {pos = Vector3.new(0, 10, -4000),   keywords = {"legend beach"}},
+    ["Frost Gym"]        = {pos = Vector3.new(-2569, 12, -474), keywords = {"frost", "frozen"}},
+    ["Mythic Gym"]       = {pos = Vector3.new(2250, 12, 1070),  keywords = {"mythic"}},
+    ["Jungle Gym"]       = {pos = Vector3.new(-2500, 15, 2350), keywords = {"jungle"}},
+    ["Industrial Gym"]   = {pos = Vector3.new(-4560, 995, -3000),keywords = {"industrial"}},
+    ["Eternal Gym"]      = {pos = Vector3.new(-6730, 12, -1280),keywords = {"eternal"}},
+    ["Legend Gym"]       = {pos = Vector3.new(4400, 995, -4000),keywords = {"legend gym"}},
+    ["Muscle King Gym"]  = {pos = Vector3.new(-8550, 20, -5700),keywords = {"muscle king"}},
+    ["Overcharged Gym"]  = {pos = Vector3.new(-7050, 20, -1350),keywords = {"overcharged"}},
+    -- Временная (событийная) зона: без фиксированной позиции — ищем по имени в мире
+    ["Temporary Zone"]   = {pos = nil, keywords = {"temporary zone", "temporary", "temp zone", "event zone", "eventzone", "limited time", "временная"}},
 }
 
 local function safeTeleport(targetCFrame)
@@ -793,7 +814,7 @@ end
 
 local function smartTeleportToIsland(islandName)
     local data = islandDatabase[islandName]
-    local targetPos = data and data.pos or Vector3.new(0, 0, 0)
+    local targetPos = data and data.pos or nil
 
     local foundPart = nil
     if data and data.keywords then
@@ -813,8 +834,11 @@ local function smartTeleportToIsland(islandName)
 
     if foundPart then
         safeTeleport(foundPart.CFrame * CFrame.new(0, 5, 0))
-    elseif data then
+    elseif targetPos then
         safeTeleport(CFrame.new(targetPos))
+    else
+        notify("Vortex Teleport", tn("Локация не найдена на этом сервере: ", "Location not found on this server: ") .. islandName, 3)
+        return
     end
     notify("Vortex Teleport", "Teleported to " .. islandName, 2)
 end
@@ -1184,7 +1208,7 @@ end
 pcall(function()
     StarterGui:SetCore("SendNotification", {
         Title = "Vortex 0.23",
-        Text = "Скрипт успешно запущен! Нажмите Right Shift или кнопку на экране.",
+        Text = "Vortex loaded! Press Right Shift or the on-screen button.",
         Duration = 5
     })
 end)
@@ -1480,7 +1504,7 @@ PageTitle.BackgroundTransparency = 1
 PageTitle.Position = UDim2.new(0, 18, 0, 9)
 PageTitle.Size = UDim2.new(1, -70, 0, 22)
 PageTitle.Font = Enum.Font.GothamBold
-PageTitle.Text = "Настройки"
+PageTitle.Text = "Settings"
 PageTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
 PageTitle.TextSize = 16
 PageTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -1491,7 +1515,7 @@ PageSub.BackgroundTransparency = 1
 PageSub.Position = UDim2.new(0, 18, 0, 33)
 PageSub.Size = UDim2.new(1, -70, 0, 14)
 PageSub.Font = Enum.Font.GothamMedium
-PageSub.Text = "Настройки, язык и темы интерфейса"
+PageSub.Text = "Language, themes, GUI size and configs"
 PageSub.TextColor3 = Color3.fromRGB(148, 163, 184)
 PageSub.TextSize = 10
 PageSub.TextXAlignment = Enum.TextXAlignment.Left
@@ -1519,7 +1543,7 @@ end)
 -- ЕДИНАЯ ВЫГРУЗКА СКРИПТА: останавливает все while-циклы (через флаги Config),
 -- отключает все соединения и уничтожает GUI
 local function completeScriptUnload()
-    notify("Vortex", t("Выгрузка скрипта Vortex 0.23...", "Unloading Vortex 0.23..."), 2)
+    notify("Vortex", tn("Выгрузка скрипта Vortex 0.23...", "Unloading Vortex 0.23..."), 2)
 
     local loopFlags = {
         "AutoOpFarm", "AutoDumbbell", "AutoPushups", "AutoSitups", "AutoWeight",
@@ -1530,7 +1554,7 @@ local function completeScriptUnload()
         "AutoCrystal", "PlayerESP", "FlyEnabled", "WalkWhileTraining", "AntiHit",
         "AutoSafeTPLowHP", "SpeedHack", "JumpPowerHack", "Noclip", "InfJump",
         "Bhop", "FullBright", "SpectateTarget", "AntiKnockback", "AntiAFK",
-        "UltraFastRep", "AutoKillBoss", "HatchPower",
+        "UltraFastRep", "HatchPower",
     }
     for _, flagName in ipairs(loopFlags) do
         Config[flagName] = false
@@ -1636,6 +1660,8 @@ local teleportsPage   = createPage("Teleports")
 local automationPage  = createPage("Automation")
 local petsPage        = createPage("Pets")
 local movementPage    = createPage("Movement")
+local visualsPage     = createPage("Visuals")
+local aboutPage       = createPage("About")
 
 local function switchTab(tabName)
     currentTab = tabName
@@ -1660,8 +1686,9 @@ local function switchTab(tabName)
     end
     local info = TabInfo[tabName]
     if info then
-        PageTitle.Text = resolveText(info.title)
-        PageSub.Text = resolveText(info.sub or "")
+        -- HUD (заголовок/подзаголовок страницы) всегда на английском
+        PageTitle.Text = info.title
+        PageSub.Text = info.sub or ""
     end
 end
 
@@ -1681,12 +1708,11 @@ local function createTabButton(displayName, internalName, subTitle)
     nameLbl.Position = UDim2.new(0, 14, 0.5, -8)
     nameLbl.Size = UDim2.new(1, -22, 0, 16)
     nameLbl.Font = Enum.Font.GothamBold
-    nameLbl.Text = displayName
+    nameLbl.Text = displayName -- всегда EN
     nameLbl.TextColor3 = Color3.fromRGB(148, 163, 184)
     nameLbl.TextSize = 11
     nameLbl.TextXAlignment = Enum.TextXAlignment.Left
     nameLbl.ZIndex = 6
-    bindText(nameLbl, function() return resolveText(displayName) end)
 
     local entry = {btn = btn, nameLbl = nameLbl, active = false}
     btn.MouseEnter:Connect(function()
@@ -1707,27 +1733,19 @@ local function createTabButton(displayName, internalName, subTitle)
     return btn
 end
 
--- Заголовок/подзаголовок страницы в шапке контента
-bindText(PageTitle, function()
-    local info = currentTab and TabInfo[currentTab]
-    return info and resolveText(info.title) or ""
-end)
-bindText(PageSub, function()
-    local info = currentTab and TabInfo[currentTab]
-    return info and resolveText(info.sub or "") or ""
-end)
-
--- 10 разделов: короткие названия без иконок (как в референсе Silicate)
-createTabButton("Настройки", "ClickGUI", "Настройки, язык и темы интерфейса")
-createTabButton("Главная", "Dashboard", "Обзор статистики и прогресса")
-createTabButton("Фарм", "Training", "Тренажёры и авто-фарм")
-createTabButton("Камни", "Rocks", "Камни и спортзалы")
-createTabButton("Бой", "Combat", "Kill Aura и охота на боссов")
-createTabButton("Защита", "Protection", "Защита от урона и авто-TP")
-createTabButton("Телепорты", "Teleports", "Точки и телепорты")
-createTabButton("Авто", "Automation", "Кристаллы и авто-действия")
-createTabButton("Питомцы", "Pets", "Питомцы и инвентарь")
-createTabButton("Движение", "Movement", "Движение и ESP")
+-- 12 разделов: короткие EN-названия без иконок (HUD всегда на английском)
+createTabButton("Settings", "ClickGUI", "Language, themes, GUI size and configs")
+createTabButton("Home", "Dashboard", "Stats and progress overview")
+createTabButton("Farm", "Training", "Gym machines and auto farm")
+createTabButton("Rocks", "Rocks", "Rock tiers and gyms")
+createTabButton("Combat", "Combat", "Kill aura and boss hunting")
+createTabButton("Protection", "Protection", "Defense and auto safe TP")
+createTabButton("Teleports", "Teleports", "World locations and waypoints")
+createTabButton("Auto", "Automation", "Crystals and auto actions")
+createTabButton("Pets", "Pets", "Pets and inventory")
+createTabButton("Movement", "Movement", "Movement and ESP")
+createTabButton("Visuals", "Visuals", "Sky, trails and jump effects")
+createTabButton("About", "About", "Owner harin | Discord harin")
 
 -- UI Компоненты с Индикатором Статуса [ВКЛ / ВЫКЛ]
 local accentToggles = {}
@@ -1854,8 +1872,8 @@ PopCloseBtn.AutoButtonColor = false
 
 local function closeFuncPopup()
     if not FuncPopupLayer.Visible then return end
-    local anim = tw(FuncPopupLayer, {GroupTransparency = 1}, 0.12)
-    tw(FuncPopupScale, {Scale = 0.96}, 0.12):Play()
+    local anim = tw(FuncPopupLayer, {GroupTransparency = 1}, 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    tw(FuncPopupScale, {Scale = 0.97}, 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out):Play()
     anim.Completed:Connect(function()
         if FuncPopupLayer.GroupTransparency >= 0.99 then FuncPopupLayer.Visible = false end
     end)
@@ -1886,9 +1904,9 @@ local function openFuncPopup(title, desc, buildBody)
     end
     FuncPopupLayer.Visible = true
     FuncPopupLayer.GroupTransparency = 1
-    FuncPopupScale.Scale = 0.94
-    tw(FuncPopupLayer, {GroupTransparency = 0}, 0.15):Play()
-    tw(FuncPopupScale, {Scale = 1}, 0.2, Enum.EasingStyle.Back):Play()
+    FuncPopupScale.Scale = 0.97
+    tw(FuncPopupLayer, {GroupTransparency = 0}, 0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out):Play()
+    tw(FuncPopupScale, {Scale = 1}, 0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
 end
 
 PopupBlocker.MouseButton1Click:Connect(closeFuncPopup)
@@ -2055,7 +2073,11 @@ local function createToggle(page, name, desc, default, callback, extras)
             if extras then extras(body) end
         end)
     end)
-    return btn
+    local function setState(v)
+        state = (v == true)
+        paintCard()
+    end
+    return btn, setState
 end
 
 local function createSlider(page, name, min, max, default, callback, colorAccent, desc)
@@ -2170,13 +2192,21 @@ end
 -- Экран загрузки и анимации меню определены в конце файла (playLoadingSequence / openMenu / closeMenu)
 
 -- ============================================================
--- 1. РАЗДЕЛ: CLICKGUI & CONFIG
+-- 1. РАЗДЕЛ: SETTINGS (бывший ClickGUI)
 -- ============================================================
+sectionLabel(clickGuiPage, "GUI SIZE & LAYOUT")
+local guiSizeScale = Instance.new("UIScale", MainFrame)
+guiSizeScale.Scale = Config.GuiScale
+createSlider(clickGuiPage, "GUI Size (%)", 70, 150, math.floor(Config.GuiScale * 100 + 0.5), function(v)
+    Config.GuiScale = v / 100
+    tw(guiSizeScale, {Scale = Config.GuiScale}, 0.12):Play()
+end, nil, "Overall scale of the Vortex window (70% - 150%)")
+
 sectionLabel(clickGuiPage, "LANGUAGE & THEME PRESETS")
 createButton(clickGuiPage, "Switch Language / Сменить Язык (RU / EN)", "Переключает язык интерфейса между Русским и English", function()
     Config.Language = (Config.Language == "RU") and "EN" or "RU"
     applyLanguage()
-    notify("Vortex Language", t("Язык изменен на Русский", "Language changed to English"), 3)
+    notify("Vortex Language", tn("Язык изменен на Русский", "Language changed to English"), 3)
 end)
 
 createButton(clickGuiPage, "Switch Theme (Сменить Тему)", function()
@@ -2185,7 +2215,7 @@ createButton(clickGuiPage, "Switch Theme (Сменить Тему)", function()
 end, function()
     local nextIdx = (Config.ThemeIndex % #UIThemes) + 1
     applyTheme(nextIdx)
-    notify("Vortex Theme", t("Тема: ", "Theme: ") .. UIThemes[nextIdx].name, 2)
+    notify("Vortex Theme", tn("Тема: ", "Theme: ") .. UIThemes[nextIdx].name, 2)
 end)
 
 local rSlider, gSlider, bSlider
@@ -2206,6 +2236,89 @@ end
 rSlider = createSlider(clickGuiPage, "Red Accent", 0, 255, round(currentR), function(v) currentR=v; updateCustomColor() end, Color3.fromRGB(248,113,113), "Красный цвет интерфейса")
 gSlider = createSlider(clickGuiPage, "Green Accent", 0, 255, round(currentG), function(v) currentG=v; updateCustomColor() end, Color3.fromRGB(74,222,128), "Зеленый цвет интерфейса")
 bSlider = createSlider(clickGuiPage, "Blue Accent", 0, 255, round(currentB), function(v) currentB=v; updateCustomColor() end, Color3.fromRGB(96,165,250), "Синий цвет интерфейса")
+
+-- ============================================================
+-- SAVED CONFIGS: сохранение/загрузка настроек в буфер обмена
+-- ============================================================
+sectionLabel(clickGuiPage, "SAVED CONFIGS")
+
+local function serializeConfig()
+    local parts = {}
+    for k, v in pairs(Config) do
+        local tv = type(v)
+        if tv == "boolean" or tv == "number" or tv == "string" then
+            table.insert(parts, k .. "=" .. tostring(v))
+        end
+    end
+    table.sort(parts)
+    return "VORTEX_CONFIG;" .. table.concat(parts, ";")
+end
+
+local function deserializeConfig(str)
+    if type(str) ~= "string" or not string.find(str, "VORTEX_CONFIG", 1, true) then
+        return nil, tn("Буфер обмена не содержит конфига Vortex", "Clipboard does not contain a Vortex config")
+    end
+    local loaded = 0
+    for entry in string.gmatch(str, "[^;]+") do
+        local k, v = string.match(entry, "^([%w_]+)=(.*)$")
+        if k ~= nil and Config[k] ~= nil then
+            local cur = Config[k]
+            local tv = type(cur)
+            if tv == "boolean" then
+                if v == "true" then Config[k] = true loaded = loaded + 1
+                elseif v == "false" then Config[k] = false loaded = loaded + 1 end
+            elseif tv == "number" then
+                local n = tonumber(v)
+                if n ~= nil then Config[k] = n loaded = loaded + 1 end
+            elseif tv == "string" then
+                Config[k] = v loaded = loaded + 1
+            end
+        end
+    end
+    if loaded == 0 then
+        return nil, tn("Не удалось применить значения из буфера", "Failed to apply values from clipboard")
+    end
+    return loaded, nil
+end
+
+local function readClipboardText()
+    local ok, res = pcall(function()
+        if type(readclipboard) == "function" then return readclipboard() end
+        local g = getgenv and getgenv()
+        if g and type(g.readclipboard) == "function" then return g.readclipboard() end
+        error("no clipboard reader")
+    end)
+    if ok and type(res) == "string" then return res end
+    return nil
+end
+
+createButton(clickGuiPage, "Save Config to Clipboard", "Сохраняет все настройки Vortex в буфер обмена", function()
+    local ok = pcall(function() setclipboard(serializeConfig()) end)
+    if ok then
+        notify("Vortex Config", "Config copied to clipboard!", 3)
+    else
+        notify("Vortex Config", "Clipboard is not available in this injector", 4)
+    end
+end)
+
+createButton(clickGuiPage, "Load Config from Clipboard", "Загружает настройки Vortex из буфера обмена", function()
+    local text = readClipboardText()
+    if not text then
+        notify("Vortex Config", "Clipboard read is not available in this injector", 4)
+        return
+    end
+    local loaded, err = deserializeConfig(text)
+    if not loaded then
+        notify("Vortex Config", err or "Invalid config", 4)
+        return
+    end
+    pcall(function()
+        applyTheme(Config.ThemeIndex or 1)
+        tw(guiSizeScale, {Scale = tonumber(Config.GuiScale) or 1}, 0.12):Play()
+        DescFooterBar.Visible = Config.EnableTooltips ~= false
+    end)
+    notify("Vortex Config", "Config loaded: " .. tostring(loaded) .. " options applied", 3)
+end)
 
 sectionLabel(clickGuiPage, "INTERFACE GLASS & SETTINGS")
 createToggle(clickGuiPage, "Glow Outline", "Пульсирующая неоновая рамка меню", Config.Glow, function(v)
@@ -2229,7 +2342,7 @@ createButton(clickGuiPage, "Optimize FPS (Smooth Plastic)", "Удаляет те
         end
         Lighting.GlobalShadows = false
     end)
-    notify("FPS Boost", "Текстуры карты оптимизированы!", 2)
+    notify("FPS Boost", "Map textures optimized!", 2)
 end)
 
 -- Unload кнопка использует общую completeScriptUnload (определена выше, у шапки окна)
@@ -2271,7 +2384,7 @@ local function setCharacterScale(val)
             if hum:FindFirstChild("HeadScale") then hum.HeadScale.Value = val end
         end)
     end
-    notify("Vortex Size", "Масштаб установлен: " .. tostring(val) .. "x", 2)
+    notify("Vortex Size", "Character scale set: " .. tostring(val) .. "x", 2)
 end
 
 createButton(dashboardPage, "Micro Size (0.1x)", "Делает персонажа незаметным мини-карликом", function() setCharacterScale(0.1) end)
@@ -2290,7 +2403,7 @@ sectionLabel(trainingPage, "AUTO OP — UNIVERSAL TURBO FAST FARM")
 createToggle(trainingPage, "Auto OP (Универсальный сумасшедший кликер)", "Сели за ЛЮБОЙ тренажер или взяли ЛЮБОЙ снаряд — мгновенно качает на предельной турбо-скорости!", Config.AutoOpFarm, function(v)
     Config.AutoOpFarm = v
     if v then
-        notify("Vortex Auto OP", "Auto OP включен! Просто сядьте на тренажер или возьмите снаряд!", 4)
+        notify("Vortex Auto OP", "Auto OP enabled! Just sit on any machine or grab any equipment!", 4)
         task.spawn(function()
             while Config.AutoOpFarm do
                 local char = LocalPlayer.Character
@@ -2414,7 +2527,7 @@ createToggle(trainingPage, "Walk While Training (Ходить во время у
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
             LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Sit = false
         end
-        notify("Vortex Walk", "Свободная ходьба во время качания включена!", 2)
+        notify("Vortex Walk", "Walk while training enabled!", 2)
         -- Постоянный цикл: не дает игре усадить вас, пока вы держите снаряд.
         -- Тренажеры-сиденья (жим, присед и т.д.) не затрагиваются — снаряд в руках не экипирован.
         task.spawn(function()
@@ -2575,7 +2688,7 @@ end)
 createToggle(trainingPage, "ULTRA FAST INSTANT REP MODE (TURBO 100X)", "Ультра-скоростной режим: мгновенный спам ивентов качания без задержки!", Config.UltraFastRep, function(v)
     Config.UltraFastRep = v
     if v then
-        notify("Vortex Turbo Farm", "Ультра-скоростной фарм включен! (100x Rep Spam)", 3)
+        notify("Vortex Turbo Farm", "Ultra-fast farm enabled! (100x Rep Spam)", 3)
     end
 end)
 
@@ -2667,14 +2780,15 @@ createToggle(rocksPage, "Auto Treadmill Farm (Agility)", "Телепортиру
     end
 end)
 
-sectionLabel(rocksPage, "SELECT ROCK TIER (ТОЧНЫЕ ТРЕБОВАНИЯ)")
+sectionLabel(rocksPage, "SELECT ROCK TIER")
 for _, rData in ipairs(rockTiers) do
-    createButton(rocksPage, rData[1] .. " [" .. rData[2] .. "]", function()
+    createButton(rocksPage, rData[1], function()
         return t("Выбрать ", "Select ") .. rData[1] .. t(" для фарминга", " for farming")
+            .. " (" .. rData[2] .. ")"
     end, function()
         Config.SelectedRockTier = rData[3]
         RockInfoLabel.Text = "Selected Rock Tier: " .. rData[1] .. " (" .. rData[2] .. ")"
-        notify("Vortex Rock", "Выбран камень: " .. rData[1], 2)
+        notify("Vortex Rock", "Selected rock tier: " .. rData[1], 2)
     end)
 end
 
@@ -2686,24 +2800,24 @@ sectionLabel(combatPage, "ADVANCED KILL AURA ENGINE (BRING & BEAT)")
 local KillAuraStatusLabel = Instance.new("TextLabel", createGlassPanel(combatPage, 34))
 KillAuraStatusLabel.BackgroundTransparency = 1; KillAuraStatusLabel.Position = UDim2.new(0, 12, 0, 0); KillAuraStatusLabel.Size = UDim2.new(1, -24, 1, 0)
 KillAuraStatusLabel.Font = Enum.Font.GothamBold; KillAuraStatusLabel.TextColor3 = AccentColor; KillAuraStatusLabel.TextSize = 11; KillAuraStatusLabel.TextXAlignment = Enum.TextXAlignment.Left; CollectionService:AddTag(KillAuraStatusLabel, "AccentText")
-KillAuraStatusLabel.Text = "Kill Aura Mode: Bring To Me (Телепорт врагов к себе)"
+KillAuraStatusLabel.Text = "Kill Aura Mode: Bring To Me"
 
 createButton(combatPage, "Mode 1: Bring Target To Me (Телепортировать врага к себе)", "Притягивает/телепортирует корпус врага прямо перед вашими кулаками и бьет!", function()
     Config.KillAuraMode = "Bring To Me"
-    KillAuraStatusLabel.Text = "Kill Aura Mode: Bring To Me (Телепорт врагов к себе)"
-    notify("Vortex Killaura", "Режим: Притягивать врагов к себе и бить!", 2)
+    KillAuraStatusLabel.Text = "Kill Aura Mode: Bring To Me"
+    notify("Vortex Killaura", "Mode: pull enemies to me and beat them!", 2)
 end)
 
 createButton(combatPage, "Mode 2: Magnet TP To Target (Телепортироваться к врагу)", "Мгновенно телепортирует вас за спину / в лицо врагу и наносит удары", function()
     Config.KillAuraMode = "Magnet TP to Target"
-    KillAuraStatusLabel.Text = "Kill Aura Mode: Magnet TP to Target (Телепорт к врагу)"
-    notify("Vortex Killaura", "Режим: Телепортироваться к врагам и бить!", 2)
+    KillAuraStatusLabel.Text = "Kill Aura Mode: Magnet TP To Target"
+    notify("Vortex Killaura", "Mode: teleport to enemies and beat them!", 2)
 end)
 
 createButton(combatPage, "Mode 3: Orbit Target (Орбита вокруг цели)", "Вращается по кругу вокруг цели и наносит серии ударов", function()
     Config.KillAuraMode = "Orbit Target"
-    KillAuraStatusLabel.Text = "Kill Aura Mode: Orbit Target (Орбита вокруг цели)"
-    notify("Vortex Killaura", "Режим: Орбита вокруг врагов!", 2)
+    KillAuraStatusLabel.Text = "Kill Aura Mode: Orbit Target"
+    notify("Vortex Killaura", "Mode: orbit around enemies!", 2)
 end)
 
 createToggle(combatPage, "Enable Kill Aura (Auto Hit & Teleport)", "Активирует Kill Aura: бьет, телепортирует врагов прямо к вам или телепортируется к ним!", Config.KillAura, function(v)
@@ -2800,7 +2914,7 @@ createButton(combatPage, "Select Nearest Player as Target", "Выбирает б
     if nearestP then
         Config.SelectedTargetPlayer = nearestP
         TargetInfoLbl.Text = "Selected Target: " .. nearestP.Name
-        notify("Vortex Target", "Выбран цель: " .. nearestP.Name, 2)
+        notify("Vortex Target", "Target selected: " .. nearestP.Name, 2)
     end
 end)
 
@@ -2809,7 +2923,7 @@ createButton(combatPage, "Bring Selected Target to Me", "Притягивает 
         pcall(function()
             Config.SelectedTargetPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
         end)
-        notify("Vortex Target", "Игрок притянут к вам!", 2)
+        notify("Vortex Target", "Player pulled to you!", 2)
     end
 end)
 
@@ -2880,14 +2994,18 @@ end)
 sectionLabel(combatPage, "LEGEND BOSS KILLER ENGINE (GODMODE & FAST ATTACK)")
 
 local BOSS_TARGET_FOLDERS = {
-    "bossFolder", "BossFolder", "Bosses", "Boss",
-    "enemies", "Enemies", "mobs", "Mobs",
+    "bossFolder", "BossFolder", "Bosses", "Boss", "bossIsland", "BossIsland",
+    "worldboss", "WorldBoss", "eventBoss", "EventBoss",
+    "enemies", "Enemies", "enemy", "Enemy", "mobs", "Mobs",
     "battleIsland", "BattleIsland", "warriors", "Warriors",
+    "arena", "Arena", "raids", "Raids", "spawns", "Spawns",
 }
 local BOSS_NAME_KEYWORDS = {
     "boss", "босс", "evil", "king", "warrior", "brute", "titan",
     "champion", "monster", "giant", "fighter", "bandit", "enemy",
     "warlord", "overlord", "chief", "colossus", "juggernaut", "million",
+    "overcharged", "zombie", "demon", "dragon", "alien", "skeleton",
+    "golem", "gorilla", "shark", "phantom", "reaper", "behemoth",
 }
 local BOSS_NAME_EXCLUDES = {
     "statue", "portal", "gate", "leaderboard", "display", "decor",
@@ -2896,52 +3014,101 @@ local BOSS_NAME_EXCLUDES = {
     "bench", "squat", "tread", "pull", "boulder", "dummy",
 }
 
+-- Ищет модель с живым Humanoid, поднимаясь вверх от объекта
+local function modelWithHumanoidFrom(inst)
+    local cur = inst
+    while cur and cur ~= Workspace and cur ~= game do
+        if cur:IsA("Model") then
+            local hum = cur:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then return cur end
+        end
+        cur = cur.Parent
+    end
+    return nil
+end
+
 local function getActiveBoss()
     local char = LocalPlayer.Character
     local myPos = char and char:FindFirstChild("HumanoidRootPart") and char.HumanoidRootPart.Position
-    local bestModel, bestHum, bestHrp, bestDist = nil, nil, nil, math.huge
+    local bestModel, bestHum, bestHrp, bestScore, bestDist = nil, nil, nil, -1, math.huge
 
-    local function consider(obj)
-        if not obj:IsA("Model") then return end
+    -- Общая приёмка кандидата: score — приоритет источника (3=billboard, 2=папка, 1=имя)
+    local function accept(obj, score)
+        if not obj or not obj:IsA("Model") then return end
         if Players:GetPlayerFromCharacter(obj) then return end
-        local n = string.lower(obj.Name)
-        for _, ex in ipairs(BOSS_NAME_EXCLUDES) do
-            if string.find(n, ex) then return end
-        end
         local hum = obj:FindFirstChildOfClass("Humanoid")
         local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart")
             or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
-        if hum and hum.Health > 0 and hrp then
-            local dist = myPos and (hrp.Position - myPos).Magnitude or 0
-            if dist < bestDist then
-                bestModel, bestHum, bestHrp, bestDist = obj, hum, hrp, dist
-            end
+        if not (hum and hum.Health > 0 and hrp) then return end
+        local dist = myPos and (hrp.Position - myPos).Magnitude or 0
+        if score > bestScore or (score == bestScore and dist < bestDist) then
+            bestModel, bestHum, bestHrp, bestScore, bestDist = obj, hum, hrp, score, dist
         end
     end
 
-    local function nameMatches(n)
+    local function namePasses(n)
+        for _, ex in ipairs(BOSS_NAME_EXCLUDES) do
+            if string.find(n, ex) then return false end
+        end
         for _, kw in ipairs(BOSS_NAME_KEYWORDS) do
             if string.find(n, kw) then return true end
         end
         return false
     end
 
-    -- 1) Игровые папки с врагами / боссами (внутри — любые живые модели)
-    for _, fName in ipairs(BOSS_TARGET_FOLDERS) do
-        local folder = Workspace:FindFirstChild(fName)
-        if folder then
-            for _, obj in pairs(folder:GetDescendants()) do
-                consider(obj)
+    -- 1) BillboardGui с надписью Boss/HP над головой — самый точный признак
+    for _, bb in ipairs(Workspace:GetDescendants()) do
+        if bb:IsA("BillboardGui") then
+            local txt = ""
+            for _, tl in ipairs(bb:GetDescendants()) do
+                if tl:IsA("TextLabel") and type(tl.Text) == "string" then
+                    txt = txt .. " " .. tl.Text
+                end
+            end
+            txt = string.lower(txt)
+            local isBossText = string.find(txt, "boss") or string.find(txt, "босс")
+            local isHpText = string.find(txt, "%d+%s*/%s*%d+")
+            if isBossText or isHpText then
+                local root = bb.Adornee or bb.Parent
+                local model = modelWithHumanoidFrom(root)
+                if model then
+                    if isBossText then
+                        accept(model, 3)
+                    else
+                        -- HP-бар без слова Boss: пропускаем только если имя не похоже на декор/снаряд
+                        local n = string.lower(model.Name)
+                        local okName = true
+                        for _, ex in ipairs(BOSS_NAME_EXCLUDES) do
+                            if string.find(n, ex) then okName = false break end
+                        end
+                        if okName then accept(model, 2) end
+                    end
+                end
             end
         end
     end
 
-    -- 2) Модели с ключевыми словами в имени по всему Workspace
-    if not bestModel then
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("Model") and nameMatches(string.lower(obj.Name)) then
-                consider(obj)
+    -- 2) Игровые папки с врагами / боссами — РЕКУРСИВНЫЙ поиск (папка может быть вложенной)
+    for _, fName in ipairs(BOSS_TARGET_FOLDERS) do
+        local folder = Workspace:FindFirstChild(fName, true)
+        if folder then
+            for _, obj in pairs(folder:GetDescendants()) do
+                if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
+                    local n = string.lower(obj.Name)
+                    local okName = true
+                    for _, ex in ipairs(BOSS_NAME_EXCLUDES) do
+                        if string.find(n, ex) then okName = false break end
+                    end
+                    if okName then accept(obj, 2) end
+                end
             end
+        end
+    end
+
+    -- 3) Модели с ключевыми словами в имени по всему Workspace
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and namePasses(string.lower(obj.Name)) then
+            accept(obj, 1)
         end
     end
 
@@ -2951,7 +3118,7 @@ end
 createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авто-фарм Босса: позиция у босса + без урона по вам + быстрая атака!", Config.AutoKillBoss, function(v)
     Config.AutoKillBoss = v
     if v then
-        notify("Vortex Boss", t("Авто-фарм Босса включен! Наведение...", "Boss auto farm enabled! Targeting..."), 3)
+        notify("Vortex Boss", tn("Авто-фарм Босса включен! Наведение...", "Boss auto farm enabled! Targeting..."), 3)
         task.spawn(function()
             local notifiedNoBoss = false
             local lastTargetName = nil
@@ -2981,7 +3148,7 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                         notifiedNoBoss = false
                         if lastTargetName ~= bossModel.Name then
                             lastTargetName = bossModel.Name
-                            notify("Vortex Boss", t("Цель захвачена: ", "Target acquired: ") .. bossModel.Name, 3)
+                            notify("Vortex Boss", tn("Цель захвачена: ", "Target acquired: ") .. bossModel.Name, 3)
                         end
 
                         local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or myChar:FindFirstChild("Punch")
@@ -3010,7 +3177,7 @@ createToggle(combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авт
                     else
                         lastTargetName = nil
                         if not notifiedNoBoss then
-                            notify("Vortex Boss", t("Ожидание спавна Босса на карте...", "Waiting for boss spawn..."), 3)
+                            notify("Vortex Boss", tn("Ожидание спавна Босса на карте...", "Waiting for boss spawn..."), 3)
                             notifiedNoBoss = true
                         end
                         task.wait(1.5)
@@ -3101,32 +3268,33 @@ createButton(protectionPage, "Teleport to Sky Safe Zone", "Спавнит неб
             p.Parent = Workspace
         end
         safeTeleport(CFrame.new(0, 5005, 0))
-        notify("Vortex Safe Zone", "Успешный телепорт на небесную платформу!", 3)
+        notify("Vortex Safe Zone", "Teleported to the sky platform!", 3)
     end
 end)
 
 -- ============================================================
 -- 7. РАЗДЕЛ: TELEPORTS & POINTS
 -- ============================================================
-sectionLabel(teleportsPage, "WORLD TELEPORTS (ALL 11 ISLANDS)")
+sectionLabel(teleportsPage, "WORLD TELEPORTS")
 
 local locationDisplayList = {
-    {"Spawn Beach", "0 Rebirths / Старт"},
-    {"Tiny Island", "0 Rebirths / 100 Str"},
-    {"Legend Beach", "0 Rebirths / 5K Str"},
-    {"Frost Gym (5 Rebirths)", "5 Перерождений"},
-    {"Mythic Gym (15 Reb)", "15 Перерождений"},
-    {"Jungle Gym (60 Reb)", "60 Перерождений (Тренажерный зал Джунглей)"},
-    {"Industrial Gym (150 Reb)", "150 Перерождений (Промышленный спортзал)"},
-    {"Eternal Gym (300 Reb)", "300 Перерождений"},
-    {"Legend Gym (3K Reb)", "3,000 Перерождений"},
-    {"Muscle King Gym (30K)", "30,000 Перерождений"},
-    {"Overcharged Gym (100K)", "100,000 Перерождений"}
+    {"Spawn Beach", "Start area"},
+    {"Tiny Island", "Tiny Island"},
+    {"Legend Beach", "Legend Beach"},
+    {"Frost Gym", "Frost zone"},
+    {"Mythic Gym", "Mythic zone"},
+    {"Jungle Gym", "Jungle zone"},
+    {"Industrial Gym", "Industrial zone"},
+    {"Eternal Gym", "Eternal zone"},
+    {"Legend Gym", "Legend zone"},
+    {"Muscle King Gym", "Muscle King zone"},
+    {"Overcharged Gym", "Overcharged zone"},
+    {"Temporary Zone", "Event / temporary zone"},
 }
 
 for _, loc in ipairs(locationDisplayList) do
-    createButton(teleportsPage, loc[1] .. " [" .. loc[2] .. "]", function()
-        return t("Безопасный умный телепорт на ", "Safe smart teleport to ") .. loc[1]
+    createButton(teleportsPage, loc[1], function()
+        return t("Безопасный умный телепорт: ", "Safe smart teleport: ") .. loc[2]
     end, function()
         smartTeleportToIsland(loc[1])
     end)
@@ -3143,16 +3311,16 @@ createButton(teleportsPage, "Save Current Position as Waypoint", "Сохраня
         Config.SavedWaypoint = LocalPlayer.Character.HumanoidRootPart.CFrame
         local p = Config.SavedWaypoint.Position
         WaypointLabel.Text = string.format("Saved Waypoint: (%.0f, %.0f, %.0f)", p.X, p.Y, p.Z)
-        notify("Vortex Waypoint", "Позиция успешно сохранена!", 2)
+        notify("Vortex Waypoint", "Position saved!", 2)
     end
 end)
 
 createButton(teleportsPage, "Teleport to Saved Waypoint", "Телепортирует на ранее сохраненную точку", function()
     if Config.SavedWaypoint then
         safeTeleport(Config.SavedWaypoint)
-        notify("Vortex Waypoint", "Телепортирован на сохраненную точку!", 2)
+        notify("Vortex Waypoint", "Teleported to saved waypoint!", 2)
     else
-        notify("Vortex Waypoint", "Нет сохраненной точки!", 2)
+        notify("Vortex Waypoint", "No saved waypoint!", 2)
     end
 end)
 
@@ -3170,7 +3338,7 @@ createButton(teleportsPage, "Teleport to Strongest Player", "Телепорти�
     end
     if topP and topP.Character and topP.Character:FindFirstChild("HumanoidRootPart") then
         safeTeleport(topP.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
-        notify("Vortex TP", "Телепортирован к топ-игроку: " .. topP.Name, 2)
+        notify("Vortex TP", "Teleported to top player: " .. topP.Name, 2)
     end
 end)
 
@@ -3286,13 +3454,13 @@ end)
 createToggle(automationPage, "Stay In Place After Rebirth (Не телепортовать на спавн)", "Сохраняет вашу позицию до перерождения и возвращает вас обратно после него", Config.StayAfterRebirth, function(v)
     Config.StayAfterRebirth = v
     notify("Vortex Rebirth", v
-        and t("После ребирта вы останетесь на месте!", "After rebirth you will stay in place!")
-        or t("После ребирта будет обычный телепорт на спавн.", "Normal spawn teleport after rebirth."), 3)
+        and tn("После ребирта вы останетесь на месте!", "After rebirth you will stay in place!")
+        or tn("После ребирта будет обычный телепорт на спавн.", "Normal spawn teleport after rebirth."), 3)
 end)
 
 createButton(automationPage, "Manual Rebirth (Переродиться прямо сейчас)", "Принудительно запрашивает перерождение на сервере через все каналы", function()
     triggerRebirth()
-    notify("Vortex Rebirth", t("Запрос на перерождение отправлен!", "Rebirth requested!"), 2)
+    notify("Vortex Rebirth", tn("Запрос на перерождение отправлен!", "Rebirth requested!"), 2)
 end)
 
 sectionLabel(automationPage, "CHESTS & ORBS MAGNET")
@@ -3308,7 +3476,7 @@ createButton(automationPage, "Collect All Map Chests", "Авто-телепор�
             end
         end
     end
-    notify("Chests", "Собрано сундуков: " .. tostring(count), 3)
+    notify("Chests", "Chests collected: " .. tostring(count), 3)
 end)
 
 createToggle(automationPage, "Auto Collect Map Orbs", "Автоматически притягивает/собирает сферы со всей карты", Config.AutoCollectOrbs, function(v)
@@ -3412,16 +3580,16 @@ end
 local function validateHatchCount(count)
     count = math.floor(tonumber(count) or 0)
     if count < 1 then
-        return nil, t("Минимум — 1 яйцо!", "Minimum is 1 egg!")
+        return nil, tn("Минимум — 1 яйцо!", "Minimum is 1 egg!")
     end
     if count > 500 then
-        return nil, t("Максимум — 500 яиц за один раз!", "Maximum is 500 eggs at once!")
+        return nil, tn("Максимум — 500 яиц за один раз!", "Maximum is 500 eggs at once!")
     end
 
     local free, owned, cap = freePetSlots()
     if free and count > free then
         return nil, string.format(
-            t("Свободно только %d мест (занято %d из %d), а запрошено %d! Уменьшите количество.",
+           tn("Свободно только %d мест (занято %d из %d), а запрошено %d! Уменьшите количество.",
               "Only %d free slots (used %d of %d) but %d requested! Reduce the amount."),
             free, owned, cap, count)
     end
@@ -3432,14 +3600,14 @@ local function validateHatchCount(count)
         if balance then
             if balance < price then
                 return nil, string.format(
-                    t("Не хватает валюты: нужно %d %s, у вас %d.",
+                   tn("Не хватает валюты: нужно %d %s, у вас %d.",
                       "Not enough currency: need %d %s, you have %d."),
                     price, kind or "Gems", balance)
             end
             local affordable = math.floor(balance / price)
             if count > affordable then
                 return nil, string.format(
-                    t("Хватит только на %d из %d яиц (цена %d %s, баланс %d).",
+                   tn("Хватит только на %d из %d яиц (цена %d %s, баланс %d).",
                       "Enough for only %d of %d eggs (price %d %s, balance %d)."),
                     affordable, count, price, kind or "Gems", balance)
             end
@@ -3455,7 +3623,7 @@ local hatchState = {running = false, cancel = false}
 local function describeDenial()
     local free = freePetSlots()
     if free ~= nil and free <= 0 then
-        return t("сервер отказал: инвентарь питомцев полон — продайте или улучшите питомцев",
+        return tn("сервер отказал: инвентарь питомцев полон — продайте или улучшите питомцев",
             "server denied: pet inventory is full — sell or upgrade pets")
     end
     local price, kind = getCrystalPrice(Config.SelectedCrystal)
@@ -3463,19 +3631,24 @@ local function describeDenial()
         local balance = getCurrency(kind)
         if balance and balance < price then
             return string.format(
-                t("сервер отказал: не хватает валюты (%s: нужно %d, есть %d)",
+               tn("сервер отказал: не хватает валюты (%s: нужно %d, есть %d)",
                   "server denied: not enough currency (%s: need %d, have %d)"),
                 kind or "Gems", price, balance)
         end
     end
-    return t("сервер отказал: инвентарь полон или не хватает валюты",
+    return tn("сервер отказал: инвентарь полон или не хватает валюты",
         "server denied: inventory full or not enough currency")
 end
+
+-- ============================================================
+-- Массовое открытие кристаллов (до 500 за раз)
+-- ============================================================
+local autoCrystalSync = nil -- синхронизация пилла тумблера при внешнем сбросе
 
 local function hatchBatch(count)
     if hatchState.running then
         hatchState.cancel = true
-        notify("Vortex Hatch", t("Массовое вылупление останавливается...", "Stopping mass hatch..."), 2)
+        notify("Vortex Hatch", tn("Массовое вылупление останавливается...", "Stopping mass hatch..."), 2)
         return
     end
     local n, err = validateHatchCount(count)
@@ -3486,6 +3659,7 @@ local function hatchBatch(count)
 
     if Config.AutoCrystal then
         Config.AutoCrystal = false -- сначала гасим авто-режим, чтобы не дублировать открытия
+        if autoCrystalSync then autoCrystalSync(false) end
     end
     hatchState.running = true
     hatchState.cancel = false
@@ -3497,7 +3671,7 @@ local function hatchBatch(count)
         -- открываем строго дистанционно (без телепорта к кристаллу)
         for _ = 1, n do
             if hatchState.cancel or not Config.HatchPower then
-                failReason = t("остановлено пользователем", "stopped by user")
+                failReason = tn("остановлено пользователем", "stopped by user")
                 break
             end
             local ok, petOrReason, rarity = openCrystalOnce(Config.SelectedCrystal)
@@ -3510,10 +3684,10 @@ local function hatchBatch(count)
                 if petOrReason == "denied" then
                     failReason = describeDenial()
                 elseif petOrReason == "invokefail" then
-                    failReason = t("ошибка вызова openCrystalRemote",
+                    failReason = tn("ошибка вызова openCrystalRemote",
                         "openCrystalRemote call failed")
                 else
-                    failReason = t("ремоут openCrystalRemote не найден",
+                    failReason = tn("ремоут openCrystalRemote не найден",
                         "openCrystalRemote not found")
                 end
                 break
@@ -3540,12 +3714,14 @@ createSlider(automationPage, "Eggs Per Batch (1-500)", 1, 500, Config.HatchCount
     refreshHatchStatus()
 end, nil, "Сколько яиц открывать за один Mass Hatch (максимум 500)")
 
-createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-открытие выбранного кристалла пока включено (остановка при отказе сервера)", Config.AutoCrystal, function(v)
+local acCard, acSet
+acCard, acSet = createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-открытие выбранного кристалла пока включено (остановка при отказе сервера)", Config.AutoCrystal, function(v)
     Config.AutoCrystal = v
     if v then
         if hatchState.running then
             Config.AutoCrystal = false
-            notify("Vortex Hatch", t("Идёт массовое вылупление — сначала остановите его (Stop).",
+            if autoCrystalSync then autoCrystalSync(false) end
+            notify("Vortex Hatch", tn("Идёт массовое вылупление — сначала остановите его (Stop).",
                 "Mass hatch is running — stop it first (Stop)."), 4)
             return
         end
@@ -3555,14 +3731,15 @@ createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-отк
                 local ok, reason = openCrystalOnce(Config.SelectedCrystal)
                 if not ok then
                     Config.AutoCrystal = false
+                    if autoCrystalSync then autoCrystalSync(false) end
                     local msg
                     if reason == "denied" then
-                        msg = t("Авто-вылупление остановлено: ", "Auto hatch stopped: ") .. describeDenial()
+                        msg = tn("Авто-вылупление остановлено: ", "Auto hatch stopped: ") .. describeDenial()
                     elseif reason == "invokefail" then
-                        msg = t("Авто-вылупление остановлено: ошибка вызова openCrystalRemote.",
+                        msg = tn("Авто-вылупление остановлено: ошибка вызова openCrystalRemote.",
                             "Auto hatch stopped: openCrystalRemote call failed.")
                     else
-                        msg = t("Авто-вылупление остановлено: ремоут openCrystalRemote не найден.",
+                        msg = tn("Авто-вылупление остановлено: ремоут openCrystalRemote не найден.",
                             "Auto hatch stopped: openCrystalRemote not found.")
                     end
                     notify("Vortex Hatch", msg, 5)
@@ -3579,6 +3756,7 @@ end, function(body)
         Config.HatchDelay = math.floor(v) / 100
     end, nil, "12 = 0.12 секунды между открытиями (диапазон 0.05–1.00)")
 end)
+autoCrystalSync = acSet
 
 createButton(automationPage, "MASS HATCH (открыть выбранное количество)", "Быстро открывает до 500 яиц подряд с проверкой мест в инвентаре и валюты", function()
     hatchBatch(Config.HatchCount)
@@ -3595,9 +3773,9 @@ end)
 createButton(automationPage, "Stop Mass Hatch", "Останавливает идущее массовое вылупление", function()
     if hatchState.running then
         hatchState.cancel = true
-        notify("Vortex Hatch", t("Останавливаем массовое вылупление...", "Stopping mass hatch..."), 2)
+        notify("Vortex Hatch", tn("Останавливаем массовое вылупление...", "Stopping mass hatch..."), 2)
     else
-        notify("Vortex Hatch", t("Сейчас ничего не открывается.", "Nothing is hatching right now."), 2)
+        notify("Vortex Hatch", tn("Сейчас ничего не открывается.", "Nothing is hatching right now."), 2)
     end
 end)
 
@@ -3688,7 +3866,7 @@ for _, crystalName in ipairs(crystalCatalog) do
         Config.SelectedCrystal = crystalName
         refreshHatchStatus()
         updateCrystalCards()
-        notify(t("Кристалл выбран: ", "Crystal selected: ") .. crystalName, t("Теперь его можно открывать кнопками ниже.", "You can now open it with the buttons above."), 2)
+        notify(tn("Кристалл выбран: ", "Crystal selected: ") .. crystalName, tn("Теперь его можно открывать кнопками ниже.", "You can now open it with the buttons above."), 2)
     end)
 
     crystalCards[crystalName] = {stroke = cardStroke, nameLbl = nameLbl, checkLbl = checkLbl}
@@ -3704,25 +3882,25 @@ sectionLabel(petsPage, "PET MANAGEMENT ENGINE")
 createButton(petsPage, "Auto Evolve All Pets", "Автоматически объединяет одинаковых питомцев для эволюции", function()
     local ev = getMuscleEvent()
     if ev then ev:FireServer("evolvePetAll") end
-    notify("Vortex Pets", "Запрос на эволюцию отправлен!", 2)
+    notify("Vortex Pets", "Evolution request sent!", 2)
 end)
 
 createButton(petsPage, "Equip Best Pets", "Автоматически надевает лучших питомцев в инвентаре", function()
     local ev = getMuscleEvent()
     if ev then ev:FireServer("equipBestPets") end
-    notify("Vortex Pets", "Лучшие питомцы экипированы!", 2)
+    notify("Vortex Pets", "Best pets equipped!", 2)
 end)
 
 createButton(petsPage, "Продать обычных питомцев", "Продаёт всех питомцев раритета Common, освобождая места для кристаллов", function()
     local ev = nil
     pcall(function() ev = getREvent("sellPetEvent") end)
     if not ev then
-        notify("Vortex Pets", t("Ремоут sellPetEvent не найден.", "sellPetEvent remote not found."), 4)
+        notify("Vortex Pets", tn("Ремоут sellPetEvent не найден.", "sellPetEvent remote not found."), 4)
         return
     end
     local pf = LocalPlayer:FindFirstChild("petsFolder")
     if not pf then
-        notify("Vortex Pets", t("Папка питомцев не найдена.", "Pets folder not found."), 4)
+        notify("Vortex Pets", tn("Папка питомцев не найдена.", "Pets folder not found."), 4)
         return
     end
     local toSell = {}
@@ -3734,7 +3912,7 @@ createButton(petsPage, "Продать обычных питомцев", "Про
         end
     end
     if #toSell == 0 then
-        notify("Vortex Pets", t("Обычных питомцев нет — продавать нечего.", "No common pets — nothing to sell."), 3)
+        notify("Vortex Pets", tn("Обычных питомцев нет — продавать нечего.", "No common pets — nothing to sell."), 3)
         return
     end
     local sold = 0
@@ -3744,7 +3922,7 @@ createButton(petsPage, "Продать обычных питомцев", "Про
         task.wait(0.05)
     end
     refreshHatchStatus()
-    notify("Vortex Pets", string.format(t("Продано обычных питомцев: %d", "Common pets sold: %d"), sold), 4)
+    notify("Vortex Pets", string.format(tn("Продано обычных питомцев: %d", "Common pets sold: %d"), sold), 4)
 end)
 
 -- ============================================================
@@ -3839,7 +4017,7 @@ createToggle(movementPage, "Player NameTags ESP", "Показывает имен
     Config.PlayerESP = v
     if v then
         if Drawing == nil or type(Drawing.new) ~= "function" then
-            notify("Vortex ESP", "Этот инжектор не поддерживает Drawing — ESP недоступен", 4)
+            notify("Vortex ESP", "This injector does not support Drawing — ESP unavailable", 4)
             Config.PlayerESP = false
             return
         end
@@ -3921,7 +4099,7 @@ createButton(movementPage, "Rejoin Same Server", "Перезайти на это
 end)
 
 createButton(movementPage, "Server Hop (Random Server)", "Подключиться к случайному серверу", function()
-    notify("Vortex Server", "Поиск сервера...", 2)
+    notify("Vortex Server", "Searching for server...", 2)
     pcall(function()
         local sfUrl = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
         local req = HttpService:JSONDecode(game:HttpGet(sfUrl))
@@ -3938,7 +4116,185 @@ end)
 
 createButton(movementPage, "Copy JobID to Clipboard", "Копирует ID текущего сервера в буфер обмена", function()
     pcall(function() setclipboard(tostring(game.JobId)) end)
-    notify("Vortex Server", "JobID скопирован в буфер!", 2)
+    notify("Vortex Server", "JobID copied to clipboard!", 2)
+end)
+
+-- ============================================================
+-- РАЗДЕЛ: VISUALS (небо, след, эффект прыжка)
+-- ============================================================
+sectionLabel(visualsPage, "CUSTOM SKY")
+
+local SKY_PRESETS = {
+    {name = "Default", desc = function() return t("Стандартное дневное небо", "Standard daylight sky") end,
+        timeOfDay = "14:00:00", ambient = Color3.fromRGB(128,128,128), outdoor = Color3.fromRGB(150,150,150), fog = Color3.fromRGB(190,200,215), fogEnd = 100000},
+    {name = "Night", desc = function() return t("Тёмное ночное небо", "Dark night sky") end,
+        timeOfDay = "00:00:00", ambient = Color3.fromRGB(30,35,60), outdoor = Color3.fromRGB(40,45,80), fog = Color3.fromRGB(10,12,25), fogEnd = 60000},
+    {name = "Sunset", desc = function() return t("Оранжевый закат", "Orange sunset") end,
+        timeOfDay = "18:30:00", ambient = Color3.fromRGB(140,90,70), outdoor = Color3.fromRGB(200,120,80), fog = Color3.fromRGB(230,140,90), fogEnd = 80000},
+    {name = "Neon", desc = function() return t("Неоново-фиолетовая атмосфера", "Neon purple atmosphere") end,
+        timeOfDay = "20:00:00", ambient = Color3.fromRGB(70,40,110), outdoor = Color3.fromRGB(90,50,150), fog = Color3.fromRGB(60,30,90), fogEnd = 50000},
+    {name = "Cosmic", desc = function() return t("Космический красный", "Deep space red") end,
+        timeOfDay = "02:00:00", ambient = Color3.fromRGB(80,25,35), outdoor = Color3.fromRGB(120,35,50), fog = Color3.fromRGB(50,10,20), fogEnd = 40000},
+}
+
+local function applySkyPreset(preset)
+    local ok = pcall(function()
+        Lighting.TimeOfDay = preset.timeOfDay
+        Lighting.Ambient = preset.ambient
+        Lighting.OutdoorAmbient = preset.outdoor
+        Lighting.FogColor = preset.fog
+        Lighting.FogEnd = preset.fogEnd
+        Lighting.FogStart = 0
+    end)
+    if ok then
+        Config.SkyMode = preset.name
+        notify("Vortex Visuals", "Sky preset: " .. preset.name, 2)
+    end
+end
+
+for _, preset in ipairs(SKY_PRESETS) do
+    createButton(visualsPage, "Sky: " .. preset.name, preset.desc, function()
+        applySkyPreset(preset)
+    end)
+end
+
+sectionLabel(visualsPage, "TRAIL BEHIND PLAYER")
+
+local activeTrail = nil
+local activeTrailAttachments = {}
+
+local function removeTrail()
+    if activeTrail then pcall(function() activeTrail:Destroy() end) activeTrail = nil end
+    for _, a in ipairs(activeTrailAttachments) do pcall(function() a:Destroy() end) end
+    activeTrailAttachments = {}
+end
+
+local function createTrail(char)
+    removeTrail()
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    pcall(function()
+        local a0 = Instance.new("Attachment")
+        a0.Position = Vector3.new(0, 1.5, 0)
+        a0.Parent = hrp
+        local a1 = Instance.new("Attachment")
+        a1.Position = Vector3.new(0, -1.5, 0)
+        a1.Parent = hrp
+        local trail = Instance.new("Trail")
+        trail.Attachment0 = a0
+        trail.Attachment1 = a1
+        trail.Color = ColorSequence.new(AccentColor, Color3.fromRGB(255,255,255))
+        trail.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1)})
+        trail.Lifetime = tonumber(Config.TrailLifetime) or 0.6
+        trail.LightEmission = 0.6
+        trail.FaceCamera = true
+        trail.Parent = hrp
+        activeTrail = trail
+        activeTrailAttachments = {a0, a1}
+    end)
+end
+
+local trailLoopConn = nil
+createToggle(visualsPage, "Player Trail", "Яркий след за персонажем (цвет акцента интерфейса)", Config.TrailEnabled, function(v)
+    Config.TrailEnabled = v
+    if v then
+        createTrail(LocalPlayer.Character)
+        if not trailLoopConn then
+            trailLoopConn = task.spawn(function()
+                while Config.TrailEnabled do
+                    task.wait(1)
+                    if Config.TrailEnabled and (not activeTrail or not activeTrail.Parent) then
+                        createTrail(LocalPlayer.Character)
+                    end
+                end
+            end)
+        end
+    else
+        removeTrail()
+    end
+end)
+
+createSlider(visualsPage, "Trail Length (sec)", 2, 20, math.floor((tonumber(Config.TrailLifetime) or 0.6) * 10 + 0.5), function(v)
+    Config.TrailLifetime = v / 10
+    if activeTrail then activeTrail.Lifetime = Config.TrailLifetime end
+end, nil, "Длина затухания следа (0.2 - 2.0 секунды)")
+
+sectionLabel(visualsPage, "JUMP EFFECT")
+
+local function spawnJumpRing(pos)
+    pcall(function()
+        local ring = Instance.new("Part")
+        ring.Shape = Enum.PartType.Cylinder
+        ring.Size = Vector3.new(0.2, 2, 2)
+        ring.CFrame = CFrame.new(pos + Vector3.new(0, 0.15, 0)) * CFrame.Angles(0, 0, math.rad(90))
+        ring.Anchored = true
+        ring.CanCollide = false
+        ring.CanQuery = false
+        ring.CanTouch = false
+        ring.Material = Enum.Material.Neon
+        ring.Color = AccentColor
+        ring.Transparency = 0.25
+        ring.Parent = Workspace
+        tw(ring, {Size = Vector3.new(0.2, 9, 9), Transparency = 1}, 0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out):Play()
+        game:GetService("Debris"):AddItem(ring, 0.5)
+    end)
+end
+
+local function bindJumpRing(char)
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    if hum:GetAttribute("VortexRingBound") then return end
+    hum:SetAttribute("VortexRingBound", true)
+    hum.StateChanged:Connect(function(_, newState)
+        if Config.JumpRing and newState == Enum.HumanoidStateType.Jumping then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then spawnJumpRing(hrp.Position - Vector3.new(0, 2.5, 0)) end
+        end
+    end)
+end
+
+local jumpCharConn = nil
+createToggle(visualsPage, "Jump Ring Effect", "Неоновое кольцо под ногами при каждом прыжке", Config.JumpRing, function(v)
+    Config.JumpRing = v
+    if v then
+        if LocalPlayer.Character then bindJumpRing(LocalPlayer.Character) end
+        if not jumpCharConn then
+            jumpCharConn = LocalPlayer.CharacterAdded:Connect(bindJumpRing)
+        end
+    else
+        if jumpCharConn then jumpCharConn:Disconnect() jumpCharConn = nil end
+    end
+end)
+
+-- ============================================================
+-- РАЗДЕЛ: ABOUT (владелец и поддержка)
+-- ============================================================
+sectionLabel(aboutPage, "VORTEX SCRIPT")
+
+local aboutPanel = createGlassPanel(aboutPage, 96)
+local aboutText = Instance.new("TextLabel", aboutPanel)
+aboutText.BackgroundTransparency = 1
+aboutText.Position = UDim2.new(0, 12, 0, 8)
+aboutText.Size = UDim2.new(1, -24, 1, -16)
+aboutText.Font = Enum.Font.GothamMedium
+aboutText.TextColor3 = Color3.fromRGB(241,245,249)
+aboutText.TextSize = 11
+aboutText.TextXAlignment = Enum.TextXAlignment.Left
+aboutText.TextYAlignment = Enum.TextYAlignment.Top
+aboutText.TextWrapped = true
+aboutText.Text = "Vortex v0.23 — Muscle Legends Hub\nOwner: harin\nDiscord: harin\nMenu key: Right Shift"
+
+createButton(aboutPage, "Owner: harin", "Владелец и разработчик скрипта Vortex", function()
+    notify("Vortex", "Owner: harin", 3)
+end)
+
+createButton(aboutPage, "Discord: harin", "Нажмите, чтобы скопировать Discord владельца в буфер обмена", function()
+    local ok = pcall(function() setclipboard("harin") end)
+    if ok then
+        notify("Vortex", "Discord copied to clipboard!", 3)
+    else
+        notify("Vortex", "Discord: harin", 3)
+    end
 end)
 
 -- ============================================================
@@ -3952,12 +4308,12 @@ local function openMenu()
     if guiVisible or isAnimating then return end
     isAnimating = true
     guiVisible = true
-    MainFrame.Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 40)
-    menuScale.Scale = 0.92
+    MainFrame.Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 24)
+    menuScale.Scale = 0.95
     MainFrame.Visible = true
     OpenBtn.Visible = false
-    tw(MainFrame, {Position = menuTargetPos}, 0.35, Enum.EasingStyle.Quint):Play()
-    local s = tw(menuScale, {Scale = 1}, 0.35, Enum.EasingStyle.Quint)
+    tw(MainFrame, {Position = menuTargetPos}, 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+    local s = tw(menuScale, {Scale = 1}, 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
     s:Play()
     s.Completed:Connect(function() isAnimating = false end)
 end
@@ -3967,8 +4323,8 @@ local function closeMenu()
     isAnimating = true
     guiVisible = false
     if FuncPopupLayer.Visible then closeFuncPopup() end
-    tw(MainFrame, {Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 40)}, 0.22, Enum.EasingStyle.Quad):Play()
-    local s = tw(menuScale, {Scale = 0.92}, 0.22, Enum.EasingStyle.Quad)
+    tw(MainFrame, {Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 24)}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out):Play()
+    local s = tw(menuScale, {Scale = 0.95}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     s:Play()
     s.Completed:Connect(function()
         MainFrame.Visible = false
@@ -4032,7 +4388,7 @@ local function playLoadingSequence()
     loadingDone = true
     openMenu()
     OpenBtn.Visible = false
-    notify("Vortex 0.23", t("Загрузка завершена! Меню: [Right Shift]",
+    notify("Vortex 0.23", tn("Загрузка завершена! Меню: [Right Shift]",
         "Loaded! Menu: [Right Shift]"), 5)
 end
 task.spawn(playLoadingSequence)
