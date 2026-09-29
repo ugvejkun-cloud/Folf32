@@ -362,6 +362,25 @@ local LangDict = {
     ["Подготовка интерфейса..."] = "Preparing interface...",
     ["Готово! Открываем меню..."] = "Ready! Opening menu...",
     ["Загрузка завершена! Меню: [Right Shift]"] = "Loaded! Menu: [Right Shift]",
+    -- Короткие названия вкладок (без иконок)
+    ["Настройки"] = "Settings",
+    ["Главная"] = "Home",
+    ["Фарм"] = "Farm",
+    ["Камни"] = "Rocks",
+    ["Бой"] = "Combat",
+    ["Защита"] = "Protection",
+    ["Телепорты"] = "Teleports",
+    ["Авто"] = "Auto",
+    ["Питомцы"] = "Pets",
+    ["Движение"] = "Movement",
+    ["Защита от урона и авто-TP"] = "Damage protection and auto TP",
+    ["Кристаллы и авто-действия"] = "Crystals and auto actions",
+    ["Загрузка..."] = "Loading...",
+    ["CRYSTAL SELECTOR (ВЫБОР КРИСТАЛЛА)"] = "CRYSTAL SELECTOR (PICK A CRYSTAL)",
+    ["Продать обычных питомцев"] = "Sell Common Pets",
+    ["Продаёт всех питомцев раритета Common, освобождая места для кристаллов"] = "Sells all Common-rarity pets to free up slots for crystals",
+    ["Задержка между открытиями (0.01 сек)"] = "Open delay (0.01 sec)",
+    ["12 = 0.12 секунды между открытиями (диапазон 0.05–1.00)"] = "12 = 0.12 seconds between openings (range 0.05–1.00)",
 }
 
 local TextBindings = {}
@@ -395,9 +414,10 @@ local function applyLanguage()
     end
 end
 
-local AccentColor = Color3.fromRGB(236, 236, 240) -- по умолчанию — серебро на чёрном
+local AccentColor = Color3.fromRGB(201, 180, 255) -- лаванда — как на референсе Silicate
 
 local AccentPresets = {
+    {name = "Lavender", color = Color3.fromRGB(201, 180, 255)},
     {name = "Silver",  color = Color3.fromRGB(236, 236, 240)},
     {name = "Teal",    color = Color3.fromRGB(45, 212, 191)},
     {name = "Purple",  color = Color3.fromRGB(168, 85, 247)},
@@ -406,16 +426,15 @@ local AccentPresets = {
     {name = "Green",   color = Color3.fromRGB(74, 222, 128)},
     {name = "Pink",    color = Color3.fromRGB(244, 114, 182)},
     {name = "Amber",   color = Color3.fromRGB(251, 191, 36)},
-    {name = "Slate",   color = Color3.fromRGB(148, 163, 184)},
 }
 
--- Темы окна: сплошные (непрозрачные) фоны. Первая тема — "Black" по умолчанию.
+-- Темы окна: единый near-black фон (окно = сайдбар = шапка), карточки чуть светлее.
 local UIThemes = {
-    {name = "Black",     window = Color3.fromRGB(12, 12, 14),    panel = Color3.fromRGB(22, 22, 25),    bar = Color3.fromRGB(16, 16, 18),    side = Color3.fromRGB(14, 14, 16),    accent = Color3.fromRGB(236, 236, 240)},
-    {name = "Slate",     window = Color3.fromRGB(17, 20, 24),    panel = Color3.fromRGB(26, 30, 36),    bar = Color3.fromRGB(20, 24, 28),    side = Color3.fromRGB(18, 21, 26),    accent = Color3.fromRGB(148, 163, 184)},
-    {name = "Midnight",  window = Color3.fromRGB(10, 13, 22),    panel = Color3.fromRGB(18, 23, 38),    bar = Color3.fromRGB(13, 17, 28),    side = Color3.fromRGB(11, 14, 24),    accent = Color3.fromRGB(96, 165, 250)},
-    {name = "Crimson",   window = Color3.fromRGB(18, 11, 12),    panel = Color3.fromRGB(30, 19, 20),    bar = Color3.fromRGB(22, 14, 15),    side = Color3.fromRGB(16, 10, 11),    accent = Color3.fromRGB(248, 113, 113)},
-    {name = "Cyberpunk", window = Color3.fromRGB(8, 12, 16),     panel = Color3.fromRGB(20, 26, 30),    bar = Color3.fromRGB(10, 15, 18),    side = Color3.fromRGB(10, 15, 18),    accent = Color3.fromRGB(45, 212, 191)},
+    {name = "Black",     window = Color3.fromRGB(11, 11, 13),    panel = Color3.fromRGB(24, 24, 27),    bar = Color3.fromRGB(11, 11, 13),    side = Color3.fromRGB(11, 11, 13),    accent = Color3.fromRGB(201, 180, 255)},
+    {name = "Slate",     window = Color3.fromRGB(15, 17, 20),    panel = Color3.fromRGB(27, 30, 35),    bar = Color3.fromRGB(15, 17, 20),    side = Color3.fromRGB(15, 17, 20),    accent = Color3.fromRGB(148, 163, 184)},
+    {name = "Midnight",  window = Color3.fromRGB(10, 12, 20),    panel = Color3.fromRGB(20, 24, 38),    bar = Color3.fromRGB(10, 12, 20),    side = Color3.fromRGB(10, 12, 20),    accent = Color3.fromRGB(96, 165, 250)},
+    {name = "Crimson",   window = Color3.fromRGB(17, 11, 12),    panel = Color3.fromRGB(30, 19, 20),    bar = Color3.fromRGB(17, 11, 12),    side = Color3.fromRGB(17, 11, 12),    accent = Color3.fromRGB(248, 113, 113)},
+    {name = "Cyberpunk", window = Color3.fromRGB(8, 11, 14),     panel = Color3.fromRGB(18, 24, 27),    bar = Color3.fromRGB(8, 11, 14),     side = Color3.fromRGB(8, 11, 14),     accent = Color3.fromRGB(45, 212, 191)},
 }
 
 local function currentTheme()
@@ -562,6 +581,30 @@ local function detectItemCapacity()
             if v and v > 0 then return v end
         end
     end
+    -- Проба Data-модуля игры (ReplicatorClient), как в open-source скрипте
+    local ok, Data = pcall(function()
+        local packages = ReplicatedStorage:WaitForChild("packages", 3)
+        local mod = packages and packages:WaitForChild("ReplicatorClient", 3)
+        return require(mod).get("Data")
+    end)
+    if ok and Data and Data.TryIndex then
+        local keys = {
+            "inventoryCapacity", "itemCapacity", "petCapacity", "maxPets",
+            "capacity", "inventorySize", "maxItems", "petSlots", "maxPetSlots",
+        }
+        for _, key in ipairs(keys) do
+            local ok2, v = pcall(function() return Data:TryIndex(key) end)
+            if ok2 and type(v) == "number" and v > 0 then return math.floor(v) end
+        end
+        local paths = {
+            {"inventory", "capacity"}, {"pets", "capacity"},
+            {"inventory", "max"}, {"inventory", "maxPets"},
+        }
+        for _, path in ipairs(paths) do
+            local ok2, v = pcall(function() return Data:TryIndex(path[1], path[2]) end)
+            if ok2 and type(v) == "number" and v > 0 then return math.floor(v) end
+        end
+    end
     return nil
 end
 
@@ -645,9 +688,11 @@ local function teleportToCrystal(crystalName)
     end
 end
 
--- Одно открытие кристалла. Возвращает:
+-- Одно открытие кристалла (дистанционно, без телепорта — как в open-source).
+-- Возвращает:
 --   true,  petName, rarity  — выпал питомец
 --   false, "denied"         — сервер отказал (инвентарь полон / не хватает валюты)
+--   false, "invokefail"     — вызов ремоута упал
 --   false, "noremote"       — ремоут openCrystalRemote не найден
 local function openCrystalOnce(crystalName)
     local remote = nil
@@ -655,11 +700,26 @@ local function openCrystalOnce(crystalName)
         remote = getREvent("openCrystalRemote")
     end)
     if remote and remote:IsA("RemoteFunction") then
-        local ok, pet, rarity = pcall(function()
+        local ok, a, b = pcall(function()
             return remote:InvokeServer("openCrystal", crystalName)
         end)
         if ok then
-            if type(pet) == "string" then return true, pet, rarity end
+            -- Толерантная расшифровка ответа: (pet, rarity) | (true, pet) | таблица | Instance
+            local petName, rarity
+            if type(a) == "string" then
+                petName, rarity = a, b
+            elseif a == true and type(b) == "string" then
+                petName, rarity = b, nil
+            elseif type(a) == "table" then
+                petName = a.name or a.pet or a[1]
+                rarity = a.rarity
+            elseif typeof(a) == "Instance" then
+                petName = a.Name
+                rarity = b
+            elseif type(a) == "number" then
+                petName, rarity = tostring(a), b
+            end
+            if petName then return true, tostring(petName), rarity end
             return false, "denied"
         end
         return false, "invokefail"
@@ -677,7 +737,7 @@ local function openCrystalOnce(crystalName)
 end
 
 local function hatchCrystal(crystalName)
-    teleportToCrystal(crystalName)
+    -- Открытие строго дистанционно — телепорт не используется
     return openCrystalOnce(crystalName)
 end
 
@@ -1130,73 +1190,124 @@ pcall(function()
 end)
 
 -- ============================================================
--- ЭКРАН ЗАГРУЗКИ СКРИПТА (SCRIPT LOADING SCREEN) — вместо выбора языка
+-- ЛОГОТИП (стилизованный чёрный кот по мотивам референса)
 -- ============================================================
-local LoadModal = Instance.new("Frame", ScreenGui)
+local function createCatLogo(parent, s)
+    local logo = Instance.new("Frame", parent)
+    logo.BackgroundTransparency = 1
+    logo.Size = UDim2.new(0, s, 0, s)
+    logo.ClipsDescendants = false
+
+    local headW = math.floor(s * 0.68)
+    local headH = math.floor(s * 0.58)
+    local earS  = math.floor(s * 0.34)
+
+    -- уши: повёрнутые квадраты, верхние углы выглядывают из-за головы
+    local function ear(xPos, rot)
+        local e = Instance.new("Frame", logo)
+        e.Size = UDim2.new(0, earS, 0, earS)
+        e.Position = xPos
+        e.Rotation = rot
+        e.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+        e.BorderSizePixel = 0
+        e.ZIndex = 21
+        applyCorner(e, 4)
+        applyStroke(e, Color3.fromRGB(235, 235, 245), 0.5, 1)
+        return e
+    end
+    ear(UDim2.new(0, math.floor(s * 0.08), 0, math.floor(s * 0.14)), -20)
+    ear(UDim2.new(1, -earS - math.floor(s * 0.08), 0, math.floor(s * 0.14)), 20)
+
+    -- голова
+    local head = Instance.new("Frame", logo)
+    head.AnchorPoint = Vector2.new(0.5, 1)
+    head.Position = UDim2.new(0.5, 0, 1, -math.floor(s * 0.03))
+    head.Size = UDim2.new(0, headW, 0, headH)
+    head.BackgroundColor3 = Color3.fromRGB(9, 9, 11)
+    head.BorderSizePixel = 0
+    head.ZIndex = 22
+    applyCorner(head, math.floor(headW * 0.44))
+    applyStroke(head, Color3.fromRGB(235, 235, 245), 0.7, 1)
+
+    -- светящиеся глаза-штрихи «^ ^»
+    local eyeW = math.max(8, math.floor(s * 0.26))
+    local eyeH = math.max(3, math.floor(s * 0.075))
+    local function eye(xOff, rot)
+        local e = Instance.new("Frame", head)
+        e.AnchorPoint = Vector2.new(0.5, 0.5)
+        e.Position = UDim2.new(0.5, xOff, 0, math.floor(headH * 0.44))
+        e.Size = UDim2.new(0, eyeW, 0, eyeH)
+        e.Rotation = rot
+        e.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        e.BorderSizePixel = 0
+        e.ZIndex = 23
+        applyCorner(e, eyeH)
+        applyStroke(e, Color3.fromRGB(255, 255, 255), 0.3, 2)
+    end
+    eye(-math.floor(headW * 0.19), -16)
+    eye(math.floor(headW * 0.19), 16)
+    return logo
+end
+
+-- ============================================================
+-- ЭКРАН ЗАГРУЗКИ СКРИПТА (компактная карточка сверху слева, как на референсе)
+-- ============================================================
+local LoadModal = Instance.new("CanvasGroup", ScreenGui)
 LoadModal.Name = "LoadModal"
-LoadModal.Size = UDim2.new(0, 420, 0, 196)
-LoadModal.Position = UDim2.new(0.5, -210, 0.5, -98)
+LoadModal.Size = UDim2.new(0, 330, 0, 96)
+LoadModal.Position = UDim2.new(0, 18, 0, 18)
 LoadModal.BackgroundColor3 = currentTheme().window
 LoadModal.BackgroundTransparency = 0
+LoadModal.BorderSizePixel = 0
 LoadModal.ZIndex = 20
 CollectionService:AddTag(LoadModal, "ThemeWindow")
-applyCorner(LoadModal, 16)
-local loadStroke = applyStroke(LoadModal, AccentColor, 0.25, 1.5)
+applyCorner(LoadModal, 14)
+local loadStroke = applyStroke(LoadModal, AccentColor, 0.55, 1)
 CollectionService:AddTag(loadStroke, "AccentStroke")
-local LoadScale = Instance.new("UIScale", LoadModal)
-LoadScale.Scale = 1
 
-local LoadIcon = Instance.new("Frame", LoadModal)
-LoadIcon.AnchorPoint = Vector2.new(0.5, 0)
-LoadIcon.Position = UDim2.new(0.5, 0, 0, 24)
-LoadIcon.Size = UDim2.new(0, 14, 0, 14)
-LoadIcon.BackgroundColor3 = AccentColor
-LoadIcon.Rotation = 45
-LoadIcon.ZIndex = 21
-CollectionService:AddTag(LoadIcon, "AccentFill")
-applyCorner(LoadIcon, 3)
+local LoadLogo = createCatLogo(LoadModal, 46)
+LoadLogo.Position = UDim2.new(0, 14, 0.5, -23)
 
 local LoadTitle = Instance.new("TextLabel", LoadModal)
 LoadTitle.BackgroundTransparency = 1
-LoadTitle.Position = UDim2.new(0, 20, 0, 48)
-LoadTitle.Size = UDim2.new(1, -40, 0, 30)
+LoadTitle.Position = UDim2.new(0, 72, 0, 16)
+LoadTitle.Size = UDim2.new(1, -120, 0, 18)
 LoadTitle.Font = Enum.Font.GothamBold
 LoadTitle.Text = "Vortex"
-LoadTitle.TextColor3 = AccentColor
-LoadTitle.TextSize = 24
-LoadTitle.TextXAlignment = Enum.TextXAlignment.Center
+LoadTitle.TextColor3 = Color3.fromRGB(235, 235, 240)
+LoadTitle.TextSize = 15
+LoadTitle.TextXAlignment = Enum.TextXAlignment.Left
 LoadTitle.ZIndex = 21
-CollectionService:AddTag(LoadTitle, "AccentText")
 
 local LoadVersion = Instance.new("TextLabel", LoadModal)
 LoadVersion.BackgroundTransparency = 1
-LoadVersion.Position = UDim2.new(0, 20, 0, 78)
-LoadVersion.Size = UDim2.new(1, -40, 0, 14)
+LoadVersion.Position = UDim2.new(1, -56, 0, 17)
+LoadVersion.Size = UDim2.new(0, 44, 0, 16)
 LoadVersion.Font = Enum.Font.GothamMedium
-LoadVersion.Text = "v0.23  •  Muscle Legends"
-LoadVersion.TextColor3 = Color3.fromRGB(148, 163, 184)
+LoadVersion.Text = "v0.23"
+LoadVersion.TextColor3 = Color3.fromRGB(120, 122, 130)
 LoadVersion.TextSize = 10
-LoadVersion.TextXAlignment = Enum.TextXAlignment.Center
+LoadVersion.TextXAlignment = Enum.TextXAlignment.Right
 LoadVersion.ZIndex = 21
 
 local LoadStatus = Instance.new("TextLabel", LoadModal)
 LoadStatus.BackgroundTransparency = 1
-LoadStatus.Position = UDim2.new(0, 30, 0, 112)
-LoadStatus.Size = UDim2.new(1, -60, 0, 16)
+LoadStatus.Position = UDim2.new(0, 72, 0, 40)
+LoadStatus.Size = UDim2.new(1, -86, 0, 16)
 LoadStatus.Font = Enum.Font.Gotham
-LoadStatus.Text = "Инициализация ядра..."
-LoadStatus.TextColor3 = Color3.fromRGB(203, 213, 225)
-LoadStatus.TextSize = 11
-LoadStatus.TextXAlignment = Enum.TextXAlignment.Center
+LoadStatus.Text = "Загрузка..."
+LoadStatus.TextColor3 = Color3.fromRGB(140, 142, 150)
+LoadStatus.TextSize = 10
+LoadStatus.TextXAlignment = Enum.TextXAlignment.Left
 LoadStatus.ZIndex = 21
 
 local LoadBarBG = Instance.new("Frame", LoadModal)
-LoadBarBG.Position = UDim2.new(0, 40, 0, 150)
-LoadBarBG.Size = UDim2.new(1, -80, 0, 6)
-LoadBarBG.BackgroundColor3 = Color3.fromRGB(51, 65, 85)
+LoadBarBG.Position = UDim2.new(0, 16, 1, -22)
+LoadBarBG.Size = UDim2.new(1, -32, 0, 4)
+LoadBarBG.BackgroundColor3 = Color3.fromRGB(38, 38, 43)
 LoadBarBG.BorderSizePixel = 0
 LoadBarBG.ZIndex = 21
-applyCorner(LoadBarBG, 3)
+applyCorner(LoadBarBG, 2)
 
 local LoadBarFill = Instance.new("Frame", LoadBarBG)
 LoadBarFill.Size = UDim2.new(0, 0, 1, 0)
@@ -1204,15 +1315,15 @@ LoadBarFill.BackgroundColor3 = AccentColor
 LoadBarFill.BorderSizePixel = 0
 LoadBarFill.ZIndex = 22
 CollectionService:AddTag(LoadBarFill, "AccentFill")
-applyCorner(LoadBarFill, 3)
+applyCorner(LoadBarFill, 2)
 
 local LoadPercent = Instance.new("TextLabel", LoadModal)
 LoadPercent.BackgroundTransparency = 1
-LoadPercent.Position = UDim2.new(0, 40, 0, 162)
-LoadPercent.Size = UDim2.new(1, -80, 0, 14)
+LoadPercent.Position = UDim2.new(1, -48, 1, -36)
+LoadPercent.Size = UDim2.new(0, 34, 0, 12)
 LoadPercent.Font = Enum.Font.GothamBold
 LoadPercent.Text = "0%"
-LoadPercent.TextColor3 = Color3.fromRGB(148, 163, 184)
+LoadPercent.TextColor3 = Color3.fromRGB(120, 122, 130)
 LoadPercent.TextSize = 9
 LoadPercent.TextXAlignment = Enum.TextXAlignment.Right
 LoadPercent.ZIndex = 21
@@ -1236,6 +1347,7 @@ CollectionService:AddTag(OpenBtn, "ThemeWindow")
 applyCorner(OpenBtn, 10)
 local openBtnStroke = applyStroke(OpenBtn, AccentColor, 0.4, 1.5)
 CollectionService:AddTag(openBtnStroke, "AccentStroke")
+OpenBtn.Visible = false -- появится после экрана загрузки
 
 -- ============================================================
 -- ON-SCREEN HUD
@@ -1326,14 +1438,9 @@ BrandHeader.ZIndex = 6
 BrandHeader.Active = true
 CollectionService:AddTag(BrandHeader, "ThemeBar")
 
-local BrandIcon = Instance.new("Frame", BrandHeader)
-BrandIcon.Position = UDim2.new(0, 18, 0, 22)
-BrandIcon.Size = UDim2.new(0, 13, 0, 13)
-BrandIcon.BackgroundColor3 = AccentColor
-BrandIcon.Rotation = 45
-BrandIcon.ZIndex = 7
-CollectionService:AddTag(BrandIcon, "AccentFill")
-applyCorner(BrandIcon, 3)
+-- Мини-логотип (кот) в бренд-шапке
+local BrandIcon = createCatLogo(BrandHeader, 30)
+BrandIcon.Position = UDim2.new(0, 14, 0.5, -15)
 
 local BrandTitle = Instance.new("TextLabel", BrandHeader)
 BrandTitle.BackgroundTransparency = 1
@@ -1373,7 +1480,7 @@ PageTitle.BackgroundTransparency = 1
 PageTitle.Position = UDim2.new(0, 18, 0, 9)
 PageTitle.Size = UDim2.new(1, -70, 0, 22)
 PageTitle.Font = Enum.Font.GothamBold
-PageTitle.Text = "ClickGUI & Config"
+PageTitle.Text = "Настройки"
 PageTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
 PageTitle.TextSize = 16
 PageTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -1477,11 +1584,10 @@ DescTextLabel.BackgroundTransparency = 1
 DescTextLabel.Position = UDim2.new(0, 16, 0, 0)
 DescTextLabel.Size = UDim2.new(1, -32, 1, 0)
 DescTextLabel.Font = Enum.Font.GothamMedium
-DescTextLabel.TextColor3 = Color3.fromRGB(94, 234, 212)
+DescTextLabel.TextColor3 = Color3.fromRGB(126, 130, 136)
 DescTextLabel.TextSize = 10
 DescTextLabel.TextXAlignment = Enum.TextXAlignment.Left
 DescTextLabel.Text = "Vortex 0.23: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
-CollectionService:AddTag(DescTextLabel, "AccentText")
 bindText(DescTextLabel, function()
     return "Vortex 0.23: " .. t("Наведите курсор на функцию для описания...", "Hover over feature to view description...")
 end)
@@ -1496,17 +1602,26 @@ SideLayout.SortOrder = Enum.SortOrder.LayoutOrder; SideLayout.Padding = UDim.new
 local SidePadding = Instance.new("UIPadding", Sidebar)
 SidePadding.PaddingTop = UDim.new(0,8); SidePadding.PaddingLeft = UDim.new(0,8); SidePadding.PaddingRight = UDim.new(0,8)
 
-local pages, tabButtons, TabInfo, currentTab = {}, {}, {}, nil
+local pages, pageCanvases, tabButtons, TabInfo, currentTab = {}, {}, {}, {}, nil
 local PagesContainer = Instance.new("Frame", MainFrame)
 PagesContainer.BackgroundTransparency = 1; PagesContainer.Position = UDim2.new(0,202,0,66); PagesContainer.Size = UDim2.new(1,-214,1,-102); PagesContainer.ZIndex = 5
 
 local function createPage(name)
-    local page = Instance.new("ScrollingFrame", PagesContainer)
-    page.Name = name.."Page"; page.BackgroundTransparency = 1; page.Size = UDim2.new(1,0,1,0); page.CanvasSize = UDim2.new(0,0,0,1250); page.ScrollBarThickness = 4; page.ScrollBarImageColor3 = AccentColor; page.Visible = false; page.ZIndex = 5
+    -- CanvasGroup-обёртка даёт fade-анимацию смены страницы (GroupTransparency)
+    local cg = Instance.new("CanvasGroup", PagesContainer)
+    cg.Name = name.."Canvas"
+    cg.BackgroundTransparency = 1
+    cg.Size = UDim2.new(1, 0, 1, 0)
+    cg.Visible = false
+    cg.ZIndex = 5
+    cg.GroupTransparency = 1
+    local page = Instance.new("ScrollingFrame", cg)
+    page.Name = name.."Page"; page.BackgroundTransparency = 1; page.Size = UDim2.new(1,0,1,0); page.CanvasSize = UDim2.new(0,0,0,1250); page.ScrollBarThickness = 4; page.ScrollBarImageColor3 = AccentColor; page.Visible = true; page.ZIndex = 5
     CollectionService:AddTag(page, "AccentScroll")
     local layout = Instance.new("UIListLayout", page)
     layout.SortOrder = Enum.SortOrder.LayoutOrder; layout.Padding = UDim.new(0,8)
-    pages[name] = page
+    pages[name] = cg
+    pageCanvases[name] = cg
     return page
 end
 
@@ -1524,12 +1639,24 @@ local movementPage    = createPage("Movement")
 
 local function switchTab(tabName)
     currentTab = tabName
-    for name, page in pairs(pages) do page.Visible = (name == tabName) end
+    for name, cg in pairs(pages) do
+        local active = (name == tabName)
+        if active then
+            cg.Visible = true
+            tw(cg, {GroupTransparency = 0}, 0.18):Play()
+        else
+            local anim = tw(cg, {GroupTransparency = 1}, 0.15)
+            anim:Play()
+            anim.Completed:Connect(function()
+                if currentTab ~= name then cg.Visible = false end
+            end)
+        end
+    end
     for name, entry in pairs(tabButtons) do
         local active = (name == tabName)
+        entry.active = active
         tw(entry.btn, {BackgroundTransparency = active and 0.9 or 1}, 0.2):Play()
         entry.nameLbl.TextColor3 = active and Color3.fromRGB(241, 245, 249) or Color3.fromRGB(148, 163, 184)
-        entry.iconLbl.TextColor3 = active and AccentColor or Color3.fromRGB(148, 163, 184)
     end
     local info = TabInfo[tabName]
     if info then
@@ -1538,7 +1665,8 @@ local function switchTab(tabName)
     end
 end
 
-local function createTabButton(icon, displayName, internalName, subTitle)
+-- Вкладка без иконок (как в референсе): только короткое имя + hover-подсветка
+local function createTabButton(displayName, internalName, subTitle)
     local btn = Instance.new("TextButton", Sidebar)
     btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     btn.BackgroundTransparency = 1
@@ -1548,20 +1676,10 @@ local function createTabButton(icon, displayName, internalName, subTitle)
     btn.ZIndex = 5
     applyCorner(btn, 8)
 
-    local iconLbl = Instance.new("TextLabel", btn)
-    iconLbl.BackgroundTransparency = 1
-    iconLbl.Position = UDim2.new(0, 8, 0.5, -8)
-    iconLbl.Size = UDim2.new(0, 20, 0, 16)
-    iconLbl.Font = Enum.Font.GothamBold
-    iconLbl.Text = icon
-    iconLbl.TextSize = 13
-    iconLbl.TextColor3 = Color3.fromRGB(148, 163, 184)
-    iconLbl.ZIndex = 6
-
     local nameLbl = Instance.new("TextLabel", btn)
     nameLbl.BackgroundTransparency = 1
-    nameLbl.Position = UDim2.new(0, 32, 0.5, -8)
-    nameLbl.Size = UDim2.new(1, -38, 0, 16)
+    nameLbl.Position = UDim2.new(0, 14, 0.5, -8)
+    nameLbl.Size = UDim2.new(1, -22, 0, 16)
     nameLbl.Font = Enum.Font.GothamBold
     nameLbl.Text = displayName
     nameLbl.TextColor3 = Color3.fromRGB(148, 163, 184)
@@ -1570,8 +1688,21 @@ local function createTabButton(icon, displayName, internalName, subTitle)
     nameLbl.ZIndex = 6
     bindText(nameLbl, function() return resolveText(displayName) end)
 
+    local entry = {btn = btn, nameLbl = nameLbl, active = false}
+    btn.MouseEnter:Connect(function()
+        if not entry.active then
+            tw(btn, {BackgroundTransparency = 0.95}, 0.12):Play()
+            tw(nameLbl, {TextColor3 = Color3.fromRGB(214, 216, 224)}, 0.12):Play()
+        end
+    end)
+    btn.MouseLeave:Connect(function()
+        if not entry.active then
+            tw(btn, {BackgroundTransparency = 1}, 0.15):Play()
+            tw(nameLbl, {TextColor3 = Color3.fromRGB(148, 163, 184)}, 0.15):Play()
+        end
+    end)
     btn.MouseButton1Click:Connect(function() switchTab(internalName) end)
-    tabButtons[internalName] = {btn = btn, iconLbl = iconLbl, nameLbl = nameLbl}
+    tabButtons[internalName] = entry
     TabInfo[internalName] = {title = displayName, sub = subTitle}
     return btn
 end
@@ -1586,17 +1717,17 @@ bindText(PageSub, function()
     return info and resolveText(info.sub or "") or ""
 end)
 
--- 10 разделов в стиле Silicate: иконка + короткое имя
-createTabButton("⚙", "ClickGUI & Config", "ClickGUI", "Настройки, язык и темы интерфейса")
-createTabButton("⌂", "Dashboard", "Dashboard", "Обзор статистики и прогресса")
-createTabButton("✦", "Auto Farm", "Training", "Тренажёры и авто-фарм")
-createTabButton("◆", "Rocks & Gyms", "Rocks", "Камни и спортзалы")
-createTabButton("⚔", "Combat", "Combat", "Kill Aura и охота на боссов")
-createTabButton("◉", "Protection", "Protection", "Защита и безопасность")
-createTabButton("✈", "Teleports", "Teleports", "Точки и телепорты")
-createTabButton("⚡", "Automation", "Automation", "Яйца и авто-действия")
-createTabButton("♡", "Pets", "Pets", "Питомцы и инвентарь")
-createTabButton("➤", "Movement", "Movement", "Движение и ESP")
+-- 10 разделов: короткие названия без иконок (как в референсе Silicate)
+createTabButton("Настройки", "ClickGUI", "Настройки, язык и темы интерфейса")
+createTabButton("Главная", "Dashboard", "Обзор статистики и прогресса")
+createTabButton("Фарм", "Training", "Тренажёры и авто-фарм")
+createTabButton("Камни", "Rocks", "Камни и спортзалы")
+createTabButton("Бой", "Combat", "Kill Aura и охота на боссов")
+createTabButton("Защита", "Protection", "Защита от урона и авто-TP")
+createTabButton("Телепорты", "Teleports", "Точки и телепорты")
+createTabButton("Авто", "Automation", "Кристаллы и авто-действия")
+createTabButton("Питомцы", "Pets", "Питомцы и инвентарь")
+createTabButton("Движение", "Movement", "Движение и ESP")
 
 -- UI Компоненты с Индикатором Статуса [ВКЛ / ВЫКЛ]
 local accentToggles = {}
@@ -1625,11 +1756,206 @@ local function createGlassPanel(page, height)
     local panel = Instance.new("Frame", page)
     panel.BackgroundColor3 = currentTheme().panel; panel.BackgroundTransparency = 0; panel.Size = UDim2.new(1,-10,0,height)
     CollectionService:AddTag(panel, "ThemePanel")
-    applyCorner(panel, 10); applyStroke(panel, Color3.fromRGB(255,255,255), 0.9, 1)
+    applyCorner(panel, 10); applyStroke(panel, Color3.fromRGB(255,255,255), 0.94, 1)
+    -- мягкая подсветка при наведении
+    panel.MouseEnter:Connect(function()
+        local base = currentTheme().panel
+        tw(panel, {BackgroundColor3 = Color3.new(
+            math.min(1, base.R + 0.05), math.min(1, base.G + 0.05), math.min(1, base.B + 0.05)
+        )}, 0.12):Play()
+    end)
+    panel.MouseLeave:Connect(function()
+        tw(panel, {BackgroundColor3 = currentTheme().panel}, 0.15):Play()
+    end)
     return panel
 end
 
-local function createButton(page, name, desc, callback)
+-- ============================================================
+-- ПОПАП НАСТРОЕК ФУНКЦИИ: ЛКМ по карточке-тумблеру открывает окно
+-- ============================================================
+local FuncPopupLayer = Instance.new("CanvasGroup", ScreenGui)
+FuncPopupLayer.Name = "FuncPopupLayer"
+FuncPopupLayer.Size = UDim2.new(1, 0, 1, 0)
+FuncPopupLayer.BackgroundTransparency = 1
+FuncPopupLayer.Visible = false
+FuncPopupLayer.ZIndex = 30
+FuncPopupLayer.GroupTransparency = 1
+
+local PopupBlocker = Instance.new("TextButton", FuncPopupLayer)
+PopupBlocker.Size = UDim2.new(1, 0, 1, 0)
+PopupBlocker.BackgroundTransparency = 1
+PopupBlocker.Text = ""
+PopupBlocker.AutoButtonColor = false
+PopupBlocker.ZIndex = 31
+
+local FuncPopup = Instance.new("Frame", FuncPopupLayer)
+FuncPopup.Name = "FuncPopup"
+FuncPopup.AnchorPoint = Vector2.new(0.5, 0.5)
+FuncPopup.Position = UDim2.new(0.5, 0, 0.5, 0)
+FuncPopup.Size = UDim2.new(0, 360, 0, 0)
+FuncPopup.AutomaticSize = Enum.AutomaticSize.Y
+FuncPopup.BackgroundColor3 = currentTheme().window
+FuncPopup.BorderSizePixel = 0
+FuncPopup.ZIndex = 32
+CollectionService:AddTag(FuncPopup, "ThemeWindow")
+applyCorner(FuncPopup, 14)
+local popupStroke = applyStroke(FuncPopup, AccentColor, 0.5, 1)
+CollectionService:AddTag(popupStroke, "AccentStroke")
+
+local FuncPopupScale = Instance.new("UIScale", FuncPopup)
+FuncPopupScale.Scale = 0.94
+
+local popupLayout = Instance.new("UIListLayout", FuncPopup)
+popupLayout.SortOrder = Enum.SortOrder.LayoutOrder
+popupLayout.Padding = UDim.new(0, 8)
+
+local popupPad = Instance.new("UIPadding", FuncPopup)
+popupPad.PaddingTop = UDim.new(0, 16); popupPad.PaddingBottom = UDim.new(0, 16)
+popupPad.PaddingLeft = UDim.new(0, 16); popupPad.PaddingRight = UDim.new(0, 16)
+
+local PopTitle = Instance.new("TextLabel", FuncPopup)
+PopTitle.Name = "PopTitle"
+PopTitle.BackgroundTransparency = 1
+PopTitle.LayoutOrder = 1
+PopTitle.Size = UDim2.new(1, -30, 0, 20)
+PopTitle.Font = Enum.Font.GothamBold
+PopTitle.Text = ""
+PopTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
+PopTitle.TextSize = 14
+PopTitle.TextXAlignment = Enum.TextXAlignment.Left
+PopTitle.ZIndex = 33
+
+local PopDesc = Instance.new("TextLabel", FuncPopup)
+PopDesc.Name = "PopDesc"
+PopDesc.BackgroundTransparency = 1
+PopDesc.LayoutOrder = 2
+PopDesc.Size = UDim2.new(1, 0, 0, 0)
+PopDesc.AutomaticSize = Enum.AutomaticSize.Y
+PopDesc.Font = Enum.Font.Gotham
+PopDesc.Text = ""
+PopDesc.TextWrapped = true
+PopDesc.TextColor3 = Color3.fromRGB(148, 163, 184)
+PopDesc.TextSize = 10
+PopDesc.TextXAlignment = Enum.TextXAlignment.Left
+PopDesc.ZIndex = 33
+
+local PopCloseBtn = Instance.new("TextButton", FuncPopup)
+PopCloseBtn.Name = "PopClose"
+PopCloseBtn.AnchorPoint = Vector2.new(1, 0)
+PopCloseBtn.Position = UDim2.new(1, -10, 0, 10)
+PopCloseBtn.Size = UDim2.new(0, 26, 0, 26)
+PopCloseBtn.BackgroundTransparency = 1
+PopCloseBtn.Text = "✕"
+PopCloseBtn.Font = Enum.Font.GothamBold
+PopCloseBtn.TextSize = 12
+PopCloseBtn.TextColor3 = Color3.fromRGB(148, 163, 184)
+PopCloseBtn.ZIndex = 34
+PopCloseBtn.AutoButtonColor = false
+
+local function closeFuncPopup()
+    if not FuncPopupLayer.Visible then return end
+    local anim = tw(FuncPopupLayer, {GroupTransparency = 1}, 0.12)
+    tw(FuncPopupScale, {Scale = 0.96}, 0.12):Play()
+    anim.Completed:Connect(function()
+        if FuncPopupLayer.GroupTransparency >= 0.99 then FuncPopupLayer.Visible = false end
+    end)
+end
+
+-- buildBody(parent) создаёт тело popup; все его дочерние GuiObject
+-- (кроме заголовка/описания/крестика) попадают в общий список LayoutOrder
+local function openFuncPopup(title, desc, buildBody)
+    for _, child in ipairs(FuncPopup:GetChildren()) do
+        if child:IsA("GuiObject") and child:GetAttribute("PopupBody") then
+            child:Destroy()
+        end
+    end
+    PopTitle.Text = tostring(resolveText(title or ""))
+    PopDesc.Text = tostring(resolveText(desc or ""))
+    PopDesc.Visible = (desc ~= nil and desc ~= "")
+    if buildBody then
+        local ok, err = pcall(buildBody, FuncPopup)
+        if not ok then warn("[Vortex] popup body error: " .. tostring(err)) end
+    end
+    local order = 2
+    for _, child in ipairs(FuncPopup:GetChildren()) do
+        if child:IsA("GuiObject") and child ~= PopTitle and child ~= PopDesc and child ~= PopCloseBtn then
+            child:SetAttribute("PopupBody", true)
+            order = order + 1
+            child.LayoutOrder = order
+        end
+    end
+    FuncPopupLayer.Visible = true
+    FuncPopupLayer.GroupTransparency = 1
+    FuncPopupScale.Scale = 0.94
+    tw(FuncPopupLayer, {GroupTransparency = 0}, 0.15):Play()
+    tw(FuncPopupScale, {Scale = 1}, 0.2, Enum.EasingStyle.Back):Play()
+end
+
+PopupBlocker.MouseButton1Click:Connect(closeFuncPopup)
+PopCloseBtn.MouseButton1Click:Connect(closeFuncPopup)
+PopCloseBtn.MouseEnter:Connect(function()
+    tw(PopCloseBtn, {TextColor3 = Color3.fromRGB(248, 113, 113)}, 0.12):Play()
+end)
+PopCloseBtn.MouseLeave:Connect(function()
+    tw(PopCloseBtn, {TextColor3 = Color3.fromRGB(148, 163, 184)}, 0.12):Play()
+end)
+
+-- Тумблер внутри popup (общий вид с карточкой)
+local function buildPopupSwitch(parent, getState, onFlip)
+    local row = Instance.new("TextButton", parent)
+    row.Size = UDim2.new(1, 0, 0, 50)
+    row.BackgroundColor3 = currentTheme().panel
+    row.BorderSizePixel = 0
+    row.Text = ""
+    row.AutoButtonColor = false
+    row.ZIndex = 33
+    CollectionService:AddTag(row, "ThemePanel")
+    applyCorner(row, 10)
+    applyStroke(row, Color3.fromRGB(255, 255, 255), 0.94, 1)
+
+    local rowLbl = Instance.new("TextLabel", row)
+    rowLbl.BackgroundTransparency = 1
+    rowLbl.Position = UDim2.new(0, 14, 0.5, -8)
+    rowLbl.Size = UDim2.new(1, -70, 0, 16)
+    rowLbl.Font = Enum.Font.GothamBold
+    rowLbl.Text = getState() and t("Включено", "Enabled") or t("Выключено", "Disabled")
+    rowLbl.TextColor3 = getState() and AccentColor or Color3.fromRGB(148, 163, 184)
+    rowLbl.TextSize = 11
+    rowLbl.TextXAlignment = Enum.TextXAlignment.Left
+    rowLbl.ZIndex = 34
+
+    local indicator = Instance.new("Frame", row)
+    indicator.AnchorPoint = Vector2.new(1, 0.5)
+    indicator.Position = UDim2.new(1, -14, 0.5, 0)
+    indicator.Size = UDim2.new(0, 44, 0, 22)
+    indicator.BackgroundColor3 = getState() and AccentColor or Color3.fromRGB(51, 65, 85)
+    indicator.ZIndex = 34
+    applyCorner(indicator, 11)
+
+    local dot = Instance.new("Frame", indicator)
+    dot.AnchorPoint = Vector2.new(0, 0.5)
+    dot.Position = getState() and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+    dot.Size = UDim2.new(0, 16, 0, 16)
+    dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    dot.ZIndex = 35
+    applyCorner(dot, 8)
+
+    local function paint()
+        local on = getState()
+        rowLbl.Text = on and t("Включено", "Enabled") or t("Выключено", "Disabled")
+        tw(rowLbl, {TextColor3 = on and AccentColor or Color3.fromRGB(148, 163, 184)}, 0.15):Play()
+        tw(indicator, {BackgroundColor3 = on and AccentColor or Color3.fromRGB(51, 65, 85)}, 0.15):Play()
+        tw(dot, {Position = on and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)}, 0.15):Play()
+    end
+
+    row.MouseButton1Click:Connect(function()
+        onFlip()
+        paint()
+    end)
+    return paint
+end
+
+local function createButton(page, name, desc, callback, extras)
     local panel = createGlassPanel(page, 46)
     local btn = Instance.new("TextButton", panel)
     btn.BackgroundTransparency = 1; btn.Size = UDim2.new(1,0,1,0); btn.Text = ""; btn.ZIndex = 2
@@ -1651,6 +1977,29 @@ local function createButton(page, name, desc, callback)
     bindTooltip(btn, desc)
 
     btn.MouseButton1Click:Connect(function()
+        -- с настройками (extras) — открываем popup; чистое действие — выполняем сразу
+        if extras then
+            openFuncPopup(name, desc, function(body)
+                extras(body)
+                local run = Instance.new("TextButton", body)
+                run.Size = UDim2.new(1, 0, 0, 40)
+                run.BackgroundColor3 = AccentColor
+                run.BorderSizePixel = 0
+                run.Text = t("Запустить", "Run")
+                run.Font = Enum.Font.GothamBold
+                run.TextSize = 12
+                run.TextColor3 = Color3.fromRGB(17, 17, 20)
+                run.AutoButtonColor = false
+                run.ZIndex = 33
+                CollectionService:AddTag(run, "AccentFill")
+                applyCorner(run, 10)
+                run.MouseButton1Click:Connect(function()
+                    closeFuncPopup()
+                    callback()
+                end)
+            end)
+            return
+        end
         tw(panel, {BackgroundColor3 = AccentColor, BackgroundTransparency = 0}, 0.1):Play()
         task.delay(0.15, function() tw(panel, {BackgroundColor3 = currentTheme().panel, BackgroundTransparency = 0}, 0.15):Play() end)
         callback()
@@ -1658,7 +2007,7 @@ local function createButton(page, name, desc, callback)
     return panel
 end
 
-local function createToggle(page, name, desc, default, callback)
+local function createToggle(page, name, desc, default, callback, extras)
     local btn = createGlassPanel(page, 48)
     local clickArea = Instance.new("TextButton", btn)
     clickArea.BackgroundTransparency = 1; clickArea.Size = UDim2.new(1,0,1,0); clickArea.Text = ""; clickArea.ZIndex = 2
@@ -1690,11 +2039,21 @@ local function createToggle(page, name, desc, default, callback)
     bindTooltip(clickArea, desc)
     table.insert(accentToggles, {indicator = indicator, getState = function() return state end})
 
-    clickArea.MouseButton1Click:Connect(function()
-        state = not state
+    local function paintCard()
         tw(indicator, {BackgroundColor3 = state and AccentColor or Color3.fromRGB(51,65,85)}, 0.15):Play()
         tw(dot, {Position = state and UDim2.new(1,-17,0.5,0) or UDim2.new(0,3,0.5,0)}, 0.15):Play()
-        callback(state)
+    end
+
+    -- ЛКМ по карточке: открыть настройки (popup с тумблером)
+    clickArea.MouseButton1Click:Connect(function()
+        openFuncPopup(name, desc, function(body)
+            buildPopupSwitch(body, function() return state end, function()
+                state = not state
+                paintCard()
+                callback(state)
+            end)
+            if extras then extras(body) end
+        end)
     end)
     return btn
 end
@@ -1803,8 +2162,8 @@ local function applyTheme(idx)
         tw(inst, {BackgroundColor3 = theme.panel, BackgroundTransparency = 0}, 0.25):Play()
     end
     applyAccent(theme.accent)
-    for name, page in pairs(pages) do
-        if page.Visible then switchTab(name) end
+    if currentTab and pages[currentTab] then
+        switchTab(currentTab)
     end
 end
 
@@ -1886,7 +2245,8 @@ StatsText.BackgroundTransparency = 1; StatsText.Position = UDim2.new(0, 12, 0, 1
 StatsText.Font = Enum.Font.GothamMedium; StatsText.TextColor3 = Color3.fromRGB(241,245,249); StatsText.TextSize = 11; StatsText.TextXAlignment = Enum.TextXAlignment.Left; StatsText.TextYAlignment = Enum.TextYAlignment.Top
 
 local dashConn = RunService.RenderStepped:Connect(function()
-    if dashboardPage.Visible then
+    local dashCanvas = pageCanvases["Dashboard"]
+    if dashCanvas and dashCanvas.Visible then
         local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
         local str = leaderstats and leaderstats:FindFirstChild("Strength") and leaderstats.Strength.Value or 0
         local reb = leaderstats and leaderstats:FindFirstChild("Rebirths") and leaderstats.Rebirths.Value or 0
@@ -1925,7 +2285,7 @@ createSlider(dashboardPage, "Custom Size Multiplier", 1, 30, 1, function(v) setC
 -- ============================================================
 -- 3. РАЗДЕЛ: AUTO FARM / TRAINING
 -- ============================================================
-sectionLabel(trainingPage, "🔥 AUTO OP - UNIVERSAL TURBO FAST FARM")
+sectionLabel(trainingPage, "AUTO OP — UNIVERSAL TURBO FAST FARM")
 
 createToggle(trainingPage, "Auto OP (Универсальный сумасшедший кликер)", "Сели за ЛЮБОЙ тренажер или взяли ЛЮБОЙ снаряд — мгновенно качает на предельной турбо-скорости!", Config.AutoOpFarm, function(v)
     Config.AutoOpFarm = v
@@ -2233,7 +2593,7 @@ end, nil, "Задержка между повторами (0 = мгновенн�
 sectionLabel(rocksPage, "AUTO ROCK FARM ENGINE (FIXED)")
 local RockInfoLabel = Instance.new("TextLabel", createGlassPanel(rocksPage, 34))
 RockInfoLabel.BackgroundTransparency = 1; RockInfoLabel.Position = UDim2.new(0, 12, 0, 0); RockInfoLabel.Size = UDim2.new(1, -24, 1, 0)
-RockInfoLabel.Font = Enum.Font.GothamBold; RockInfoLabel.TextColor3 = Color3.fromRGB(94, 234, 212); RockInfoLabel.TextSize = 11; RockInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+RockInfoLabel.Font = Enum.Font.GothamBold; RockInfoLabel.TextColor3 = AccentColor; RockInfoLabel.TextSize = 11; RockInfoLabel.TextXAlignment = Enum.TextXAlignment.Left; CollectionService:AddTag(RockInfoLabel, "AccentText")
 RockInfoLabel.Text = "Selected Rock Tier: Any"
 
 createToggle(rocksPage, "Auto Farm Selected Rock", "Телепортируется к камню 1 раз и непрерывно бьет!", Config.AutoRock, function(v)
@@ -2325,7 +2685,7 @@ sectionLabel(combatPage, "ADVANCED KILL AURA ENGINE (BRING & BEAT)")
 
 local KillAuraStatusLabel = Instance.new("TextLabel", createGlassPanel(combatPage, 34))
 KillAuraStatusLabel.BackgroundTransparency = 1; KillAuraStatusLabel.Position = UDim2.new(0, 12, 0, 0); KillAuraStatusLabel.Size = UDim2.new(1, -24, 1, 0)
-KillAuraStatusLabel.Font = Enum.Font.GothamBold; KillAuraStatusLabel.TextColor3 = Color3.fromRGB(94, 234, 212); KillAuraStatusLabel.TextSize = 11; KillAuraStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+KillAuraStatusLabel.Font = Enum.Font.GothamBold; KillAuraStatusLabel.TextColor3 = AccentColor; KillAuraStatusLabel.TextSize = 11; KillAuraStatusLabel.TextXAlignment = Enum.TextXAlignment.Left; CollectionService:AddTag(KillAuraStatusLabel, "AccentText")
 KillAuraStatusLabel.Text = "Kill Aura Mode: Bring To Me (Телепорт врагов к себе)"
 
 createButton(combatPage, "Mode 1: Bring Target To Me (Телепортировать врага к себе)", "Притягивает/телепортирует корпус врага прямо перед вашими кулаками и бьет!", function()
@@ -2418,7 +2778,7 @@ createSlider(combatPage, "Punch Event Multiplier (1x-10x)", 1, 10, 2, function(v
 sectionLabel(combatPage, "PLAYER TARGETING & SERVER DESTRUCTION")
 local TargetInfoLbl = Instance.new("TextLabel", createGlassPanel(combatPage, 34))
 TargetInfoLbl.BackgroundTransparency = 1; TargetInfoLbl.Position = UDim2.new(0, 12, 0, 0); TargetInfoLbl.Size = UDim2.new(1, -24, 1, 0)
-TargetInfoLbl.Font = Enum.Font.GothamBold; TargetInfoLbl.TextColor3 = Color3.fromRGB(94, 234, 212); TargetInfoLbl.TextSize = 11; TargetInfoLbl.TextXAlignment = Enum.TextXAlignment.Left
+TargetInfoLbl.Font = Enum.Font.GothamBold; TargetInfoLbl.TextColor3 = AccentColor; TargetInfoLbl.TextSize = 11; TargetInfoLbl.TextXAlignment = Enum.TextXAlignment.Left; CollectionService:AddTag(TargetInfoLbl, "AccentText")
 TargetInfoLbl.Text = "Selected Target: None Selected"
 
 createButton(combatPage, "Select Nearest Player as Target", "Выбирает ближайшего к вам игрока в качестве цели", function()
@@ -2775,7 +3135,7 @@ end
 sectionLabel(teleportsPage, "WAYPOINTS & PLAYER TELEPORT")
 local WaypointLabel = Instance.new("TextLabel", createGlassPanel(teleportsPage, 34))
 WaypointLabel.BackgroundTransparency = 1; WaypointLabel.Position = UDim2.new(0, 12, 0, 0); WaypointLabel.Size = UDim2.new(1, -24, 1, 0)
-WaypointLabel.Font = Enum.Font.GothamBold; WaypointLabel.TextColor3 = Color3.fromRGB(94, 234, 212); WaypointLabel.TextSize = 11; WaypointLabel.TextXAlignment = Enum.TextXAlignment.Left
+WaypointLabel.Font = Enum.Font.GothamBold; WaypointLabel.TextColor3 = AccentColor; WaypointLabel.TextSize = 11; WaypointLabel.TextXAlignment = Enum.TextXAlignment.Left; CollectionService:AddTag(WaypointLabel, "AccentText")
 WaypointLabel.Text = "Saved Waypoint: None"
 
 createButton(teleportsPage, "Save Current Position as Waypoint", "Сохраняет вашу текущую позицию в память", function()
@@ -3091,6 +3451,27 @@ end
 -- Массовое вылупление: count яиц подряд (отмена — повторным нажатием или Stop)
 local hatchState = {running = false, cancel = false}
 
+-- Точная причина отказа сервера при открытии
+local function describeDenial()
+    local free = freePetSlots()
+    if free ~= nil and free <= 0 then
+        return t("сервер отказал: инвентарь питомцев полон — продайте или улучшите питомцев",
+            "server denied: pet inventory is full — sell or upgrade pets")
+    end
+    local price, kind = getCrystalPrice(Config.SelectedCrystal)
+    if price and price > 0 then
+        local balance = getCurrency(kind)
+        if balance and balance < price then
+            return string.format(
+                t("сервер отказал: не хватает валюты (%s: нужно %d, есть %d)",
+                  "server denied: not enough currency (%s: need %d, have %d)"),
+                kind or "Gems", price, balance)
+        end
+    end
+    return t("сервер отказал: инвентарь полон или не хватает валюты",
+        "server denied: inventory full or not enough currency")
+end
+
 local function hatchBatch(count)
     if hatchState.running then
         hatchState.cancel = true
@@ -3113,9 +3494,7 @@ local function hatchBatch(count)
         local opened = 0
         local failReason = nil
         local lastPetText = nil
-        if n >= 10 then
-            pcall(teleportToCrystal, Config.SelectedCrystal)
-        end
+        -- открываем строго дистанционно (без телепорта к кристаллу)
         for _ = 1, n do
             if hatchState.cancel or not Config.HatchPower then
                 failReason = t("остановлено пользователем", "stopped by user")
@@ -3129,8 +3508,7 @@ local function hatchBatch(count)
                 end
             else
                 if petOrReason == "denied" then
-                    failReason = t("сервер отказал: инвентарь полон или не хватает валюты",
-                        "server denied: inventory full or not enough currency")
+                    failReason = describeDenial()
                 elseif petOrReason == "invokefail" then
                     failReason = t("ошибка вызова openCrystalRemote",
                         "openCrystalRemote call failed")
@@ -3171,7 +3549,7 @@ createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-отк
                 "Mass hatch is running — stop it first (Stop)."), 4)
             return
         end
-        pcall(teleportToCrystal, Config.SelectedCrystal)
+        -- открытие дистанционное, без телепорта
         task.spawn(function()
             while Config.AutoCrystal do
                 local ok, reason = openCrystalOnce(Config.SelectedCrystal)
@@ -3179,8 +3557,7 @@ createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-отк
                     Config.AutoCrystal = false
                     local msg
                     if reason == "denied" then
-                        msg = t("Авто-вылупление остановлено: сервер отказал (инвентарь полон / нет валюты).",
-                            "Auto hatch stopped: server denied (inventory full / no currency).")
+                        msg = t("Авто-вылупление остановлено: ", "Auto hatch stopped: ") .. describeDenial()
                     elseif reason == "invokefail" then
                         msg = t("Авто-вылупление остановлено: ошибка вызова openCrystalRemote.",
                             "Auto hatch stopped: openCrystalRemote call failed.")
@@ -3196,6 +3573,11 @@ createToggle(automationPage, "Auto Hatch Selected Egg/Crystal", "Авто-отк
             refreshHatchStatus()
         end)
     end
+end, function(body)
+    -- настройки прямо в popup: задержка между авто-открытиями
+    createSlider(body, "Задержка между открытиями (0.01 сек)", 5, 100, math.floor(Config.HatchDelay * 100 + 0.5), function(v)
+        Config.HatchDelay = math.floor(v) / 100
+    end, nil, "12 = 0.12 секунды между открытиями (диапазон 0.05–1.00)")
 end)
 
 createButton(automationPage, "MASS HATCH (открыть выбранное количество)", "Быстро открывает до 500 яиц подряд с проверкой мест в инвентаре и валюты", function()
@@ -3219,17 +3601,100 @@ createButton(automationPage, "Stop Mass Hatch", "Останавливает ид
     end
 end)
 
-sectionLabel(automationPage, "CRYSTAL SELECTOR (ВЫБОР ЯЙЦА)")
-for _, crystalName in ipairs(crystalCatalog) do
-    createButton(automationPage, crystalName, function()
-        return t("Выбрать ", "Select ") .. crystalName .. t(" для крутки", " to open")
-    end, function()
-        Config.SelectedCrystal = crystalName
-        refreshHatchStatus()
-        notify("Egg Selected", t("Активный кристалл: ", "Active crystal: ") .. crystalName, 2)
-    end)
+sectionLabel(automationPage, "CRYSTAL SELECTOR (ВЫБОР КРИСТАЛЛА)")
+
+-- Карточки-кристаллы: ЛКМ = выбрать (без popup), выбранный подсвечен акцентом + галочка
+local crystalCards = {}
+
+local function updateCrystalCards()
+    for name, card in pairs(crystalCards) do
+        local sel = (name == Config.SelectedCrystal)
+        tw(card.stroke, {
+            Color = sel and AccentColor or Color3.fromRGB(255, 255, 255),
+            Transparency = sel and 0.35 or 0.94,
+        }, 0.15):Play()
+        tw(card.nameLbl, {TextColor3 = sel and AccentColor or Color3.fromRGB(241, 245, 249)}, 0.15):Play()
+        tw(card.checkLbl, {TextTransparency = sel and 0 or 1}, 0.15):Play()
+    end
 end
 
+for _, crystalName in ipairs(crystalCatalog) do
+    local card = Instance.new("TextButton", automationPage)
+    card.Name = "CrystalCard_" .. crystalName
+    card.BackgroundColor3 = currentTheme().panel
+    card.BackgroundTransparency = 0
+    card.Size = UDim2.new(1, -10, 0, 42)
+    card.AutoButtonColor = false
+    card.Text = ""
+    CollectionService:AddTag(card, "ThemePanel")
+    applyCorner(card, 10)
+    local cardStroke = applyStroke(card, Color3.fromRGB(255, 255, 255), 0.94, 1)
+
+    card.MouseEnter:Connect(function()
+        local base = currentTheme().panel
+        tw(card, {BackgroundColor3 = Color3.new(
+            math.min(1, base.R + 0.05), math.min(1, base.G + 0.05), math.min(1, base.B + 0.05)
+        )}, 0.12):Play()
+    end)
+    card.MouseLeave:Connect(function()
+        tw(card, {BackgroundColor3 = currentTheme().panel}, 0.15):Play()
+    end)
+
+    local nameLbl = Instance.new("TextLabel", card)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Position = UDim2.new(0, 14, 0.5, -8)
+    nameLbl.Size = UDim2.new(1, -110, 0, 16)
+    nameLbl.Font = Enum.Font.GothamBold
+    nameLbl.Text = crystalName
+    nameLbl.TextColor3 = Color3.fromRGB(241, 245, 249)
+    nameLbl.TextSize = 11
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    nameLbl.ZIndex = 2
+
+    local priceLbl = Instance.new("TextLabel", card)
+    priceLbl.BackgroundTransparency = 1
+    priceLbl.AnchorPoint = Vector2.new(1, 0.5)
+    priceLbl.Position = UDim2.new(1, -44, 0.5, 0)
+    priceLbl.Size = UDim2.new(0, 90, 0, 14)
+    priceLbl.Font = Enum.Font.Gotham
+    priceLbl.Text = ""
+    priceLbl.TextColor3 = Color3.fromRGB(148, 163, 184)
+    priceLbl.TextSize = 9
+    priceLbl.TextXAlignment = Enum.TextXAlignment.Right
+    priceLbl.ZIndex = 2
+    do
+        local price, kind = getCrystalPrice(crystalName)
+        if price and price > 0 then
+            priceLbl.Text = tostring(price) .. " " .. tostring(kind or "Gems")
+        end
+    end
+
+    local checkLbl = Instance.new("TextLabel", card)
+    checkLbl.BackgroundTransparency = 1
+    checkLbl.AnchorPoint = Vector2.new(1, 0.5)
+    checkLbl.Position = UDim2.new(1, -16, 0.5, 0)
+    checkLbl.Size = UDim2.new(0, 18, 0, 18)
+    checkLbl.Font = Enum.Font.GothamBold
+    checkLbl.Text = "✓"
+    checkLbl.TextColor3 = AccentColor
+    checkLbl.TextSize = 14
+    checkLbl.ZIndex = 2
+    CollectionService:AddTag(checkLbl, "AccentText")
+    checkLbl.TextTransparency = 1
+
+    bindTooltip(card, t("Выбрать ", "Select ") .. crystalName .. t(" для открытия", " to open"))
+
+    card.MouseButton1Click:Connect(function()
+        Config.SelectedCrystal = crystalName
+        refreshHatchStatus()
+        updateCrystalCards()
+        notify(t("Кристалл выбран: ", "Crystal selected: ") .. crystalName, t("Теперь его можно открывать кнопками ниже.", "You can now open it with the buttons above."), 2)
+    end)
+
+    crystalCards[crystalName] = {stroke = cardStroke, nameLbl = nameLbl, checkLbl = checkLbl}
+end
+
+updateCrystalCards()
 refreshHatchStatus()
 
 -- ============================================================
@@ -3246,6 +3711,40 @@ createButton(petsPage, "Equip Best Pets", "Автоматически надев
     local ev = getMuscleEvent()
     if ev then ev:FireServer("equipBestPets") end
     notify("Vortex Pets", "Лучшие питомцы экипированы!", 2)
+end)
+
+createButton(petsPage, "Продать обычных питомцев", "Продаёт всех питомцев раритета Common, освобождая места для кристаллов", function()
+    local ev = nil
+    pcall(function() ev = getREvent("sellPetEvent") end)
+    if not ev then
+        notify("Vortex Pets", t("Ремоут sellPetEvent не найден.", "sellPetEvent remote not found."), 4)
+        return
+    end
+    local pf = LocalPlayer:FindFirstChild("petsFolder")
+    if not pf then
+        notify("Vortex Pets", t("Папка питомцев не найдена.", "Pets folder not found."), 4)
+        return
+    end
+    local toSell = {}
+    for _, rarityFolder in pairs(pf:GetChildren()) do
+        if string.lower(rarityFolder.Name) == "common" then
+            for _, pet in ipairs(rarityFolder:GetChildren()) do
+                table.insert(toSell, pet)
+            end
+        end
+    end
+    if #toSell == 0 then
+        notify("Vortex Pets", t("Обычных питомцев нет — продавать нечего.", "No common pets — nothing to sell."), 3)
+        return
+    end
+    local sold = 0
+    for _, pet in ipairs(toSell) do
+        local ok = pcall(function() ev:FireServer("sellPet", pet) end)
+        if ok then sold = sold + 1 end
+        task.wait(0.05)
+    end
+    refreshHatchStatus()
+    notify("Vortex Pets", string.format(t("Продано обычных питомцев: %d", "Common pets sold: %d"), sold), 4)
 end)
 
 -- ============================================================
@@ -3453,11 +3952,12 @@ local function openMenu()
     if guiVisible or isAnimating then return end
     isAnimating = true
     guiVisible = true
-    MainFrame.Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 22)
-    menuScale.Scale = 0.94
+    MainFrame.Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 40)
+    menuScale.Scale = 0.92
     MainFrame.Visible = true
-    tw(MainFrame, {Position = menuTargetPos}, 0.32, Enum.EasingStyle.Quint):Play()
-    local s = tw(menuScale, {Scale = 1}, 0.32, Enum.EasingStyle.Quint)
+    OpenBtn.Visible = false
+    tw(MainFrame, {Position = menuTargetPos}, 0.35, Enum.EasingStyle.Quint):Play()
+    local s = tw(menuScale, {Scale = 1}, 0.35, Enum.EasingStyle.Quint)
     s:Play()
     s.Completed:Connect(function() isAnimating = false end)
 end
@@ -3466,12 +3966,14 @@ local function closeMenu()
     if not guiVisible or isAnimating then return end
     isAnimating = true
     guiVisible = false
-    tw(MainFrame, {Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 22)}, 0.2, Enum.EasingStyle.Quad):Play()
-    local s = tw(menuScale, {Scale = 0.94}, 0.2, Enum.EasingStyle.Quad)
+    if FuncPopupLayer.Visible then closeFuncPopup() end
+    tw(MainFrame, {Position = UDim2.new(menuTargetPos.X.Scale, menuTargetPos.X.Offset, menuTargetPos.Y.Scale, menuTargetPos.Y.Offset + 40)}, 0.22, Enum.EasingStyle.Quad):Play()
+    local s = tw(menuScale, {Scale = 0.92}, 0.22, Enum.EasingStyle.Quad)
     s:Play()
     s.Completed:Connect(function()
         MainFrame.Visible = false
         MainFrame.Position = menuTargetPos
+        OpenBtn.Visible = true
         isAnimating = false
     end)
 end
@@ -3494,6 +3996,13 @@ table.insert(ScriptConnections, mainKeyConn)
 
 -- Экран загрузки: прогресс-бар + статусы, затем плавный вход в меню
 local function playLoadingSequence()
+    -- мягкий въезд карточки загрузки
+    LoadModal.GroupTransparency = 1
+    LoadModal.Position = UDim2.new(0, 18, 0, 6)
+    tw(LoadModal, {GroupTransparency = 0}, 0.35, Enum.EasingStyle.Quint):Play()
+    tw(LoadModal, {Position = UDim2.new(0, 18, 0, 18)}, 0.35, Enum.EasingStyle.Quint):Play()
+    task.wait(0.3)
+
     local steps = {
         t("Инициализация ядра...", "Initializing core..."),
         t("Загрузка модулей...", "Loading modules..."),
@@ -3515,14 +4024,14 @@ local function playLoadingSequence()
     LoadStatus.Text = steps[#steps]
     task.wait(0.45)
 
-    -- плавный уход экрана загрузки
-    tw(LoadModal, {Position = UDim2.new(LoadModal.Position.X.Scale, LoadModal.Position.X.Offset, LoadModal.Position.Y.Scale, LoadModal.Position.Y.Offset - 26)}, 0.3, Enum.EasingStyle.Quint):Play()
-    local out = tw(LoadScale, {Scale = 0.9}, 0.3, Enum.EasingStyle.Quint)
-    out:Play()
-    out.Completed:Wait()
+    -- плавный уход карточки загрузки
+    tw(LoadModal, {GroupTransparency = 1}, 0.3, Enum.EasingStyle.Quint):Play()
+    tw(LoadModal, {Position = UDim2.new(0, 18, 0, -14)}, 0.3, Enum.EasingStyle.Quint):Play()
+    task.wait(0.32)
     LoadModal.Visible = false
     loadingDone = true
     openMenu()
+    OpenBtn.Visible = false
     notify("Vortex 0.23", t("Загрузка завершена! Меню: [Right Shift]",
         "Loaded! Menu: [Right Shift]"), 5)
 end
