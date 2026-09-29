@@ -41,6 +41,21 @@ local Camera = Workspace.CurrentCamera
 local WHITELIST_URL = "https://raw.githubusercontent.com/ugvejkun-cloud/Folf32/main/whitelist.json"
 local ENABLE_WHITELIST = true
 
+-- Встроенный резервный список: работает даже когда GitHub недоступен (429/таймаут)
+local EMBEDDED_WHITELIST = {
+    "tvinkilp", "user", "ownername", "drybs5",
+    "@kotega33333333", "kotega33333333", "hamsterlegend", "harin",
+}
+
+local function nameAllowed(name)
+    local n = string.lower(tostring(name))
+    if n == "all" then return true end
+    for _, allowed in ipairs(EMBEDDED_WHITELIST) do
+        if allowed == n then return true end
+    end
+    return false
+end
+
 local function checkPlayerWhitelist()
     if not ENABLE_WHITELIST then return true end
 
@@ -72,9 +87,9 @@ local function checkPlayerWhitelist()
         task.wait(0.5)
     end
 
-    -- Резерв для владельца, если GitHub совсем недоступен
-    if LocalPlayer.Name == "Tvinkilp" or LocalPlayer.Name == "User" then
-        print("[Vortex STAGE B]: резервный доступ владельца")
+    -- GitHub недоступен: проверяем по встроенному списку
+    if nameAllowed(playerName) then
+        print("[Vortex STAGE B]: доступ по встроенному резервному списку")
         return true
     end
     warn("[Vortex Auth]: не удалось загрузить whitelist.json (попыток: 3)")
@@ -85,9 +100,34 @@ if not checkPlayerWhitelist() then
     pcall(function()
         StarterGui:SetCore("SendNotification", {
             Title = "Vortex Auth Error",
-            Text = "У вас нет доступа к скрипту Vortex 0.23! Ник: " .. LocalPlayer.Name,
+            Text = "Нет доступа! Ник: " .. LocalPlayer.Name,
             Duration = 10
         })
+    end)
+    -- ВИДИМЫЙ на экране отказ (инжекторы часто не показывают SetCore-уведомления)
+    pcall(function()
+        local denied = Instance.new("ScreenGui")
+        denied.Name = "Vortex_AccessDenied"
+        denied.ResetOnSpawn = false
+        denied.DisplayOrder = 99
+        local label = Instance.new("TextLabel", denied)
+        label.AnchorPoint = Vector2.new(0.5, 0)
+        label.Position = UDim2.new(0.5, 0, 0.12, 0)
+        label.Size = UDim2.new(0, 560, 0, 96)
+        label.BackgroundColor3 = Color3.fromRGB(28, 18, 18)
+        label.BackgroundTransparency = 0.1
+        label.BorderSizePixel = 0
+        label.Font = Enum.Font.GothamBold
+        label.TextWrapped = true
+        label.TextColor3 = Color3.fromRGB(255, 110, 110)
+        label.TextSize = 16
+        label.Text = "Vortex: access denied!\nYour nickname is not in the whitelist: " .. LocalPlayer.Name .. "\nVortex Auth Error"
+        local corner = Instance.new("UICorner", label)
+        corner.CornerRadius = UDim.new(0, 10)
+        local parentOk = false
+        if typeof(gethui) == "function" then pcall(function() denied.Parent = gethui() parentOk = true end) end
+        if not parentOk then pcall(function() denied.Parent = CoreGui parentOk = true end) end
+        if not parentOk then pcall(function() denied.Parent = LocalPlayer:WaitForChild("PlayerGui") end) end
     end)
     warn("[Vortex Auth]: Доступ запрещен для игрока " .. LocalPlayer.Name)
     return
@@ -4391,7 +4431,38 @@ local function playLoadingSequence()
     notify("Vortex 0.23", tn("Загрузка завершена! Меню: [Right Shift]",
         "Loaded! Menu: [Right Shift]"), 5)
 end
-task.spawn(playLoadingSequence)
+task.spawn(function()
+    local ok, err = pcall(playLoadingSequence)
+    if not ok then
+        warn("[Vortex STAGE Z]: ошибка анимации загрузки: " .. tostring(err))
+        pcall(function()
+            LoadModal.Visible = false
+            loadingDone = true
+            openMenu()
+        end)
+        if not guiVisible then pcall(function() OpenBtn.Visible = true end) end
+    end
+end)
+
+-- Страховка: если по любой причине меню не открылось за 8 секунд — открываем принудительно
+task.delay(8, function()
+    if not loadingDone then
+        warn("[Vortex STAGE Z]: таймаут загрузки — принудительное открытие меню")
+        pcall(function()
+            LoadModal.Visible = false
+            loadingDone = true
+            if not guiVisible then openMenu() end
+        end)
+    end
+    -- Финальная проверка: если меню так и не видно — хотя бы покажем кнопку открытия
+    task.wait(0.5)
+    pcall(function()
+        if not (MainFrame.Visible and guiVisible) and not OpenBtn.Visible then
+            warn("[Vortex STAGE Z]: меню не отображается — показываю кнопку OpenBtn")
+            OpenBtn.Visible = true
+        end
+    end)
+end)
 
 print("[Vortex STAGE Z]: ЗАГРУЗКА ЗАВЕРШЕНА — экран загрузки анимирован, меню откроется автоматически (меню: RightShift)")
 print("[Vortex Glass UI Engine v0.23]: Muscle Legends Hub loaded successfully!")
