@@ -564,7 +564,8 @@ KV.rockTiers = {
 }
 
 KV.crystalsList = {
-    "Blue Crystal", "Green Crystal", "Frost Crystal", "Mythic Crystal", "Infernal Crystal", "Galaxy Crystal"
+    "Blue Crystal", "Green Crystal", "Frost Crystal", "Mythic Crystal", "Infernal Crystal", "Galaxy Crystal",
+    "Overcharged Crystal"
 }
 
 -- ============================================================
@@ -669,6 +670,53 @@ KV.countOwnedPets = function()
         end
     end
     return n
+end
+
+-- Снимок всех объектов в инвентаре питомцев (для честной проверки, что питомец появился)
+KV.petSnapshot = function()
+    local pf = LocalPlayer:FindFirstChild("petsFolder")
+    if not pf then return nil end
+    local set = {}
+    local n = 0
+    for _, d in ipairs(pf:GetDescendants()) do
+        set[d] = true
+        n = n + 1
+    end
+    return set, n
+end
+
+-- Появился ли хоть один новый объект после снимка: true/false, nil — проверить нечем
+KV.petGainedSince = function(snapshot)
+    if not snapshot then return nil end
+    local pf = LocalPlayer:FindFirstChild("petsFolder")
+    if not pf then return nil end
+    for _, d in ipairs(pf:GetDescendants()) do
+        if not snapshot[d] then return true end
+    end
+    return false
+end
+
+-- Верификатор одного открытия: true — открыто, false — не открыто, nil — проверить нечем
+KV.makeOpenVerifier = function(crystalName)
+    local snap, seenBefore = KV.petSnapshot()
+    local price, kind = KV.getCrystalPrice(crystalName)
+    local bal = nil
+    if price and price > 0 then
+        bal = KV.getCurrency(kind)
+    end
+    -- надёжная проверка = видна папка питомцев ИЛИ читается баланс цены
+    local reliable = (snap ~= nil) or bal ~= nil
+    if not reliable then
+        return function() return nil end
+    end
+    return function()
+        if KV.petGainedSince(snap) == true then return true end
+        if bal ~= nil then
+            local now = KV.getCurrency(kind)
+            if now ~= nil and now < bal then return true end
+        end
+        return false
+    end
 end
 
 KV.detectItemCapacity = function()
@@ -783,11 +831,20 @@ KV.teleportToCrystal = function(crystalName)
     local myHrp = char.HumanoidRootPart
 
     local crystalObj = nil
-    for _, v in pairs(Workspace:GetDescendants()) do
-        if (v:IsA("Model") or v:IsA("BasePart")) and (string.find(string.lower(v.Name), string.lower(crystalName)) or v.Name == crystalName) then
-            crystalObj = v:IsA("BasePart") and v or (v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart"))
-            if crystalObj then break end
+    local terms = { string.lower(crystalName) }
+    local firstWord = string.match(crystalName, "^%s*(%S+)")
+    if firstWord and string.lower(firstWord) ~= terms[1] then
+        table.insert(terms, string.lower(firstWord))
+    end
+    -- сначала точное совпадение полного имени, затем по первому слову
+    for _, term in ipairs(terms) do
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if (v:IsA("Model") or v:IsA("BasePart")) and term ~= "" and string.find(string.lower(v.Name), term, 1, true) then
+                crystalObj = v:IsA("BasePart") and v or (v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart"))
+                if crystalObj then break end
+            end
         end
+        if crystalObj then break end
     end
 
     if crystalObj then
@@ -797,51 +854,97 @@ KV.teleportToCrystal = function(crystalName)
     end
 end
 
--- Одно открытие кристалла (дистанционно, без телепорта — как в open-source).
+-- Одно открытие кристалла с ЧЕСТНОЙ проверкой: успех = питомец реально появился в инвентаре.
 -- Возвращает:
---   true,  petName, rarity  — выпал питомец
+--   true,  petName, rarity  — питомец добавился (проверено по счётчику инвентаря)
 --   false, "denied"         — сервер отказал (инвентарь полон / не хватает валюты)
+--   false, "nogrow"         — сервер ответил, но питомец не появился
 --   false, "invokefail"     — вызов ремоута упал
---   false, "noremote"       — ремоут openCrystalRemote не найден
+--   false, "noremote"       — ни ремоута, ни события для открытия нет
 KV.openCrystalOnce = function(crystalName)
+    local verify = KV.makeOpenVerifier(crystalName)
+
+    -- Ждём подтверждения открытия: true — подтверждено, false — нет, nil — проверить нечем
+    local function waitGained(timeout)
+        if verify() == nil then return nil end -- верификация недоступна — не тратим время
+        local steps = math.ceil((timeout or 1) / 0.05)
+        for _ = 1, steps do
+            if verify() == true then return true end
+            task.wait(0.05)
+        end
+        return verify()
+    end
+
+    local function decodeResponse(a, b)
+        local petName, rarity
+        if type(a) == "string" then
+            petName, rarity = a, b
+        elseif a == true and type(b) == "string" then
+            petName, rarity = b, nil
+        elseif type(a) == "table" then
+            petName = a.name or a.pet or a[1]
+            rarity = a.rarity
+        elseif typeof(a) == "Instance" then
+            petName = a.Name
+            rarity = b
+        elseif type(a) == "number" then
+            petName, rarity = tostring(a), b
+        end
+        return petName, rarity
+    end
+
+    local claimedName, claimedRarity = nil, nil
+    local hadRemote = false
     local remote = nil
     pcall(function()
         remote = KV.getREvent("openCrystalRemote")
     end)
     if remote and remote:IsA("RemoteFunction") then
+        hadRemote = true
         local ok, a, b = pcall(function()
             return remote:InvokeServer("openCrystal", crystalName)
         end)
-        if ok then
-            -- Толерантная расшифровка ответа: (pet, rarity) | (true, pet) | таблица | Instance
-            local petName, rarity
-            if type(a) == "string" then
-                petName, rarity = a, b
-            elseif a == true and type(b) == "string" then
-                petName, rarity = b, nil
-            elseif type(a) == "table" then
-                petName = a.name or a.pet or a[1]
-                rarity = a.rarity
-            elseif typeof(a) == "Instance" then
-                petName = a.Name
-                rarity = b
-            elseif type(a) == "number" then
-                petName, rarity = tostring(a), b
-            end
-            if petName then return true, tostring(petName), rarity end
-            return false, "denied"
+        if not ok then
+            return false, "invokefail"
         end
-        return false, "invokefail"
+        claimedName, claimedRarity = decodeResponse(a, b)
     end
 
-    -- Фолбэк: muscleEvent (старая схема, только если ремоута нет вовсе)
+    local gained = waitGained(1)
+    if gained == true then
+        return true, claimedName or KV.tn("питомец", "pet"), claimedRarity
+    end
+    if gained == nil then
+        -- проверить появление нечем — доверяем ответу сервера
+        if claimedName then return true, tostring(claimedName), claimedRarity end
+        if hadRemote then return false, "denied" end
+    end
+
+    -- Питомец не появился: пробуем старую схему у самого кристалла
+    -- (один раз телепортируемся к выбранному кристаллу, дальше держимся рядом)
     local ev = KV.getMuscleEvent()
     if ev then
+        if KV.crystalProximityFor ~= crystalName then
+            KV.crystalProximityFor = crystalName
+            pcall(KV.teleportToCrystal, crystalName)
+            task.wait(0.25)
+        end
         pcall(function() ev:FireServer("openCrystal", crystalName) end)
         pcall(function() ev:FireServer("crys", crystalName) end)
         pcall(function() ev:FireServer("openEgg", crystalName) end)
-        return true, nil, nil
+        gained = waitGained(1)
+        if gained == true then
+            return true, claimedName or KV.tn("питомец", "pet"), claimedRarity
+        end
+        if gained == nil then
+            -- проверить появление нечем — доверяем событию (как в прежних версиях)
+            return true, claimedName or KV.tn("питомец", "pet"), claimedRarity
+        end
+        return false, "nogrow"
     end
+
+    if claimedName then return true, tostring(claimedName), claimedRarity end
+    if hadRemote then return false, "nogrow" end
     return false, "noremote"
 end
 
@@ -1949,10 +2052,12 @@ KV.PopDesc.TextSize = 10
 KV.PopDesc.TextXAlignment = Enum.TextXAlignment.Left
 KV.PopDesc.ZIndex = 33
 
-KV.PopCloseBtn = Instance.new("TextButton", KV.FuncPopup)
+-- Крестик живёт внутри заголовка: иначе UIListLayout попапа перехватывает его
+-- Position и кнопка уезжает первым элементом списка (слева-сверху, перекрывается телом)
+KV.PopCloseBtn = Instance.new("TextButton", KV.PopTitle)
 KV.PopCloseBtn.Name = "PopClose"
-KV.PopCloseBtn.AnchorPoint = Vector2.new(1, 0)
-KV.PopCloseBtn.Position = UDim2.new(1, -10, 0, 10)
+KV.PopCloseBtn.AnchorPoint = Vector2.new(1, 0.5)
+KV.PopCloseBtn.Position = UDim2.new(1, 0, 0.5, 0)
 KV.PopCloseBtn.Size = UDim2.new(0, 26, 0, 26)
 KV.PopCloseBtn.BackgroundTransparency = 1
 KV.PopCloseBtn.Text = "✕"
@@ -3601,21 +3706,31 @@ end)
 
 KV.sectionLabel(KV.automationPage, "MASS EGG HATCHER (ДО 500 ЗА РАЗ)")
 
--- Динамический каталог кристаллов из самой игры (обновления не ломают список)
+-- Динамический каталог кристаллов из самой игры (обновления не ломают список).
+-- Всегда объединяем с базовым списком, чтобы важные кристаллы (Overcharged и т.п.) не пропадали.
 KV.getCrystalCatalog = function()
     local names = {}
+    local seen = {}
+    local add = function(n)
+        if type(n) == "string" and n ~= "" and not seen[n] then
+            seen[n] = true
+            table.insert(names, n)
+        end
+    end
     pcall(function()
         local shared = ReplicatedStorage:WaitForChild("shared", 5)
         local catalogs = shared and shared:WaitForChild("catalogs", 5)
         local prices = catalogs and catalogs:WaitForChild("crystalPrices", 5)
         if prices then
             for _, entry in pairs(prices:GetChildren()) do
-                table.insert(names, entry.Name)
+                add(entry.Name)
             end
         end
     end)
+    for _, n in ipairs(KV.crystalsList) do
+        add(n)
+    end
     table.sort(names)
-    if #names == 0 then names = KV.crystalsList end
     return names
 end
 
@@ -3781,6 +3896,9 @@ KV.hatchBatch = function(count)
             else
                 if petOrReason == "denied" then
                     failReason = KV.describeDenial()
+                elseif petOrReason == "nogrow" then
+                    failReason = KV.tn("сервер принял вызов, но питомец не появился в инвентаре — проверьте, хватает ли валюты и мест, либо подойдите к кристаллу вручную",
+                        "server accepted the call but no pet appeared — check currency and free slots, or stand next to the crystal manually")
                 elseif petOrReason == "invokefail" then
                     failReason = KV.tn("ошибка вызова openCrystalRemote",
                         "openCrystalRemote call failed")
@@ -3833,6 +3951,9 @@ acCard, acSet = KV.createToggle(KV.automationPage, "Auto Hatch Selected Egg/Crys
                     local msg
                     if reason == "denied" then
                         msg = KV.tn("Авто-вылупление остановлено: ", "Auto hatch stopped: ") .. KV.describeDenial()
+                    elseif reason == "nogrow" then
+                        msg = KV.tn("Авто-вылупление остановлено: сервер принял вызов, но питомец не появился в инвентаре (валюта/места или близость к кристаллу).",
+                            "Auto hatch stopped: server accepted the call but no pet appeared (currency/slots or proximity to the crystal).")
                     elseif reason == "invokefail" then
                         msg = KV.tn("Авто-вылупление остановлено: ошибка вызова openCrystalRemote.",
                             "Auto hatch stopped: openCrystalRemote call failed.")
