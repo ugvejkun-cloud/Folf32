@@ -3744,6 +3744,29 @@ KV.getCrystalCatalog = function()
             end
         end
     end)
+    -- Авто-определение из самой игры: ищем "* Crystal" / "* Egg" в Workspace и ReplicatedStorage
+    pcall(function()
+        local function consider(n)
+            if type(n) ~= "string" then return end
+            local trimmed = string.match(n, "^%s*(.-)%s*$")
+            if trimmed == "" then return end
+            local lower = string.lower(trimmed)
+            if string.sub(lower, -8) == " crystal" or string.sub(lower, -4) == " egg"
+                or lower == "crystal" or lower == "egg" then
+                add(trimmed)
+            end
+        end
+        local function scan(list, depth)
+            for _, obj in ipairs(list) do
+                consider(obj.Name)
+                if depth > 0 and (obj:IsA("Model") or obj:IsA("Folder")) then
+                    scan(obj:GetChildren(), depth - 1)
+                end
+            end
+        end
+        scan(Workspace:GetChildren(), 2)
+        scan(ReplicatedStorage:GetChildren(), 1)
+    end)
     for _, n in ipairs(KV.crystalsList) do
         add(n)
     end
@@ -3907,9 +3930,10 @@ KV.hatchBatch = function(count)
             local ok, petOrReason, rarity = KV.openCrystalOnce(KV.Config.SelectedCrystal)
             -- "nogrow" (питомец не успел появиться/кулдаун) — пробуем ещё до 3 раз, не бросаем батч
             local tries = 1
-            while not ok and petOrReason == "nogrow" and tries < 3 do
+            local nogrowBackoff = {1.5, 2.5, 3.5}
+            while not ok and petOrReason == "nogrow" and tries < 4 do
+                task.wait(nogrowBackoff[tries] or 3.5)
                 tries = tries + 1
-                task.wait(1.2)
                 if KV.hatchState.cancel or not KV.Config.HatchPower then break end
                 ok, petOrReason, rarity = KV.openCrystalOnce(KV.Config.SelectedCrystal)
             end
@@ -3975,10 +3999,10 @@ acCard, acSet = KV.createToggle(KV.automationPage, "Auto Hatch Selected Egg/Crys
             local nogrowStreak = 0
             while KV.Config.AutoCrystal do
                 local ok, reason = KV.openCrystalOnce(KV.Config.SelectedCrystal)
-                if not ok and reason == "nogrow" and nogrowStreak < 2 then
-                    -- питомец не появился — пробуем ещё до 3 раз подряд, прежде чем остановиться
+                if not ok and reason == "nogrow" and nogrowStreak < 3 then
+                    -- питомец не появился — пробуем ещё до 4 раз подряд с растущей паузой
                     nogrowStreak = nogrowStreak + 1
-                    task.wait(1.2)
+                    task.wait(({1.5, 2.5, 3.5})[nogrowStreak] or 3.5)
                 elseif not ok then
                     KV.Config.AutoCrystal = false
                     if KV.autoCrystalSync then KV.autoCrystalSync(false) end
