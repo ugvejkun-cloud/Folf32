@@ -282,7 +282,7 @@ KV.Config = {
     AutoCrystal       = false,
     SelectedCrystal   = "Blue Crystal",
     HatchCount        = 50,     -- сколько яиц открывать за один Mass Hatch (1..500)
-    HatchDelay        = 0.12,   -- задержка между открытиями яиц (сек)
+    HatchDelay        = 0.25,   -- задержка между открытиями яиц (сек)
     HatchPower        = false,  -- флаг живости массового вылупления (гасится при Unload)
     AutoCollectOrbs   = false,
 
@@ -910,7 +910,7 @@ KV.openCrystalOnce = function(crystalName)
         claimedName, claimedRarity = decodeResponse(a, b)
     end
 
-    local gained = waitGained(1)
+    local gained = waitGained(2)
     if gained == true then
         return true, claimedName or KV.tn("питомец", "pet"), claimedRarity
     end
@@ -919,6 +919,24 @@ KV.openCrystalOnce = function(crystalName)
         if claimedName then return true, tostring(claimedName), claimedRarity end
         if hadRemote then return false, "denied" end
     end
+
+    if claimedName then
+        -- Сервер заявил об успехе: ждём ещё немного, НЕ делая новых вызовов,
+        -- чтобы не списать валюту дважды за одно яйцо
+        if waitGained(1.5) == true then
+            return true, tostring(claimedName), claimedRarity
+        end
+        return false, "nogrow"
+    end
+
+    -- Имя не вернулось: сначала точная причина (валюта / места в инвентаре)
+    local price, kind = KV.getCrystalPrice(crystalName)
+    if price and price > 0 then
+        local bal = KV.getCurrency(kind)
+        if bal ~= nil and bal < price then return false, "denied" end
+    end
+    local free = KV.freePetSlots()
+    if free ~= nil and free <= 0 then return false, "denied" end
 
     -- Питомец не появился: пробуем старую схему у самого кристалла
     -- (один раз телепортируемся к выбранному кристаллу, дальше держимся рядом)
@@ -932,18 +950,17 @@ KV.openCrystalOnce = function(crystalName)
         pcall(function() ev:FireServer("openCrystal", crystalName) end)
         pcall(function() ev:FireServer("crys", crystalName) end)
         pcall(function() ev:FireServer("openEgg", crystalName) end)
-        gained = waitGained(1)
+        gained = waitGained(2)
         if gained == true then
-            return true, claimedName or KV.tn("питомец", "pet"), claimedRarity
+            return true, KV.tn("питомец", "pet"), nil
         end
         if gained == nil then
             -- проверить появление нечем — доверяем событию (как в прежних версиях)
-            return true, claimedName or KV.tn("питомец", "pet"), claimedRarity
+            return true, KV.tn("питомец", "pet"), nil
         end
         return false, "nogrow"
     end
 
-    if claimedName then return true, tostring(claimedName), claimedRarity end
     if hadRemote then return false, "nogrow" end
     return false, "noremote"
 end
@@ -1835,7 +1852,7 @@ KV.createPage = function(name)
     cg.ZIndex = 5
     cg.GroupTransparency = 1
     local page = Instance.new("ScrollingFrame", cg)
-    page.Name = name.."Page"; page.BackgroundTransparency = 1; page.Size = UDim2.new(1,0,1,0); page.CanvasSize = UDim2.new(0,0,0,1250); page.ScrollBarThickness = 4; page.ScrollBarImageColor3 = KV.AccentColor; page.Visible = true; page.ZIndex = 5
+    page.Name = name.."Page"; page.BackgroundTransparency = 1; page.Size = UDim2.new(1,0,1,0); page.AutomaticCanvasSize = Enum.AutomaticSize.Y; page.CanvasSize = UDim2.new(0,0,0,1250); page.ScrollBarThickness = 4; page.ScrollBarImageColor3 = KV.AccentColor; page.Visible = true; page.ZIndex = 5
     CollectionService:AddTag(page, "AccentScroll")
     local layout = Instance.new("UIListLayout", page)
     layout.SortOrder = Enum.SortOrder.LayoutOrder; layout.Padding = UDim.new(0,8)
@@ -3888,6 +3905,18 @@ KV.hatchBatch = function(count)
                 break
             end
             local ok, petOrReason, rarity = KV.openCrystalOnce(KV.Config.SelectedCrystal)
+            -- "nogrow" (питомец не успел появиться/кулдаун) — пробуем ещё до 3 раз, не бросаем батч
+            local tries = 1
+            while not ok and petOrReason == "nogrow" and tries < 3 do
+                tries = tries + 1
+                task.wait(1.2)
+                if KV.hatchState.cancel or not KV.Config.HatchPower then break end
+                ok, petOrReason, rarity = KV.openCrystalOnce(KV.Config.SelectedCrystal)
+            end
+            if not ok and (KV.hatchState.cancel or not KV.Config.HatchPower) then
+                failReason = KV.tn("остановлено пользователем", "stopped by user")
+                break
+            end
             if ok then
                 opened = opened + 1
                 if type(petOrReason) == "string" then
@@ -3943,9 +3972,14 @@ acCard, acSet = KV.createToggle(KV.automationPage, "Auto Hatch Selected Egg/Crys
         end
         -- открытие дистанционное, без телепорта
         task.spawn(function()
+            local nogrowStreak = 0
             while KV.Config.AutoCrystal do
                 local ok, reason = KV.openCrystalOnce(KV.Config.SelectedCrystal)
-                if not ok then
+                if not ok and reason == "nogrow" and nogrowStreak < 2 then
+                    -- питомец не появился — пробуем ещё до 3 раз подряд, прежде чем остановиться
+                    nogrowStreak = nogrowStreak + 1
+                    task.wait(1.2)
+                elseif not ok then
                     KV.Config.AutoCrystal = false
                     if KV.autoCrystalSync then KV.autoCrystalSync(false) end
                     local msg
@@ -3964,6 +3998,7 @@ acCard, acSet = KV.createToggle(KV.automationPage, "Auto Hatch Selected Egg/Crys
                     KV.notify("Vortex Hatch", msg, 5)
                     break
                 end
+                if ok then nogrowStreak = 0 end
                 task.wait(KV.Config.HatchDelay)
             end
             KV.refreshHatchStatus()
@@ -3973,7 +4008,7 @@ end, function(body)
     -- настройки прямо в popup: задержка между авто-открытиями
     KV.createSlider(body, "Задержка между открытиями (0.01 сек)", 5, 100, math.floor(KV.Config.HatchDelay * 100 + 0.5), function(v)
         KV.Config.HatchDelay = math.floor(v) / 100
-    end, nil, "12 = 0.12 секунды между открытиями (диапазон 0.05–1.00)")
+    end, nil, "25 = 0.25 секунды между открытиями (диапазон 0.05–1.00; меньше — игра может не успевать)")
 end)
 KV.autoCrystalSync = acSet
 
