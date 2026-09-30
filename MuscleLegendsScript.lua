@@ -1966,9 +1966,15 @@ KV.closeFuncPopup = function()
     if not KV.FuncPopupLayer.Visible then return end
     local anim = KV.tw(KV.FuncPopupLayer, {GroupTransparency = 1}, 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     KV.tw(KV.FuncPopupScale, {Scale = 0.97}, 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out):Play()
-    anim.Completed:Connect(function()
+    anim:Play()
+    local done = false
+    local function hide()
+        if done then return end
+        done = true
         if KV.FuncPopupLayer.GroupTransparency >= 0.99 then KV.FuncPopupLayer.Visible = false end
-    end)
+    end
+    anim.Completed:Connect(hide)
+    task.delay(0.3, hide) -- страховка: если твин прерван — всё равно скрыть
 end
 
 -- buildBody(parent) создаёт тело popup; все его дочерние GuiObject
