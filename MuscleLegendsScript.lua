@@ -205,6 +205,7 @@ local KV = {}
 
 -- Хранилище подключений для полной выгрузки (Unload)
 KV.ScriptConnections = {}
+KV.unloaded = false
 -- Forward-декларация: определяется позже в секции ESP, но нужна в completeScriptUnload
 local clearESP
 
@@ -1755,31 +1756,48 @@ end)
 -- ЕДИНАЯ ВЫГРУЗКА СКРИПТА: останавливает все while-циклы (через флаги Config),
 -- отключает все соединения и уничтожает GUI
 KV.completeScriptUnload = function()
-    KV.notify("Vortex", KV.tn("Выгрузка скрипта Vortex 0.23...", "Unloading Vortex 0.23..."), 2)
+    if KV.unloaded then return end
+    KV.unloaded = true
+    pcall(function() KV.notify("Vortex", KV.tn("Выгрузка скрипта Vortex 0.23...", "Unloading Vortex 0.23..."), 2) end)
 
-    local loopFlags = {
-        "AutoOpFarm", "AutoDumbbell", "AutoPushups", "AutoSitups", "AutoWeight",
-        "AutoPunch", "AutoMultiTool", "AutoBenchPress", "AutoSquat",
-        "AutoTreadmillMachine", "AutoPullups", "AutoBoulder", "AutoRockMachine",
-        "AutoRock", "AutoTreadmill", "KillAura", "TargetLoopKill", "AutoKillServer",
-        "AutoBrawl", "AutoKillBoss", "AntiRagdoll", "AutoRebirth", "AutoCollectOrbs",
-        "AutoCrystal", "PlayerESP", "FlyEnabled", "WalkWhileTraining", "AntiHit",
-        "AutoSafeTPLowHP", "SpeedHack", "JumpPowerHack", "Noclip", "InfJump",
-        "Bhop", "FullBright", "SpectateTarget", "AntiKnockback", "AntiAFK",
-        "UltraFastRep", "HatchPower",
-    }
-    for _, flagName in ipairs(loopFlags) do
-        KV.Config[flagName] = false
-    end
+    -- 1. Любой boolean-флаг в Config отвечает за живость цикла/эффекта — гасим всё
+    pcall(function()
+        for key, value in pairs(KV.Config) do
+            if type(value) == "boolean" then KV.Config[key] = false end
+        end
+    end)
 
-    for _, conn in ipairs(KV.ScriptConnections) do
-        pcall(function() conn:Disconnect() end)
-    end
-    KV.ScriptConnections = {}
+    -- 2. Останавливаем массовое вылупление и авто-кресталлы
+    pcall(function()
+        KV.hatchState.cancel = true
+        KV.hatchState.running = false
+    end)
 
+    -- 3. Отключаем все соединения (общий список + отдельно сохранённые)
+    pcall(function()
+        for _, conn in ipairs(KV.ScriptConnections) do
+            pcall(function() conn:Disconnect() end)
+        end
+        KV.ScriptConnections = {}
+    end)
+    pcall(function() if KV.jumpCharConn then KV.jumpCharConn:Disconnect() KV.jumpCharConn = nil end end)
+    pcall(function() if KV.dragChangedConn then KV.dragChangedConn:Disconnect() end end)
+    pcall(function() if KV.dragEndedConn then KV.dragEndedConn:Disconnect() end end)
+
+    -- 4. Механики персонажа и визуал
     pcall(KV.stopFlight)
-    pcall(function() clearESP() end)
-    pcall(function() KV.ScreenGui:Destroy() end)
+    pcall(function() if clearESP then clearESP() end end)
+    pcall(function() if KV.removeTrail then KV.removeTrail() end end)
+
+    -- 5. Уничтожаем GUI в последнюю очередь: каждый шаг изолирован,
+    --    поэтому даже ошибка выше не оставит окно на экране
+    pcall(function() if KV.ScreenGui then KV.ScreenGui:Destroy() end end)
+    pcall(function() if bootGuiRef then bootGuiRef:Destroy() bootGuiRef, bootLabelRef = nil, nil end end)
+    pcall(function()
+        if typeof(gethui) == "function" and gethui():FindFirstChild(FRAMEWORK_NAME) then
+            gethui()[FRAMEWORK_NAME]:Destroy()
+        end
+    end)
     print("[Vortex Framework]: Unloaded successfully.")
 end
 -- Перетаскивание окна за шапку (контент или бренд)
@@ -1791,13 +1809,13 @@ KV.beginDrag = function(input)
 end
 KV.TopBar.InputBegan:Connect(KV.beginDrag)
 KV.BrandHeader.InputBegan:Connect(KV.beginDrag)
-UserInputService.InputChanged:Connect(function(input)
+KV.dragChangedConn = UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
         KV.MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
     end
 end)
-UserInputService.InputEnded:Connect(function(input)
+KV.dragEndedConn = UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
         KV.menuTargetPos = KV.MainFrame.Position -- запоминаем позицию для анимаций
@@ -4615,6 +4633,7 @@ KV.closeMenu = function()
 end
 
 KV.toggleMenu = function()
+    if KV.unloaded then return end
     if not KV.loadingDone then return end
     if guiVisible then KV.closeMenu() else KV.openMenu() end
 end
