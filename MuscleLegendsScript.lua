@@ -82,8 +82,8 @@ KV.ScriptConnections = {}
 KV.unloaded = false
 KV.originalMaterials = {}
 KV.originalShadows = Lighting.GlobalShadows
-KV.cachedBoss = {name = "None", health = 0, maxHealth = 100, alive = false, dist = 0, model = nil}
-KV.cachedShop = {items = {"Overcharged Aura", "Aura Potion", "Crystal Key"}, statusText = "Active", shopModel = nil, dist = 0}
+KV.cachedBoss = {name = "Searching...", health = 0, maxHealth = 100, alive = false, dist = 0, model = nil}
+KV.cachedShop = {items = {"Overcharged Aura", "Aura Potion", "Crystal Key"}, statusText = "Stock Active", shopModel = nil, dist = 0}
 
 if getgenv().VortexInstance then
     pcall(function() getgenv().VortexInstance:Destroy() end)
@@ -105,7 +105,7 @@ KV.Config = {
     ShowOnScreenHUD   = true,
     OptimizeFPS       = false,
     Disable3DRender   = false,
-    HUDPosition       = UDim2.new(1, -280, 0, 20),
+    HUDPosition       = UDim2.new(1, -290, 0, 20),
     AccentColor       = Color3.fromRGB(0, 242, 254),
     AutoOP            = false,
     WalkWhileTraining = true,
@@ -313,7 +313,7 @@ KV.scanActiveBoss = function()
 end
 
 KV.scanOverchargedShop = function()
-    local shopData = {items = {}, statusText = "Active", shopModel = nil, dist = 0}
+    local shopData = {items = {}, statusText = "Stock Active", shopModel = nil, dist = 0}
     local myChar = LocalPlayer.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local targetNames = {"overcharged shop", "overchargedshop", "shop", "shops", "overcharged"}
@@ -340,14 +340,18 @@ KV.scanOverchargedShop = function()
     return shopData
 end
 
--- BACKGROUND THREAD FOR SCANNING (PREVENTS RENDERSTEPPED LAG!)
+-- POPULATE CACHE IMMEDIATELY AT BOOT
+pcall(function() KV.cachedBoss = KV.scanActiveBoss() end)
+pcall(function() KV.cachedShop = KV.scanOverchargedShop() end)
+
+-- BACKGROUND THREAD FOR SCANNING (PERIODIC UPDATE EVERY 3 SECONDS)
 task.spawn(function()
     while not KV.unloaded do
         pcall(function()
             KV.cachedBoss = KV.scanActiveBoss()
             KV.cachedShop = KV.scanOverchargedShop()
         end)
-        task.wait(2.5)
+        task.wait(3)
     end
 end)
 
@@ -381,12 +385,13 @@ KV.OpenBtn.Draggable = true
 KV.applyCorner(KV.OpenBtn, 12)
 KV.OpenBtnStroke = KV.applyStroke(KV.OpenBtn, KV.AccentColor, 0.4, 1.5)
 
+-- MULTI-LABEL CRISP ON-SCREEN HUD (NEVER GETS CUT OFF OR BLANK)
 KV.OnScreenHUD = Instance.new("Frame", KV.ScreenGui)
 KV.OnScreenHUD.Name = "OnScreenHUD"
 KV.OnScreenHUD.BackgroundColor3 = Color3.fromRGB(14, 17, 26)
 KV.OnScreenHUD.BackgroundTransparency = 0.15
 KV.OnScreenHUD.Position = KV.Config.HUDPosition
-KV.OnScreenHUD.Size = UDim2.new(0, 275, 0, 145)
+KV.OnScreenHUD.Size = UDim2.new(0, 280, 0, 150)
 KV.OnScreenHUD.Visible = KV.Config.ShowOnScreenHUD
 KV.OnScreenHUD.Active = true
 KV.applyCorner(KV.OnScreenHUD, 14)
@@ -410,16 +415,27 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then hudDragging = false end
 end)
 
-KV.HUDContentLabel = Instance.new("TextLabel", KV.OnScreenHUD)
-KV.HUDContentLabel.BackgroundTransparency = 1
-KV.HUDContentLabel.Position = UDim2.new(0, 14, 0, 10)
-KV.HUDContentLabel.Size = UDim2.new(1, -28, 1, -20)
-KV.HUDContentLabel.Font = Enum.Font.GothamBold
-KV.HUDContentLabel.TextColor3 = Color3.fromRGB(240, 250, 248)
-KV.HUDContentLabel.TextSize = 11
-KV.HUDContentLabel.TextXAlignment = Enum.TextXAlignment.Left
-KV.HUDContentLabel.TextYAlignment = Enum.TextYAlignment.Top
-KV.HUDContentLabel.TextWrapped = true
+local function createHudRow(yPos, fontSize, color, isBold)
+    local lbl = Instance.new("TextLabel", KV.OnScreenHUD)
+    lbl.BackgroundTransparency = 1
+    lbl.Position = UDim2.new(0, 12, 0, yPos)
+    lbl.Size = UDim2.new(1, -24, 0, 22)
+    lbl.Font = isBold and Enum.Font.GothamBold or Enum.Font.GothamMedium
+    lbl.TextColor3 = color or Color3.fromRGB(240, 245, 255)
+    lbl.TextSize = fontSize or 11
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextTruncate = Enum.TextTruncate.AtEnd
+    lbl.ZIndex = 3
+    return lbl
+end
+
+local hudRowTitle = createHudRow(8, 12, KV.AccentColor, true)
+local hudRowFps   = createHudRow(34, 11, Color3.fromRGB(220, 230, 245), false)
+local hudRowStats = createHudRow(58, 11, Color3.fromRGB(220, 230, 245), false)
+local hudRowBoss  = createHudRow(82, 11, Color3.fromRGB(255, 180, 100), true)
+local hudRowShop  = createHudRow(106, 11, Color3.fromRGB(130, 230, 180), true)
+
+hudRowTitle.Text = "Vortex v0.24 HUD (Draggable)"
 
 local fpsAccumulator = 0
 local frameCount = 0
@@ -442,13 +458,20 @@ KV.hudConn = RunService.RenderStepped:Connect(function(dt)
         local str = ls and ls:FindFirstChild("Strength") and ls.Strength.Value or 0
         local reb = ls and ls:FindFirstChild("Rebirths") and ls.Rebirths.Value or 0
         local gems = KV.getCurrency("Gems")
-        local boss = KV.cachedBoss
-        local shop = KV.cachedShop
-        local bossText = boss.alive and string.format("Boss: %s (%d HP, %dm)", boss.name, boss.health, boss.dist) or "Boss: Spawning..."
-        local shopItemsStr = table.concat(shop.items, ", ")
-        if #shopItemsStr > 32 then shopItemsStr = string.sub(shopItemsStr, 1, 32) .. "..." end
-        local shopText = "Shop Stock: " .. shopItemsStr .. " [" .. shop.statusText .. "]"
-        KV.HUDContentLabel.Text = "Vortex v0.24 HUD (Draggable)\n  FPS: " .. tostring(smoothedFps) .. " | Ping: " .. tostring(ping) .. " ms\n  Str: " .. tostring(str) .. " | Reb: " .. tostring(reb) .. " | Gems: " .. tostring(gems) .. "\n  " .. bossText .. "\n  " .. shopText
+        local boss = KV.cachedBoss or {name = "None", health = 0, alive = false}
+        local shop = KV.cachedShop or {items = {"Aura", "Potion"}, statusText = "Active"}
+        
+        hudRowFps.Text = string.format("FPS: %d | Ping: %d ms", smoothedFps, ping)
+        hudRowStats.Text = string.format("Str: %s | Reb: %s | Gems: %s", tostring(str), tostring(reb), tostring(gems))
+        
+        if boss and boss.alive then
+            hudRowBoss.Text = string.format("Boss: %s (%d HP, %dm)", tostring(boss.name), tonumber(boss.health) or 0, tonumber(boss.dist) or 0)
+        else
+            hudRowBoss.Text = "Boss: Spawning soon..."
+        end
+        
+        local shopItemsStr = (shop and shop.items) and table.concat(shop.items, ", ") or "Aura, Potions, Keys"
+        hudRowShop.Text = "Shop: " .. shopItemsStr
     end
 end)
 table.insert(KV.ScriptConnections, KV.hudConn)
@@ -585,10 +608,15 @@ KV.createPage = function(name)
     page.Size = UDim2.new(1, 0, 1, 0)
     page.Visible = false
     page.ScrollBarThickness = 4
-    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
     local layout = Instance.new("UIListLayout", page)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Padding = UDim.new(0, 8)
+    
+    -- AUTO CANVAS SIZE SIGNAL FIX (PREVENTS COLLAPSING / SHIFTING BUGS)
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 24)
+    end)
+    
     pages[name] = page
     return page
 end
@@ -754,6 +782,7 @@ for _, preset in ipairs(KV.AccentPresets) do
     tile.MouseButton1Click:Connect(function()
         KV.AccentColor = preset.color; KV.MainStroke.Color = preset.color; KV.HUDStroke.Color = preset.color; KV.OpenBtn.TextColor3 = preset.color; KV.OpenBtnStroke.Color = preset.color
         for _, ind in pairs(tabIndicators) do ind.BackgroundColor3 = preset.color end
+        hudRowTitle.TextColor3 = preset.color
         KV.notify("Vortex Palette", "Accent changed to " .. preset.name, 2)
     end)
 end
@@ -834,7 +863,7 @@ RunService.RenderStepped:Connect(function()
     if KV.unloaded then return end
     if currentTab == "EventsShop" then
         local boss = KV.cachedBoss
-        if boss.alive then
+        if boss and boss.alive then
             bossStatusLbl.Text = "Boss Active: " .. tostring(boss.name) .. "\n  Health: " .. tostring(boss.health) .. " / " .. tostring(boss.maxHealth) .. " HP\n  Distance: " .. tostring(boss.dist) .. " studs"
         else
             bossStatusLbl.Text = "Boss Status: Searching / Spawning soon..."
@@ -844,7 +873,7 @@ end)
 
 KV.createButton(KV.eventsShopPage, "Teleport to Active Boss", "Teleport directly to active boss", function()
     local boss = KV.cachedBoss
-    if boss.alive and boss.model then
+    if boss and boss.alive and boss.model then
         local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart
         local myChar = LocalPlayer.Character
         if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 5, 5); KV.notify("Vortex Boss", "Teleported to " .. boss.name, 2) end
@@ -853,7 +882,7 @@ end)
 
 KV.createToggle(KV.eventsShopPage, "Auto Farm / Kill Boss", "Automatically attack spawning bosses", KV.Config.AutoKillBoss, function(v)
     KV.Config.AutoKillBoss = v
-    if v then task.spawn(function() while KV.Config.AutoKillBoss and not KV.unloaded do local boss = KV.cachedBoss; if boss.alive and boss.model then local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart; local myChar = LocalPlayer.Character; if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, 3); local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end) end end end task.wait(0.05) end end) end
+    if v then task.spawn(function() while KV.Config.AutoKillBoss and not KV.unloaded do local boss = KV.cachedBoss; if boss and boss.alive and boss.model then local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart; local myChar = LocalPlayer.Character; if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, 3); local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end) end end end task.wait(0.05) end end) end
 end)
 
 KV.sectionLabel(KV.eventsShopPage, "OVERCHARGED SHOP TRACKER")
@@ -865,14 +894,15 @@ RunService.RenderStepped:Connect(function()
     if KV.unloaded then return end
     if currentTab == "EventsShop" then
         local shop = KV.cachedShop
-        shopLbl.Text = "Overcharged Shop Stock:\n  Status: " .. shop.statusText .. " (Dist: " .. tostring(shop.dist) .. "m)\n  Items: " .. table.concat(shop.items, ", ")
+        local shopItemsStr = (shop and shop.items) and table.concat(shop.items, ", ") or "Aura, Potions, Keys"
+        shopLbl.Text = "Overcharged Shop Stock:\n  Status: " .. (shop and shop.statusText or "Active") .. " (Dist: " .. tostring(shop and shop.dist or 0) .. "m)\n  Items: " .. shopItemsStr
     end
 end)
 
 KV.createButton(KV.eventsShopPage, "Teleport to Overcharged Shop", "Teleport to shop location", function()
     local shop = KV.cachedShop
     local myChar = LocalPlayer.Character
-    if shop.shopModel and myChar and myChar:FindFirstChild("HumanoidRootPart") then
+    if shop and shop.shopModel and myChar and myChar:FindFirstChild("HumanoidRootPart") then
         local part = shop.shopModel:IsA("BasePart") and shop.shopModel or (shop.shopModel.PrimaryPart or shop.shopModel:FindFirstChildWhichIsA("BasePart"))
         if part then myChar.HumanoidRootPart.CFrame = part.CFrame * CFrame.new(0, 3, 5); KV.notify("Vortex Shop", "Teleported to Overcharged Shop!", 2) return end
     end
