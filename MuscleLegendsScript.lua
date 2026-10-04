@@ -16,6 +16,10 @@ end
 
 bootSet("Starting Vortex 0.24 script execution...")
 
+-- FPS UNCAPPER FOR EXECUTORS
+pcall(function() if setfpscap then setfpscap(999) end end)
+pcall(function() if set_fps_cap then set_fps_cap(999) end end)
+
 -- ============================================================
 -- WHITELIST & AUTH CHECK
 -- ============================================================
@@ -78,6 +82,8 @@ KV.ScriptConnections = {}
 KV.unloaded = false
 KV.originalMaterials = {}
 KV.originalShadows = Lighting.GlobalShadows
+KV.cachedBoss = {name = "None", health = 0, maxHealth = 100, alive = false, dist = 0, model = nil}
+KV.cachedShop = {items = {"Overcharged Aura", "Aura Potion", "Crystal Key"}, statusText = "Active", shopModel = nil, dist = 0}
 
 if getgenv().VortexInstance then
     pcall(function() getgenv().VortexInstance:Destroy() end)
@@ -98,6 +104,7 @@ KV.Config = {
     EnableTooltips    = true,
     ShowOnScreenHUD   = true,
     OptimizeFPS       = false,
+    Disable3DRender   = false,
     HUDPosition       = UDim2.new(1, -280, 0, 20),
     AccentColor       = Color3.fromRGB(0, 242, 254),
     AutoOP            = false,
@@ -193,6 +200,7 @@ KV.applyFpsOptimization = function(enable)
     pcall(function()
         if enable then
             Lighting.GlobalShadows = false
+            pcall(function() settings().Rendering.QualityLevel = 1 end)
             for _, v in pairs(Workspace:GetDescendants()) do
                 if v:IsA("BasePart") then
                     if not KV.originalMaterials[v] then KV.originalMaterials[v] = v.Material end
@@ -227,6 +235,7 @@ KV.unloadScript = function()
     KV.Config.Godmode = false
     KV.Config.OptimizeFPS = false
     pcall(function() KV.applyFpsOptimization(false) end)
+    pcall(function() RunService:Set3dRenderingEnabled(true) end)
     for _, conn in ipairs(KV.ScriptConnections) do
         pcall(function() conn:Disconnect() end)
     end
@@ -331,6 +340,17 @@ KV.scanOverchargedShop = function()
     return shopData
 end
 
+-- BACKGROUND THREAD FOR SCANNING (PREVENTS RENDERSTEPPED LAG!)
+task.spawn(function()
+    while not KV.unloaded do
+        pcall(function()
+            KV.cachedBoss = KV.scanActiveBoss()
+            KV.cachedShop = KV.scanOverchargedShop()
+        end)
+        task.wait(2.5)
+    end
+end)
+
 KV.targetParent = nil
 if typeof(gethui) == "function" then
     KV.targetParent = gethui()
@@ -422,8 +442,8 @@ KV.hudConn = RunService.RenderStepped:Connect(function(dt)
         local str = ls and ls:FindFirstChild("Strength") and ls.Strength.Value or 0
         local reb = ls and ls:FindFirstChild("Rebirths") and ls.Rebirths.Value or 0
         local gems = KV.getCurrency("Gems")
-        local boss = KV.scanActiveBoss()
-        local shop = KV.scanOverchargedShop()
+        local boss = KV.cachedBoss
+        local shop = KV.cachedShop
         local bossText = boss.alive and string.format("Boss: %s (%d HP, %dm)", boss.name, boss.health, boss.dist) or "Boss: Spawning..."
         local shopItemsStr = table.concat(shop.items, ", ")
         if #shopItemsStr > 32 then shopItemsStr = string.sub(shopItemsStr, 1, 32) .. "..." end
@@ -745,6 +765,11 @@ KV.createToggle(KV.clickGuiPage, "Optimize FPS (Smooth Plastic)", "Disable shado
     KV.applyFpsOptimization(v)
     KV.notify("Vortex FPS", v and "FPS Optimization Enabled!" or "FPS Optimization Disabled!", 2)
 end)
+KV.createToggle(KV.clickGuiPage, "Disable 3D Rendering (Ultra AFK FPS)", "Turn off 3D viewport rendering for maximum AFK speed", KV.Config.Disable3DRender, function(v)
+    KV.Config.Disable3DRender = v
+    pcall(function() RunService:Set3dRenderingEnabled(not v) end)
+    KV.notify("Vortex FPS", v and "3D Rendering OFF (Ultra FPS Boost!)" or "3D Rendering ON", 2)
+end)
 
 KV.sectionLabel(KV.clickGuiPage, "UNLOAD SCRIPT")
 KV.createRedButton(KV.clickGuiPage, "Unload Script / Выгрузить скрипт", "Completely destroy GUI & stop all loops", function()
@@ -808,7 +833,7 @@ bossStatusLbl.BackgroundTransparency = 1; bossStatusLbl.Position = UDim2.new(0, 
 RunService.RenderStepped:Connect(function()
     if KV.unloaded then return end
     if currentTab == "EventsShop" then
-        local boss = KV.scanActiveBoss()
+        local boss = KV.cachedBoss
         if boss.alive then
             bossStatusLbl.Text = "Boss Active: " .. tostring(boss.name) .. "\n  Health: " .. tostring(boss.health) .. " / " .. tostring(boss.maxHealth) .. " HP\n  Distance: " .. tostring(boss.dist) .. " studs"
         else
@@ -818,7 +843,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 KV.createButton(KV.eventsShopPage, "Teleport to Active Boss", "Teleport directly to active boss", function()
-    local boss = KV.scanActiveBoss()
+    local boss = KV.cachedBoss
     if boss.alive and boss.model then
         local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart
         local myChar = LocalPlayer.Character
@@ -828,7 +853,7 @@ end)
 
 KV.createToggle(KV.eventsShopPage, "Auto Farm / Kill Boss", "Automatically attack spawning bosses", KV.Config.AutoKillBoss, function(v)
     KV.Config.AutoKillBoss = v
-    if v then task.spawn(function() while KV.Config.AutoKillBoss and not KV.unloaded do local boss = KV.scanActiveBoss(); if boss.alive and boss.model then local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart; local myChar = LocalPlayer.Character; if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, 3); local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end) end end end task.wait(0.05) end end) end
+    if v then task.spawn(function() while KV.Config.AutoKillBoss and not KV.unloaded do local boss = KV.cachedBoss; if boss.alive and boss.model then local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart; local myChar = LocalPlayer.Character; if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, 3); local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end) end end end task.wait(0.05) end end) end
 end)
 
 KV.sectionLabel(KV.eventsShopPage, "OVERCHARGED SHOP TRACKER")
@@ -839,13 +864,13 @@ shopLbl.BackgroundTransparency = 1; shopLbl.Position = UDim2.new(0, 12, 0, 8); s
 RunService.RenderStepped:Connect(function()
     if KV.unloaded then return end
     if currentTab == "EventsShop" then
-        local shop = KV.scanOverchargedShop()
+        local shop = KV.cachedShop
         shopLbl.Text = "Overcharged Shop Stock:\n  Status: " .. shop.statusText .. " (Dist: " .. tostring(shop.dist) .. "m)\n  Items: " .. table.concat(shop.items, ", ")
     end
 end)
 
 KV.createButton(KV.eventsShopPage, "Teleport to Overcharged Shop", "Teleport to shop location", function()
-    local shop = KV.scanOverchargedShop()
+    local shop = KV.cachedShop
     local myChar = LocalPlayer.Character
     if shop.shopModel and myChar and myChar:FindFirstChild("HumanoidRootPart") then
         local part = shop.shopModel:IsA("BasePart") and shop.shopModel or (shop.shopModel.PrimaryPart or shop.shopModel:FindFirstChildWhichIsA("BasePart"))
