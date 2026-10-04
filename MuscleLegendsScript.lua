@@ -1,6 +1,6 @@
-﻿-- ============================================================
+-- ============================================================
 -- VORTEX HUB ULTIMATE v0.24 (Muscle Legends)
--- Keybind: Right Shift | Right-Click GUI for Settings (РџРљРњ)
+-- Keybind: Right Shift | Right-Click GUI for Settings
 -- ============================================================
 
 local bootStart = tick()
@@ -77,7 +77,6 @@ local CollectionService = game:GetService("CollectionService")
 KV.ScriptConnections = {}
 KV.unloaded = false
 
--- Cleaning old instances
 if getgenv().VortexInstance then
     pcall(function() getgenv().VortexInstance:Destroy() end)
 end
@@ -88,9 +87,6 @@ if getgenv().VortexConnections then
 end
 getgenv().VortexConnections = KV.ScriptConnections
 
--- ============================================================
--- CONFIGURATION STATE
--- ============================================================
 KV.Config = {
     Language          = "RU",
     ThemeIndex        = 1,
@@ -101,8 +97,6 @@ KV.Config = {
     ShowOnScreenHUD   = true,
     HUDPosition       = UDim2.new(1, -270, 0, 20),
     AccentColor       = Color3.fromRGB(0, 242, 254),
-    
-    -- Auto Farm
     AutoOP            = false,
     WalkWhileTraining = true,
     AutoPunch         = false,
@@ -110,8 +104,6 @@ KV.Config = {
     AutoPushups       = false,
     AutoSitups        = false,
     AutoBarbell       = false,
-    
-    -- Automation & Rebirth
     AutoRebirth       = false,
     TargetRebirths    = 0,
     AutoCrystal       = false,
@@ -119,18 +111,12 @@ KV.Config = {
     HatchCount        = 1,
     HatchDelay        = 0.1,
     AutoTPToCrystal   = true,
-    
-    -- Pets
     AutoEvolvePets    = false,
     AutoSellCommon    = false,
-    
-    -- Events & Boss & Shop
     AutoKillBoss      = false,
     AutoJoinBrawl     = false,
     AutoBuyShop       = false,
     SelectedShopItem  = "All",
-    
-    -- Protection & Movement
     Godmode           = false,
     AutoSafeTP        = false,
     SafeTPHealth      = 20,
@@ -143,25 +129,12 @@ KV.Config = {
     PlayerESP         = false,
 }
 
--- Target Crystals Catalog
 KV.crystalCatalog = {
-    "Blue Crystal",
-    "Red Crystal",
-    "Lightning Crystal",
-    "Inferno Crystal",
-    "Mythical Crystal",
-    "Frost Crystal",
-    "Jungle Crystal",
-    "Industrial Crystal",
-    "Eternal Crystal",
-    "Legend Crystal",
-    "Muscle King Crystal",
-    "Overcharged Crystal"
+    "Blue Crystal", "Red Crystal", "Lightning Crystal", "Inferno Crystal",
+    "Mythical Crystal", "Frost Crystal", "Jungle Crystal", "Industrial Crystal",
+    "Eternal Crystal", "Legend Crystal", "Muscle King Crystal", "Overcharged Crystal"
 }
 
--- ============================================================
--- THEMES & ACCENT PALETTES
--- ============================================================
 KV.UIThemes = {
     {name = "Cyber Neon",   window = Color3.fromRGB(15, 18, 28),  side = Color3.fromRGB(10, 12, 20),  panel = Color3.fromRGB(24, 28, 42),  bar = Color3.fromRGB(18, 22, 34)},
     {name = "Slate Dark",   window = Color3.fromRGB(20, 24, 33),  side = Color3.fromRGB(15, 18, 25),  panel = Color3.fromRGB(30, 36, 48),  bar = Color3.fromRGB(22, 27, 38)},
@@ -183,54 +156,15 @@ KV.AccentPresets = {
 
 KV.AccentColor = KV.AccentPresets[1].color
 
-KV.currentTheme = function()
-    return KV.UIThemes[KV.Config.ThemeIndex] or KV.UIThemes[1]
-end
-
--- ============================================================
--- UTILITY FUNCTIONS
--- ============================================================
+KV.currentTheme = function() return KV.UIThemes[KV.Config.ThemeIndex] or KV.UIThemes[1] end
 KV.round = function(n) return math.floor(n + 0.5) end
-
-KV.tw = function(obj, props, duration, style, dir)
-    local info = TweenInfo.new(duration or 0.2, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out)
-    return TweenService:Create(obj, info, props)
-end
-
-KV.applyCorner = function(obj, radius)
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, radius or 10)
-    c.Parent = obj
-    return c
-end
-
-KV.applyStroke = function(obj, color, transparency, thickness)
-    local s = Instance.new("UIStroke")
-    s.Color = color or KV.AccentColor
-    s.Transparency = transparency or 0.5
-    s.Thickness = thickness or 1.2
-    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    s.Parent = obj
-    return s
-end
-
-KV.t = function(ruText, enText)
-    return (KV.Config.Language == "EN") and (enText or ruText) or ruText
-end
-
+KV.tw = function(obj, props, duration, style, dir) return TweenService:Create(obj, TweenInfo.new(duration or 0.2, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props) end
+KV.applyCorner = function(obj, radius) local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, radius or 10); c.Parent = obj; return c end
+KV.applyStroke = function(obj, color, transparency, thickness) local s = Instance.new("UIStroke"); s.Color = color or KV.AccentColor; s.Transparency = transparency or 0.5; s.Thickness = thickness or 1.2; s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; s.Parent = obj; return s end
+KV.t = function(ruText, enText) return (KV.Config.Language == "EN") and (enText or ruText) or ruText end
 KV.tn = KV.t
+KV.notify = function(title, msg, duration) pcall(function() game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = msg, Duration = duration or 3}) end) end
 
-KV.notify = function(title, msg, duration)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = title,
-            Text = msg,
-            Duration = duration or 3
-        })
-    end)
-end
-
--- Currency & Player Stats Helpers
 KV.getCurrency = function(kind)
     local name = (kind == "Tokens") and "Tokens" or "Gems"
     local v = LocalPlayer:FindFirstChild(name)
@@ -245,39 +179,17 @@ KV.countOwnedPets = function()
     local pf = LocalPlayer:FindFirstChild("petsFolder")
     if not pf then return 0 end
     local count = 0
-    for _, folder in pairs(pf:GetChildren()) do
-        count = count + #folder:GetChildren()
-    end
+    for _, folder in pairs(pf:GetChildren()) do count = count + #folder:GetChildren() end
     return count
 end
 
--- ============================================================
--- GAME REMOTES & EVENT ENGINE
--- ============================================================
-KV.getMuscleEvent = function()
-    local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
-    if rEvents then
-        return rEvents:FindFirstChild("muscleEvent")
-    end
-    return nil
-end
+KV.getMuscleEvent = function() local rEvents = ReplicatedStorage:FindFirstChild("rEvents"); return rEvents and rEvents:FindFirstChild("muscleEvent") end
+KV.getREvent = function(name) local rEvents = ReplicatedStorage:FindFirstChild("rEvents"); return rEvents and rEvents:FindFirstChild(name) end
 
-KV.getREvent = function(name)
-    local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
-    if rEvents then
-        return rEvents:FindFirstChild(name)
-    end
-    return nil
-end
-
--- ============================================================
--- AUTO HATCH CRYSTAL ENGINE (FIXED & RELIABLE)
--- ============================================================
 KV.teleportToCrystal = function(crystalName)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local myHrp = char.HumanoidRootPart
-
     local crystalObj = nil
     local term = string.lower(crystalName)
     for _, v in pairs(Workspace:GetDescendants()) do
@@ -286,62 +198,37 @@ KV.teleportToCrystal = function(crystalName)
             if crystalObj then break end
         end
     end
-
-    if crystalObj then
-        pcall(function()
-            myHrp.CFrame = crystalObj.CFrame * CFrame.new(0, 3, 4)
-        end)
-    end
+    if crystalObj then pcall(function() myHrp.CFrame = crystalObj.CFrame * CFrame.new(0, 3, 4) end) end
 end
 
 KV.openCrystalOnce = function(crystalName)
     local rEvents = ReplicatedStorage:FindFirstChild("rEvents")
     if not rEvents then return false, "noremote" end
-    
     local openRemote = rEvents:FindFirstChild("openCrystalRemote") or rEvents:FindFirstChild("openCrystal")
     if not openRemote then return false, "noremote" end
-    
-    -- Auto TP if enabled
-    if KV.Config.AutoTPToCrystal then
-        pcall(KV.teleportToCrystal, crystalName)
-    end
-    
+    if KV.Config.AutoTPToCrystal then pcall(KV.teleportToCrystal, crystalName) end
     local snapBefore = KV.countOwnedPets()
     local gemsBefore = KV.getCurrency("Gems")
-    
     if openRemote:IsA("RemoteEvent") then
         pcall(function() openRemote:FireServer("openCrystal", crystalName) end)
         pcall(function() openRemote:FireServer(crystalName) end)
     elseif openRemote:IsA("RemoteFunction") then
         pcall(function() openRemote:InvokeServer("openCrystal", crystalName) end)
     end
-    
-    -- Fallback muscleEvent call
     local muscleEv = KV.getMuscleEvent()
-    if muscleEv then
-        pcall(function() muscleEv:FireServer("openCrystal", crystalName) end)
-    end
-    
-    -- Check result
+    if muscleEv then pcall(function() muscleEv:FireServer("openCrystal", crystalName) end) end
     local startTime = tick()
     while (tick() - startTime) < 0.5 do
         task.wait(0.05)
-        if KV.countOwnedPets() > snapBefore or KV.getCurrency("Gems") < gemsBefore then
-            return true, "pet", "Hatched"
-        end
+        if KV.countOwnedPets() > snapBefore or KV.getCurrency("Gems") < gemsBefore then return true, "pet", "Hatched" end
     end
-    
-    return true, "pet", "Opened" -- Always return true to keep loop running
+    return true, "pet", "Opened"
 end
 
--- ============================================================
--- BOSS & OVERCHARGED SHOP SCANNER ENGINE
--- ============================================================
 KV.scanActiveBoss = function()
     local bossData = {name = "None", health = 0, maxHealth = 100, alive = false, dist = 0, model = nil}
     local myChar = LocalPlayer.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    
     for _, v in pairs(Workspace:GetDescendants()) do
         if v:IsA("Model") then
             local n = string.lower(v.Name)
@@ -354,9 +241,7 @@ KV.scanActiveBoss = function()
                     bossData.maxHealth = math.floor(hum.MaxHealth)
                     bossData.alive = true
                     bossData.model = v
-                    if myHrp and hrp then
-                        bossData.dist = math.floor((hrp.Position - myHrp.Position).Magnitude)
-                    end
+                    if myHrp and hrp then bossData.dist = math.floor((hrp.Position - myHrp.Position).Magnitude) end
                     break
                 end
             end
@@ -370,17 +255,12 @@ KV.scanOverchargedShop = function()
     local shopFolder = Workspace:FindFirstChild("OverchargedShop") or Workspace:FindFirstChild("Shop")
     if shopFolder then
         local found = {}
-        for _, child in pairs(shopFolder:GetChildren()) do
-            table.insert(found, child.Name)
-        end
+        for _, child in pairs(shopFolder:GetChildren()) do table.insert(found, child.Name) end
         if #found > 0 then shopData.items = found end
     end
     return shopData
 end
 
--- ============================================================
--- ROOT GUI INITIALIZATION
--- ============================================================
 KV.targetParent = nil
 if typeof(gethui) == "function" then
     KV.targetParent = gethui()
@@ -397,16 +277,13 @@ KV.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 KV.ScreenGui.Parent = KV.targetParent
 getgenv().VortexInstance = KV.ScreenGui
 
--- ============================================================
--- FLOATING MENU OPEN BUTTON
--- ============================================================
 KV.OpenBtn = Instance.new("TextButton", KV.ScreenGui)
 KV.OpenBtn.Name = "Vortex_OpenBtn"
 KV.OpenBtn.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
 KV.OpenBtn.Position = UDim2.new(0, 15, 0.5, -25)
 KV.OpenBtn.Size = UDim2.new(0, 110, 0, 42)
 KV.OpenBtn.Font = Enum.Font.GothamBold
-KV.OpenBtn.Text = "вљЎ VORTEX"
+KV.OpenBtn.Text = "VORTEX"
 KV.OpenBtn.TextColor3 = KV.AccentColor
 KV.OpenBtn.TextSize = 13
 KV.OpenBtn.Active = true
@@ -414,9 +291,6 @@ KV.OpenBtn.Draggable = true
 KV.applyCorner(KV.OpenBtn, 12)
 KV.OpenBtnStroke = KV.applyStroke(KV.OpenBtn, KV.AccentColor, 0.4, 1.5)
 
--- ============================================================
--- DRAGGABLE ONSCREEN HUD (FPS / PING / BOSS / SHOP)
--- ============================================================
 KV.OnScreenHUD = Instance.new("Frame", KV.ScreenGui)
 KV.OnScreenHUD.Name = "OnScreenHUD"
 KV.OnScreenHUD.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
@@ -428,18 +302,13 @@ KV.OnScreenHUD.Active = true
 KV.applyCorner(KV.OnScreenHUD, 14)
 KV.HUDStroke = KV.applyStroke(KV.OnScreenHUD, KV.AccentColor, 0.4, 1.5)
 
--- Draggable HUD Implementation
 local hudDragging = false
 local hudDragStart, hudStartPos
-
 KV.OnScreenHUD.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        hudDragging = true
-        hudDragStart = input.Position
-        hudStartPos = KV.OnScreenHUD.Position
+        hudDragging = true; hudDragStart = input.Position; hudStartPos = KV.OnScreenHUD.Position
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if hudDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - hudDragStart
@@ -447,11 +316,8 @@ UserInputService.InputChanged:Connect(function(input)
         KV.Config.HUDPosition = KV.OnScreenHUD.Position
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        hudDragging = false
-    end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then hudDragging = false end
 end)
 
 KV.HUDContentLabel = Instance.new("TextLabel", KV.OnScreenHUD)
@@ -465,7 +331,6 @@ KV.HUDContentLabel.TextXAlignment = Enum.TextXAlignment.Left
 KV.HUDContentLabel.TextYAlignment = Enum.TextYAlignment.Top
 KV.HUDContentLabel.TextWrapped = true
 
--- Slow & Smooth FPS Counter Logic (Averaged over 0.5s)
 local fpsAccumulator = 0
 local frameCount = 0
 local smoothedFps = 60
@@ -474,35 +339,25 @@ local lastFpsUpdate = tick()
 KV.hudConn = RunService.RenderStepped:Connect(function(dt)
     fpsAccumulator = fpsAccumulator + (1 / dt)
     frameCount = frameCount + 1
-    
     if (tick() - lastFpsUpdate) >= 0.5 then
         smoothedFps = math.floor(fpsAccumulator / frameCount + 0.5)
         fpsAccumulator = 0
         frameCount = 0
         lastFpsUpdate = tick()
     end
-    
     if KV.Config.ShowOnScreenHUD then
         local ping = math.floor(LocalPlayer:GetNetworkPing() * 1000)
         local ls = LocalPlayer:FindFirstChild("leaderstats")
         local str = ls and ls:FindFirstChild("Strength") and ls.Strength.Value or 0
         local reb = ls and ls:FindFirstChild("Rebirths") and ls.Rebirths.Value or 0
-        
         local boss = KV.scanActiveBoss()
-        local bossText = boss.alive and string.format("рџ‘‘ Boss: %s (%d HP, %dm)", boss.name, boss.health, boss.dist) or "рџ‘‘ Boss: Spawning..."
-        local shopText = "рџ›’ Shop Stock: Aura, Keys, Potions [In Stock]"
-        
-        KV.HUDContentLabel.Text = string.format(
-            "вљЎ Vortex v0.24 HUD (Draggable)\n  FPS: %d | Ping: %d ms\n  Strength: %s | Rebirths: %s\n  %s\n  %s",
-            smoothedFps, ping, tostring(str), tostring(reb), bossText, shopText
-        )
+        local bossText = boss.alive and string.format("Boss: %s (%d HP, %dm)", boss.name, boss.health, boss.dist) or "Boss: Spawning..."
+        local shopText = "Shop Stock: Aura, Keys, Potions [In Stock]"
+        KV.HUDContentLabel.Text = "Vortex v0.24 HUD (Draggable)\n  FPS: " .. tostring(smoothedFps) .. " | Ping: " .. tostring(ping) .. " ms\n  Strength: " .. tostring(str) .. " | Rebirths: " .. tostring(reb) .. "\n  " .. bossText .. "\n  " .. shopText
     end
 end)
 table.insert(KV.ScriptConnections, KV.hudConn)
 
--- ============================================================
--- MAIN FRAME & REDESIGNED HEADER (700x530)
--- ============================================================
 KV.MainFrame = Instance.new("CanvasGroup", KV.ScreenGui)
 KV.MainFrame.Name = "MainFrame"
 KV.MainFrame.BackgroundColor3 = KV.currentTheme().window
@@ -518,7 +373,6 @@ KV.MainStroke = KV.applyStroke(KV.MainFrame, KV.AccentColor, 0.3, 1.5)
 KV.guiSizeScale = Instance.new("UIScale", KV.MainFrame)
 KV.guiSizeScale.Scale = KV.Config.GuiScale
 
--- Window Top Header Bar
 KV.TopBar = Instance.new("Frame", KV.MainFrame)
 KV.TopBar.Name = "TopBar"
 KV.TopBar.BackgroundColor3 = KV.currentTheme().side
@@ -527,26 +381,24 @@ KV.TopBar.Position = UDim2.new(0, 0, 0, 0)
 KV.TopBar.Size = UDim2.new(1, 0, 0, 52)
 KV.TopBar.ZIndex = 10
 
--- Brand Header Title
 KV.BrandHeader = Instance.new("TextLabel", KV.TopBar)
 KV.BrandHeader.BackgroundTransparency = 1
 KV.BrandHeader.Position = UDim2.new(0, 16, 0, 10)
 KV.BrandHeader.Size = UDim2.new(0, 320, 0, 32)
 KV.BrandHeader.Font = Enum.Font.GothamBold
-KV.BrandHeader.Text = "вљЎ VORTEX HUB <font color='#00F2FE'>v0.24 ULTIMATE</font>"
+KV.BrandHeader.Text = "VORTEX HUB <font color='#00F2FE'>v0.24 ULTIMATE</font>"
 KV.BrandHeader.RichText = true
 KV.BrandHeader.TextColor3 = Color3.fromRGB(240, 245, 255)
 KV.BrandHeader.TextSize = 15
 KV.BrandHeader.TextXAlignment = Enum.TextXAlignment.Left
 
--- REDESIGNED SLEEK CLOSE CROSS BUTTON ("РљР Р•РЎРўРРљ")
 KV.CloseHeaderBtn = Instance.new("TextButton", KV.TopBar)
 KV.CloseHeaderBtn.Name = "CloseHeaderBtn"
 KV.CloseHeaderBtn.BackgroundColor3 = Color3.fromRGB(32, 36, 48)
 KV.CloseHeaderBtn.Position = UDim2.new(1, -42, 0, 11)
 KV.CloseHeaderBtn.Size = UDim2.new(0, 30, 0, 30)
 KV.CloseHeaderBtn.Font = Enum.Font.GothamBold
-KV.CloseHeaderBtn.Text = "вњ•"
+KV.CloseHeaderBtn.Text = "X"
 KV.CloseHeaderBtn.TextColor3 = Color3.fromRGB(220, 225, 235)
 KV.CloseHeaderBtn.TextSize = 13
 KV.CloseHeaderBtn.AutoButtonColor = false
@@ -558,44 +410,36 @@ KV.CloseHeaderBtn.MouseEnter:Connect(function()
     KV.tw(KV.CloseHeaderBtn, {BackgroundColor3 = Color3.fromRGB(239, 68, 68), TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.15):Play()
     KV.tw(closeBtnStroke, {Transparency = 0.2}, 0.15):Play()
 end)
-
 KV.CloseHeaderBtn.MouseLeave:Connect(function()
     KV.tw(KV.CloseHeaderBtn, {BackgroundColor3 = Color3.fromRGB(32, 36, 48), TextColor3 = Color3.fromRGB(220, 225, 235)}, 0.15):Play()
     KV.tw(closeBtnStroke, {Transparency = 0.8}, 0.15):Play()
 end)
 
--- Window Dragging Logic
 local mainDragging = false
 local mainDragStart, mainStartPos
 KV.menuTargetPos = KV.MainFrame.Position
 
 KV.TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        mainDragging = true
-        mainDragStart = input.Position
-        mainStartPos = KV.MainFrame.Position
+        mainDragging = true; mainDragStart = input.Position; mainStartPos = KV.MainFrame.Position
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if mainDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - mainDragStart
         KV.MainFrame.Position = UDim2.new(mainStartPos.X.Scale, mainStartPos.X.Offset + delta.X, mainStartPos.Y.Scale, mainStartPos.Y.Offset + delta.Y)
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        mainDragging = false
-        KV.menuTargetPos = KV.MainFrame.Position
+        mainDragging = false; KV.menuTargetPos = KV.MainFrame.Position
     end
 end)
 
--- RIGHT-CLICK (РџРљРњ) TO OPEN SETTINGS TAB
 local function handleRightClickSettings(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         KV.switchTab("ClickGUI")
-        KV.notify("Vortex Settings", "Opened Settings via Right-Click (РџРљРњ)", 2)
+        KV.notify("Vortex Settings", "Opened Settings via Right-Click", 2)
     end
 end
 
@@ -605,13 +449,10 @@ KV.OpenBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         if not KV.MainFrame.Visible then KV.openMenu() end
         KV.switchTab("ClickGUI")
-        KV.notify("Vortex Settings", "Opened Settings via Right-Click (РџРљРњ)", 2)
+        KV.notify("Vortex Settings", "Opened Settings via Right-Click", 2)
     end
 end)
 
--- ============================================================
--- NAVIGATION SIDEBAR & PAGES CONTAINER
--- ============================================================
 KV.Sidebar = Instance.new("ScrollingFrame", KV.MainFrame)
 KV.Sidebar.Name = "Sidebar"
 KV.Sidebar.BackgroundColor3 = KV.currentTheme().side
@@ -649,27 +490,19 @@ KV.createPage = function(name)
     page.Visible = false
     page.ScrollBarThickness = 4
     page.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    
     local layout = Instance.new("UIListLayout", page)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Padding = UDim.new(0, 8)
-    
     pages[name] = page
     return page
 end
 
 KV.switchTab = function(tabName)
     currentTab = tabName
-    for name, page in pairs(pages) do
-        local active = (name == tabName)
-        page.Visible = active
-    end
+    for name, page in pairs(pages) do page.Visible = (name == tabName) end
     for name, btn in pairs(tabButtons) do
         local active = (name == tabName)
-        KV.tw(btn, {
-            BackgroundColor3 = active and KV.currentTheme().panel or Color3.fromRGB(25, 28, 40),
-            BackgroundTransparency = active and 0 or 1
-        }, 0.15):Play()
+        KV.tw(btn, {BackgroundColor3 = active and KV.currentTheme().panel or Color3.fromRGB(25, 28, 40), BackgroundTransparency = active and 0 or 1}, 0.15):Play()
     end
 end
 
@@ -685,15 +518,11 @@ KV.createTabButton = function(displayName, internalName)
     btn.TextSize = 12
     btn.TextXAlignment = Enum.TextXAlignment.Left
     KV.applyCorner(btn, 8)
-    
-    btn.MouseButton1Click:Connect(function()
-        KV.switchTab(internalName)
-    end)
+    btn.MouseButton1Click:Connect(function() KV.switchTab(internalName) end)
     tabButtons[internalName] = btn
     return btn
 end
 
--- SECTION HEADER CREATOR
 KV.sectionLabel = function(page, text)
     local lbl = Instance.new("TextLabel", page)
     lbl.BackgroundTransparency = 1
@@ -706,7 +535,6 @@ KV.sectionLabel = function(page, text)
     return lbl
 end
 
--- CARD / PANEL CREATOR
 KV.createPanel = function(page, height)
     local p = Instance.new("Frame", page)
     p.BackgroundColor3 = KV.currentTheme().panel
@@ -716,42 +544,16 @@ KV.createPanel = function(page, height)
     return p
 end
 
--- TOGGLE CREATOR
 KV.createToggle = function(page, title, desc, defaultVal, callback)
     local p = KV.createPanel(page, 44)
     local lbl = Instance.new("TextLabel", p)
-    lbl.BackgroundTransparency = 1
-    lbl.Position = UDim2.new(0, 12, 0, 4)
-    lbl.Size = UDim2.new(1, -70, 0, 20)
-    lbl.Font = Enum.Font.GothamBold
-    lbl.Text = title
-    lbl.TextColor3 = Color3.fromRGB(240, 245, 255)
-    lbl.TextSize = 12
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    
+    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0, 12, 0, 4); lbl.Size = UDim2.new(1, -70, 0, 20); lbl.Font = Enum.Font.GothamBold; lbl.Text = title; lbl.TextColor3 = Color3.fromRGB(240, 245, 255); lbl.TextSize = 12; lbl.TextXAlignment = Enum.TextXAlignment.Left
     local dLbl = Instance.new("TextLabel", p)
-    dLbl.BackgroundTransparency = 1
-    dLbl.Position = UDim2.new(0, 12, 0, 22)
-    dLbl.Size = UDim2.new(1, -70, 0, 16)
-    dLbl.Font = Enum.Font.Gotham
-    dLbl.Text = desc or ""
-    dLbl.TextColor3 = Color3.fromRGB(150, 160, 175)
-    dLbl.TextSize = 10
-    dLbl.TextXAlignment = Enum.TextXAlignment.Left
-    
+    dLbl.BackgroundTransparency = 1; dLbl.Position = UDim2.new(0, 12, 0, 22); dLbl.Size = UDim2.new(1, -70, 0, 16); dLbl.Font = Enum.Font.Gotham; dLbl.Text = desc or ""; dLbl.TextColor3 = Color3.fromRGB(150, 160, 175); dLbl.TextSize = 10; dLbl.TextXAlignment = Enum.TextXAlignment.Left
     local tBtn = Instance.new("TextButton", p)
-    tBtn.BackgroundColor3 = defaultVal and KV.AccentColor or Color3.fromRGB(45, 50, 65)
-    tBtn.Position = UDim2.new(1, -50, 0.5, -11)
-    tBtn.Size = UDim2.new(0, 38, 0, 22)
-    tBtn.Text = ""
-    KV.applyCorner(tBtn, 11)
-    
+    tBtn.BackgroundColor3 = defaultVal and KV.AccentColor or Color3.fromRGB(45, 50, 65); tBtn.Position = UDim2.new(1, -50, 0.5, -11); tBtn.Size = UDim2.new(0, 38, 0, 22); tBtn.Text = ""; KV.applyCorner(tBtn, 11)
     local dot = Instance.new("Frame", tBtn)
-    dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    dot.Position = defaultVal and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
-    dot.Size = UDim2.new(0, 16, 0, 16)
-    KV.applyCorner(dot, 8)
-    
+    dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255); dot.Position = defaultVal and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8); dot.Size = UDim2.new(0, 16, 0, 16); KV.applyCorner(dot, 8)
     local val = defaultVal
     tBtn.MouseButton1Click:Connect(function()
         val = not val
@@ -762,59 +564,25 @@ KV.createToggle = function(page, title, desc, defaultVal, callback)
     return p
 end
 
--- BUTTON CREATOR
 KV.createButton = function(page, title, desc, callback)
     local p = KV.createPanel(page, 40)
     local btn = Instance.new("TextButton", p)
-    btn.BackgroundTransparency = 1
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.Font = Enum.Font.GothamBold
-    btn.Text = "  " .. title
-    btn.TextColor3 = Color3.fromRGB(240, 245, 255)
-    btn.TextSize = 12
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    
-    btn.MouseButton1Click:Connect(function()
-        if callback then callback() end
-    end)
+    btn.BackgroundTransparency = 1; btn.Size = UDim2.new(1, 0, 1, 0); btn.Font = Enum.Font.GothamBold; btn.Text = "  " .. title; btn.TextColor3 = Color3.fromRGB(240, 245, 255); btn.TextSize = 12; btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.MouseButton1Click:Connect(function() if callback then callback() end end)
     return p
 end
 
--- SLIDER CREATOR
 KV.createSlider = function(page, title, minVal, maxVal, defaultVal, callback)
     local p = KV.createPanel(page, 48)
     local lbl = Instance.new("TextLabel", p)
-    lbl.BackgroundTransparency = 1
-    lbl.Position = UDim2.new(0, 12, 0, 4)
-    lbl.Size = UDim2.new(1, -80, 0, 18)
-    lbl.Font = Enum.Font.GothamBold
-    lbl.Text = title
-    lbl.TextColor3 = Color3.fromRGB(240, 245, 255)
-    lbl.TextSize = 11
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    
+    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0, 12, 0, 4); lbl.Size = UDim2.new(1, -80, 0, 18); lbl.Font = Enum.Font.GothamBold; lbl.Text = title; lbl.TextColor3 = Color3.fromRGB(240, 245, 255); lbl.TextSize = 11; lbl.TextXAlignment = Enum.TextXAlignment.Left
     local valLbl = Instance.new("TextLabel", p)
-    valLbl.BackgroundTransparency = 1
-    valLbl.Position = UDim2.new(1, -65, 0, 4)
-    valLbl.Size = UDim2.new(0, 50, 0, 18)
-    valLbl.Font = Enum.Font.GothamBold
-    valLbl.Text = tostring(defaultVal)
-    valLbl.TextColor3 = KV.AccentColor
-    valLbl.TextSize = 11
-    valLbl.TextXAlignment = Enum.TextXAlignment.Right
-    
+    valLbl.BackgroundTransparency = 1; valLbl.Position = UDim2.new(1, -65, 0, 4); valLbl.Size = UDim2.new(0, 50, 0, 18); valLbl.Font = Enum.Font.GothamBold; valLbl.Text = tostring(defaultVal); valLbl.TextColor3 = KV.AccentColor; valLbl.TextSize = 11; valLbl.TextXAlignment = Enum.TextXAlignment.Right
     local sTrack = Instance.new("Frame", p)
-    sTrack.BackgroundColor3 = Color3.fromRGB(40, 45, 60)
-    sTrack.Position = UDim2.new(0, 12, 0, 28)
-    sTrack.Size = UDim2.new(1, -24, 0, 8)
-    KV.applyCorner(sTrack, 4)
-    
+    sTrack.BackgroundColor3 = Color3.fromRGB(40, 45, 60); sTrack.Position = UDim2.new(0, 12, 0, 28); sTrack.Size = UDim2.new(1, -24, 0, 8); KV.applyCorner(sTrack, 4)
     local pct = math.clamp((defaultVal - minVal) / (maxVal - minVal), 0, 1)
     local sFill = Instance.new("Frame", sTrack)
-    sFill.BackgroundColor3 = KV.AccentColor
-    sFill.Size = UDim2.new(pct, 0, 1, 0)
-    KV.applyCorner(sFill, 4)
-    
+    sFill.BackgroundColor3 = KV.AccentColor; sFill.Size = UDim2.new(pct, 0, 1, 0); KV.applyCorner(sFill, 4)
     local sliderDragging = false
     local function updateSlider(input)
         local pos = math.clamp((input.Position.X - sTrack.AbsolutePosition.X) / sTrack.AbsoluteSize.X, 0, 1)
@@ -823,29 +591,12 @@ KV.createSlider = function(page, title, minVal, maxVal, defaultVal, callback)
         valLbl.Text = tostring(val)
         if callback then callback(val) end
     end
-    
-    sTrack.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            sliderDragging = true
-            updateSlider(input)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if sliderDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateSlider(input)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            sliderDragging = false
-        end
-    end)
+    sTrack.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliderDragging = true; updateSlider(input) end end)
+    UserInputService.InputChanged:Connect(function(input) if sliderDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then updateSlider(input) end end)
+    UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliderDragging = false end end)
     return p
 end
 
--- ============================================================
--- SIDEBAR TABS DEFINITION (ROCKS & COMBAT REMOVED!)
--- ============================================================
 KV.clickGuiPage    = KV.createPage("ClickGUI")
 KV.dashboardPage   = KV.createPage("Dashboard")
 KV.trainingPage    = KV.createPage("Training")
@@ -870,93 +621,38 @@ KV.createTabButton("Movement", "Movement")
 KV.createTabButton("Visuals", "Visuals")
 KV.createTabButton("About", "About")
 
--- ============================================================
--- 1. TAB: SETTINGS & COLOR PALETTE PANEL
--- ============================================================
 KV.sectionLabel(KV.clickGuiPage, "GUI SIZE & ACCENT PALETTE")
-
 KV.createSlider(KV.clickGuiPage, "GUI Scale (%)", 70, 150, math.floor(KV.Config.GuiScale * 100), function(v)
-    KV.Config.GuiScale = v / 100
-    KV.tw(KV.guiSizeScale, {Scale = KV.Config.GuiScale}, 0.12):Play()
+    KV.Config.GuiScale = v / 100; KV.tw(KV.guiSizeScale, {Scale = KV.Config.GuiScale}, 0.12):Play()
 end)
 
-KV.sectionLabel(KV.clickGuiPage, "COLOR PALETTE (Р¦Р’Р•РўРћР’РђРЇ РџРђРќР•Р›Р¬)")
-
--- RECTANGULAR COLOR PALETTE GRID
+KV.sectionLabel(KV.clickGuiPage, "COLOR PALETTE (PALETTE)")
 local palettePanel = KV.createPanel(KV.clickGuiPage, 90)
-local pGrid = Instance.new("UIGridLayout", palettePanel)
-pGrid.CellSize = UDim2.new(0, 110, 0, 36)
-pGrid.CellPadding = UDim2.new(0, 8, 0, 8)
-pGrid.SortOrder = Enum.SortOrder.LayoutOrder
-
-local pPadding = Instance.new("UIPadding", palettePanel)
-pPadding.PaddingTop = UDim.new(0, 8)
-pPadding.PaddingLeft = UDim.new(0, 8)
+local pGrid = Instance.new("UIGridLayout", palettePanel); pGrid.CellSize = UDim2.new(0, 110, 0, 36); pGrid.CellPadding = UDim2.new(0, 8, 0, 8); pGrid.SortOrder = Enum.SortOrder.LayoutOrder
+local pPadding = Instance.new("UIPadding", palettePanel); pPadding.PaddingTop = UDim.new(0, 8); pPadding.PaddingLeft = UDim.new(0, 8)
 
 for _, preset in ipairs(KV.AccentPresets) do
     local tile = Instance.new("TextButton", palettePanel)
-    tile.BackgroundColor3 = Color3.fromRGB(25, 30, 42)
-    tile.AutoButtonColor = false
-    tile.Text = ""
-    KV.applyCorner(tile, 6)
-    
-    local cBar = Instance.new("Frame", tile)
-    cBar.BackgroundColor3 = preset.color
-    cBar.Position = UDim2.new(0, 6, 0.5, -10)
-    cBar.Size = UDim2.new(0, 20, 0, 20)
-    KV.applyCorner(cBar, 4)
-    
-    local tLbl = Instance.new("TextLabel", tile)
-    tLbl.BackgroundTransparency = 1
-    tLbl.Position = UDim2.new(0, 32, 0, 0)
-    tLbl.Size = UDim2.new(1, -34, 1, 0)
-    tLbl.Font = Enum.Font.GothamBold
-    tLbl.Text = preset.name
-    tLbl.TextColor3 = Color3.fromRGB(230, 235, 245)
-    tLbl.TextSize = 9
-    tLbl.TextXAlignment = Enum.TextXAlignment.Left
-    
+    tile.BackgroundColor3 = Color3.fromRGB(25, 30, 42); tile.AutoButtonColor = false; tile.Text = ""; KV.applyCorner(tile, 6)
+    local cBar = Instance.new("Frame", tile); cBar.BackgroundColor3 = preset.color; cBar.Position = UDim2.new(0, 6, 0.5, -10); cBar.Size = UDim2.new(0, 20, 0, 20); KV.applyCorner(cBar, 4)
+    local tLbl = Instance.new("TextLabel", tile); tLbl.BackgroundTransparency = 1; tLbl.Position = UDim2.new(0, 32, 0, 0); tLbl.Size = UDim2.new(1, -34, 1, 0); tLbl.Font = Enum.Font.GothamBold; tLbl.Text = preset.name; tLbl.TextColor3 = Color3.fromRGB(230, 235, 245); tLbl.TextSize = 9; tLbl.TextXAlignment = Enum.TextXAlignment.Left
     tile.MouseButton1Click:Connect(function()
-        KV.AccentColor = preset.color
-        KV.MainStroke.Color = preset.color
-        KV.HUDStroke.Color = preset.color
-        KV.OpenBtn.TextColor3 = preset.color
-        KV.OpenBtnStroke.Color = preset.color
+        KV.AccentColor = preset.color; KV.MainStroke.Color = preset.color; KV.HUDStroke.Color = preset.color; KV.OpenBtn.TextColor3 = preset.color; KV.OpenBtnStroke.Color = preset.color
         KV.notify("Vortex Palette", "Accent changed to " .. preset.name, 2)
     end)
 end
 
 KV.sectionLabel(KV.clickGuiPage, "HUD & DISPLAY SETTINGS")
-KV.createToggle(KV.clickGuiPage, "Show OnScreen HUD", "РћС‚РѕР±СЂР°Р¶Р°С‚СЊ HUD РЅР° СЌРєСЂР°РЅРµ (РїРµСЂРµС‚Р°СЃРєРёРІР°РµРјС‹Р№)", KV.Config.ShowOnScreenHUD, function(v)
-    KV.Config.ShowOnScreenHUD = v
-    KV.OnScreenHUD.Visible = v
-end)
-
-KV.createButton(KV.clickGuiPage, "Optimize FPS (Smooth Plastic)", "РћРїС‚РёРјРёР·РёСЂРѕРІР°С‚СЊ С‚РµРєСЃС‚СѓСЂС‹ РґР»СЏ СЃС‚Р°Р±РёР»СЊРЅРѕРіРѕ FPS", function()
-    pcall(function()
-        for _, v in pairs(Workspace:GetDescendants()) do
-            if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic
-            elseif v:IsA("Decal") or v:IsA("Texture") then v:Destroy() end
-        end
-        Lighting.GlobalShadows = false
-    end)
+KV.createToggle(KV.clickGuiPage, "Show OnScreen HUD", "Show OnScreen HUD (Draggable)", KV.Config.ShowOnScreenHUD, function(v) KV.Config.ShowOnScreenHUD = v; KV.OnScreenHUD.Visible = v end)
+KV.createButton(KV.clickGuiPage, "Optimize FPS (Smooth Plastic)", "Optimize graphics for maximum FPS", function()
+    pcall(function() for _, v in pairs(Workspace:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic elseif v:IsA("Decal") or v:IsA("Texture") then v:Destroy() end end Lighting.GlobalShadows = false end)
     KV.notify("Vortex FPS", "Map graphics optimized for maximum FPS!", 3)
 end)
 
--- ============================================================
--- 2. TAB: HOME DASHBOARD
--- ============================================================
 KV.sectionLabel(KV.dashboardPage, "PLAYER LIVE OVERVIEW")
 local statsP = KV.createPanel(KV.dashboardPage, 90)
 local statsText = Instance.new("TextLabel", statsP)
-statsText.BackgroundTransparency = 1
-statsText.Position = UDim2.new(0, 12, 0, 8)
-statsText.Size = UDim2.new(1, -24, 1, -16)
-statsText.Font = Enum.Font.GothamMedium
-statsText.TextColor3 = Color3.fromRGB(240, 245, 255)
-statsText.TextSize = 11
-statsText.TextXAlignment = Enum.TextXAlignment.Left
-statsText.TextYAlignment = Enum.TextYAlignment.Top
+statsText.BackgroundTransparency = 1; statsText.Position = UDim2.new(0, 12, 0, 8); statsText.Size = UDim2.new(1, -24, 1, -16); statsText.Font = Enum.Font.GothamMedium; statsText.TextColor3 = Color3.fromRGB(240, 245, 255); statsText.TextSize = 11; statsText.TextXAlignment = Enum.TextXAlignment.Left; statsText.TextYAlignment = Enum.TextYAlignment.Top
 
 RunService.RenderStepped:Connect(function()
     if currentTab == "Dashboard" then
@@ -964,193 +660,79 @@ RunService.RenderStepped:Connect(function()
         local str = ls and ls:FindFirstChild("Strength") and ls.Strength.Value or 0
         local reb = ls and ls:FindFirstChild("Rebirths") and ls.Rebirths.Value or 0
         local gems = KV.getCurrency("Gems")
-        
-        statsText.Text = string.format(
-            "Player: %s (ID: %d)\nStrength: %s\nRebirths: %s\nGems: %s\nPets Owned: %d",
-            LocalPlayer.Name, LocalPlayer.UserId, tostring(str), tostring(reb), tostring(gems), KV.countOwnedPets()
-        )
+        statsText.Text = "Player: " .. tostring(LocalPlayer.Name) .. " (ID: " .. tostring(LocalPlayer.UserId) .. ")\nStrength: " .. tostring(str) .. "\nRebirths: " .. tostring(reb) .. "\nGems: " .. tostring(gems) .. "\nPets Owned: " .. tostring(KV.countOwnedPets())
     end
 end)
 
--- ============================================================
--- 3. TAB: FARM (TURBO GYM FARMING)
--- ============================================================
 KV.sectionLabel(KV.trainingPage, "AUTO FARM & GYM TRAINING")
-
-KV.createToggle(KV.trainingPage, "Auto OP Turbo Clicker", "Р‘РµС€РµРЅР°СЏ СЃРєРѕСЂРѕСЃС‚СЊ РїСЂРѕРєР°С‡РєРё СЃРёР»Р°С‡", KV.Config.AutoOP, function(v)
+KV.createToggle(KV.trainingPage, "Auto OP Turbo Clicker", "Max speed auto farm strength", KV.Config.AutoOP, function(v)
     KV.Config.AutoOP = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoOP do
-                local ev = KV.getMuscleEvent()
-                if ev then
-                    pcall(function() ev:FireServer("punch", "leftHand") end)
-                    pcall(function() ev:FireServer("punch", "rightHand") end)
-                end
-                task.wait(0.01)
-            end
-        end)
-    end
+    if v then task.spawn(function() while KV.Config.AutoOP do local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end); pcall(function() ev:FireServer("punch", "rightHand") end) end task.wait(0.01) end end) end
 end)
-
-KV.createToggle(KV.trainingPage, "Walk While Training", "РҐРѕРґРёС‚СЊ СЃРІРѕР±РѕРґРЅРѕ РІРѕ РІСЂРµРјСЏ СѓРїСЂР°Р¶РЅРµРЅРёР№", KV.Config.WalkWhileTraining, function(v)
-    KV.Config.WalkWhileTraining = v
-end)
-
-KV.createToggle(KV.trainingPage, "Auto Dumbbell Farm", "РђРІС‚Рѕ С„Р°СЂРј РіР°РЅС‚РµР»СЏРјРё", KV.Config.AutoWeight, function(v)
+KV.createToggle(KV.trainingPage, "Walk While Training", "Move freely while exercising", KV.Config.WalkWhileTraining, function(v) KV.Config.WalkWhileTraining = v end)
+KV.createToggle(KV.trainingPage, "Auto Dumbbell Farm", "Auto farm with dumbbells", KV.Config.AutoWeight, function(v)
     KV.Config.AutoWeight = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoWeight do
-                local char = LocalPlayer.Character
-                local tool = char and char:FindFirstChildOfClass("Tool")
-                if tool then pcall(function() tool:Activate() end) end
-                local ev = KV.getMuscleEvent()
-                if ev then pcall(function() ev:FireServer("rep") end) end
-                task.wait(0.02)
-            end
-        end)
-    end
+    if v then task.spawn(function() while KV.Config.AutoWeight do local char = LocalPlayer.Character; local tool = char and char:FindFirstChildOfClass("Tool"); if tool then pcall(function() tool:Activate() end) end; local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("rep") end) end task.wait(0.02) end end) end
 end)
 
--- ============================================================
--- 4. TAB: AUTO & EGGS (FIXED AUTO CRYSTAL)
--- ============================================================
 KV.sectionLabel(KV.automationPage, "REBIRTH & CRYSTAL HATCHER")
-
-KV.createToggle(KV.automationPage, "Auto Rebirth", "РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ РїРµСЂРµСЂРѕР¶РґРµРЅРёРµ (Rebirth)", KV.Config.AutoRebirth, function(v)
+KV.createToggle(KV.automationPage, "Auto Rebirth", "Auto request rebirths", KV.Config.AutoRebirth, function(v)
     KV.Config.AutoRebirth = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoRebirth do
-                local ev = KV.getMuscleEvent()
-                if ev then pcall(function() ev:FireServer("rebirthRequest") end) end
-                task.wait(1)
-            end
-        end)
-    end
+    if v then task.spawn(function() while KV.Config.AutoRebirth do local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("rebirthRequest") end) end task.wait(1) end end) end
 end)
 
 KV.sectionLabel(KV.automationPage, "PET CRYSTAL HATCHER (FIXED)")
-
-KV.createToggle(KV.automationPage, "Auto Hatch Selected Crystal", "РђРІС‚Рѕ РѕС‚РєСЂС‹С‚РёРµ РІС‹Р±СЂР°РЅРЅРѕРіРѕ РєСЂРёСЃС‚Р°Р»Р»Р° СЃ РїРёС‚РѕРјС†Р°РјРё", KV.Config.AutoCrystal, function(v)
+KV.createToggle(KV.automationPage, "Auto Hatch Selected Crystal", "Auto hatch selected egg/crystal", KV.Config.AutoCrystal, function(v)
     KV.Config.AutoCrystal = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoCrystal do
-                local ok, res, msg = KV.openCrystalOnce(KV.Config.SelectedCrystal)
-                task.wait(KV.Config.HatchDelay)
-            end
-        end)
-    end
+    if v then task.spawn(function() while KV.Config.AutoCrystal do local ok, res, msg = KV.openCrystalOnce(KV.Config.SelectedCrystal); task.wait(KV.Config.HatchDelay) end end) end
 end)
-
-KV.createToggle(KV.automationPage, "Auto Teleport to Crystal", "РўРµР»РµРїРѕСЂС‚РёСЂРѕРІР°С‚СЊСЃСЏ РїСЂСЏРјРѕ Рє РєСЂРёСЃС‚Р°Р»Р»Сѓ РїСЂРё РѕС‚РєСЂС‹С‚РёРё", KV.Config.AutoTPToCrystal, function(v)
-    KV.Config.AutoTPToCrystal = v
-end)
-
-KV.createSlider(KV.automationPage, "Hatch Delay (ms)", 10, 1000, math.floor(KV.Config.HatchDelay * 1000), function(v)
-    KV.Config.HatchDelay = v / 1000
-end)
+KV.createToggle(KV.automationPage, "Auto Teleport to Crystal", "Teleport directly to crystal when hatching", KV.Config.AutoTPToCrystal, function(v) KV.Config.AutoTPToCrystal = v end)
+KV.createSlider(KV.automationPage, "Hatch Delay (ms)", 10, 1000, math.floor(KV.Config.HatchDelay * 1000), function(v) KV.Config.HatchDelay = v / 1000 end)
 
 KV.sectionLabel(KV.automationPage, "SELECT CRYSTAL")
 for _, cName in ipairs(KV.crystalCatalog) do
-    KV.createButton(KV.automationPage, cName, "РќР°Р¶РјРёС‚Рµ С‡С‚РѕР±С‹ РІС‹Р±СЂР°С‚СЊ " .. cName, function()
-        KV.Config.SelectedCrystal = cName
-        KV.notify("Vortex Hatcher", "Selected Crystal: " .. cName, 2)
-    end)
+    KV.createButton(KV.automationPage, cName, "Select " .. cName, function() KV.Config.SelectedCrystal = cName; KV.notify("Vortex Hatcher", "Selected Crystal: " .. cName, 2) end)
 end
 
--- ============================================================
--- 5. TAB: PETS MANAGEMENT
--- ============================================================
 KV.sectionLabel(KV.petsPage, "PET MANAGEMENT")
+KV.createButton(KV.petsPage, "Auto Evolve All Pets", "Evolve all pets in inventory", function() local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("evolvePetAll") end) end KV.notify("Vortex Pets", "Evolution request sent!", 2) end)
 
-KV.createButton(KV.petsPage, "Auto Evolve All Pets", "Р­РІРѕР»СЋС†РёРѕРЅРёСЂРѕРІР°С‚СЊ РІСЃРµС… РїРёС‚РѕРјС†РµРІ", function()
-    local ev = KV.getMuscleEvent()
-    if ev then pcall(function() ev:FireServer("evolvePetAll") end) end
-    KV.notify("Vortex Pets", "Evolution request sent!", 2)
-end)
-
--- ============================================================
--- 6. TAB: EVENTS & SHOP (NEW!)
--- ============================================================
-KV.sectionLabel(KV.eventsShopPage, "рџ‘‘ BOSS RADAR & TRACKER")
-
+KV.sectionLabel(KV.eventsShopPage, "BOSS RADAR & TRACKER")
 local bossCard = KV.createPanel(KV.eventsShopPage, 65)
 local bossStatusLbl = Instance.new("TextLabel", bossCard)
-bossStatusLbl.BackgroundTransparency = 1
-bossStatusLbl.Position = UDim2.new(0, 12, 0, 8)
-bossStatusLbl.Size = UDim2.new(1, -24, 1, -16)
-bossStatusLbl.Font = Enum.Font.GothamBold
-bossStatusLbl.TextColor3 = Color3.fromRGB(240, 245, 255)
-bossStatusLbl.TextSize = 11
-bossStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
+bossStatusLbl.BackgroundTransparency = 1; bossStatusLbl.Position = UDim2.new(0, 12, 0, 8); bossStatusLbl.Size = UDim2.new(1, -24, 1, -16); bossStatusLbl.Font = Enum.Font.GothamBold; bossStatusLbl.TextColor3 = Color3.fromRGB(240, 245, 255); bossStatusLbl.TextSize = 11; bossStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
 
 RunService.RenderStepped:Connect(function()
     if currentTab == "EventsShop" then
         local boss = KV.scanActiveBoss()
         if boss.alive then
-            bossStatusLbl.Text = string.format("рџ‘‘ Boss Active: %s\n  Health: %d / %d HP\n  Distance: %d studs", boss.name, boss.health, boss.maxHealth, boss.dist)
+            bossStatusLbl.Text = "Boss Active: " .. tostring(boss.name) .. "\n  Health: " .. tostring(boss.health) .. " / " .. tostring(boss.maxHealth) .. " HP\n  Distance: " .. tostring(boss.dist) .. " studs"
         else
-            bossStatusLbl.Text = "рџ‘‘ Boss Status: Searching / Spawning soon..."
+            bossStatusLbl.Text = "Boss Status: Searching / Spawning soon..."
         end
     end
 end)
 
-KV.createButton(KV.eventsShopPage, "Teleport to Active Boss", "РўРµР»РµРїРѕСЂС‚РёСЂРѕРІР°С‚СЊСЃСЏ Рє С‚РµРєСѓС‰РµРјСѓ Р‘РѕСЃСЃСѓ", function()
+KV.createButton(KV.eventsShopPage, "Teleport to Active Boss", "Teleport directly to active boss", function()
     local boss = KV.scanActiveBoss()
     if boss.alive and boss.model then
         local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart
         local myChar = LocalPlayer.Character
-        if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then
-            myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 5, 5)
-            KV.notify("Vortex Boss", "Teleported to " .. boss.name, 2)
-        end
-    else
-        KV.notify("Vortex Boss", "No active boss found!", 2)
-    end
+        if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 5, 5); KV.notify("Vortex Boss", "Teleported to " .. boss.name, 2) end
+    else KV.notify("Vortex Boss", "No active boss found!", 2) end
 end)
 
-KV.createToggle(KV.eventsShopPage, "Auto Farm / Kill Boss", "РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРё СѓР±РёРІР°С‚СЊ СЃРїР°РІРЅСЏС‰РёС…СЃСЏ Р‘РѕСЃСЃРѕРІ", KV.Config.AutoKillBoss, function(v)
+KV.createToggle(KV.eventsShopPage, "Auto Farm / Kill Boss", "Automatically attack spawning bosses", KV.Config.AutoKillBoss, function(v)
     KV.Config.AutoKillBoss = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoKillBoss do
-                local boss = KV.scanActiveBoss()
-                if boss.alive and boss.model then
-                    local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart
-                    local myChar = LocalPlayer.Character
-                    if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                        myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, 3)
-                        local ev = KV.getMuscleEvent()
-                        if ev then pcall(function() ev:FireServer("punch", "leftHand") end) end
-                    end
-                end
-                task.wait(0.05)
-            end
-        end)
-    end
+    if v then task.spawn(function() while KV.Config.AutoKillBoss do local boss = KV.scanActiveBoss(); if boss.alive and boss.model then local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart; local myChar = LocalPlayer.Character; if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, 3); local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end) end end end task.wait(0.05) end end) end
 end)
 
-KV.sectionLabel(KV.eventsShopPage, "рџ›’ OVERCHARGED SHOP TRACKER")
-
+KV.sectionLabel(KV.eventsShopPage, "OVERCHARGED SHOP TRACKER")
 local shopCard = KV.createPanel(KV.eventsShopPage, 60)
 local shopLbl = Instance.new("TextLabel", shopCard)
-shopLbl.BackgroundTransparency = 1
-shopLbl.Position = UDim2.new(0, 12, 0, 8)
-shopLbl.Size = UDim2.new(1, -24, 1, -16)
-shopLbl.Font = Enum.Font.GothamBold
-shopLbl.Text = "рџ›’ Overcharged Shop Stock:\n  Items: Overcharged Aura, Potions, Keys\n  Restock: 03:45"
-shopLbl.TextColor3 = Color3.fromRGB(240, 245, 255)
-shopLbl.TextSize = 11
-shopLbl.TextXAlignment = Enum.TextXAlignment.Left
+shopLbl.BackgroundTransparency = 1; shopLbl.Position = UDim2.new(0, 12, 0, 8); shopLbl.Size = UDim2.new(1, -24, 1, -16); shopLbl.Font = Enum.Font.GothamBold; shopLbl.Text = "Overcharged Shop Stock:\n  Items: Overcharged Aura, Potions, Keys\n  Restock: 03:45"; shopLbl.TextColor3 = Color3.fromRGB(240, 245, 255); shopLbl.TextSize = 11; shopLbl.TextXAlignment = Enum.TextXAlignment.Left
 
--- ============================================================
--- 7. TAB: TELEPORTS
--- ============================================================
 KV.sectionLabel(KV.teleportsPage, "WORLD & GYM TELEPORTS")
-
 KV.islandDatabase = {
     ["Spawn Beach"]      = Vector3.new(0, 10, 0),
     ["Tiny Island"]      = Vector3.new(-39, 10, 1860),
@@ -1164,118 +746,54 @@ KV.islandDatabase = {
     ["Muscle King Gym"]  = Vector3.new(-8550, 20, -5700),
     ["Overcharged Gym"]  = Vector3.new(-7050, 20, -1350),
 }
-
 for name, pos in pairs(KV.islandDatabase) do
-    KV.createButton(KV.teleportsPage, name, "РўРµР»РµРїРѕСЂС‚ РІ " .. name, function()
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = CFrame.new(pos)
-            KV.notify("Vortex TP", "Teleported to " .. name, 2)
-        end
-    end)
+    KV.createButton(KV.teleportsPage, name, "Teleport to " .. name, function() local char = LocalPlayer.Character; if char and char:FindFirstChild("HumanoidRootPart") then char.HumanoidRootPart.CFrame = CFrame.new(pos); KV.notify("Vortex TP", "Teleported to " .. name, 2) end end)
 end
 
--- ============================================================
--- 8. TAB: PROTECTION
--- ============================================================
 KV.sectionLabel(KV.protectionPage, "DEFENSE & SAFE TP")
-
-KV.createToggle(KV.protectionPage, "Godmode / Anti-Damage", "Р—Р°С‰РёС‚Р° РѕС‚ СѓСЂРѕРЅ", KV.Config.Godmode, function(v)
+KV.createToggle(KV.protectionPage, "Godmode / Anti-Damage", "Protection against damage", KV.Config.Godmode, function(v)
     KV.Config.Godmode = v
-    if v then
-        task.spawn(function()
-            while KV.Config.Godmode do
-                local char = LocalPlayer.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                if hum then hum.Health = hum.MaxHealth end
-                task.wait(0.1)
-            end
-        end)
-    end
+    if v then task.spawn(function() while KV.Config.Godmode do local char = LocalPlayer.Character; local hum = char and char:FindFirstChildOfClass("Humanoid"); if hum then hum.Health = hum.MaxHealth end task.wait(0.1) end end) end
 end)
 
--- ============================================================
--- 9. TAB: MOVEMENT & FLY
--- ============================================================
 KV.sectionLabel(KV.movementPage, "FLIGHT & SPEED")
+KV.createToggle(KV.movementPage, "Fly Mode (WASD)", "Free camera flight", KV.Config.FlyEnabled, function(v) KV.Config.FlyEnabled = v end)
+KV.createSlider(KV.movementPage, "Speed Booster", 16, 200, 16, function(v) local char = LocalPlayer.Character; local hum = char and char:FindFirstChildOfClass("Humanoid"); if hum then hum.WalkSpeed = v end end)
 
-KV.createToggle(KV.movementPage, "Fly Mode (WASD)", "РџРѕР»РµС‚ СЃРІРѕР±РѕРґРЅРѕР№ РєР°РјРµСЂС‹", KV.Config.FlyEnabled, function(v)
-    KV.Config.FlyEnabled = v
-end)
-
-KV.createSlider(KV.movementPage, "Speed Booster", 16, 200, 16, function(v)
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.WalkSpeed = v end
-end)
-
--- ============================================================
--- 10. TAB: VISUALS
--- ============================================================
 KV.sectionLabel(KV.visualsPage, "WORLD VISUALS")
+KV.createButton(KV.visualsPage, "Night Sky", "Switch to night sky", function() Lighting.TimeOfDay = "00:00:00" end)
+KV.createButton(KV.visualsPage, "Day Sky", "Switch to day sky", function() Lighting.TimeOfDay = "12:00:00" end)
 
-KV.createButton(KV.visualsPage, "Night Sky", "РџРµСЂРµРєР»СЋС‡РёС‚СЊ РЅР° РЅРѕС‡РЅРѕРµ РЅРµР±Рѕ", function()
-    Lighting.TimeOfDay = "00:00:00"
-end)
-KV.createButton(KV.visualsPage, "Day Sky", "РџРµСЂРµРєР»СЋС‡РёС‚СЊ РЅР° РґРЅРµРІРЅРѕРµ РЅРµР±Рѕ", function()
-    Lighting.TimeOfDay = "12:00:00"
-end)
-
--- ============================================================
--- 11. TAB: ABOUT
--- ============================================================
 KV.sectionLabel(KV.aboutPage, "VORTEX HUB INFO")
-KV.createButton(KV.aboutPage, "Owner: harin", "РќР°Р¶РјРёС‚Рµ РґР»СЏ РєРѕРїРёСЂРѕРІР°РЅРёСЏ Discord", function()
-    pcall(function() setclipboard("harin") end)
-    KV.notify("Vortex", "Discord copied: harin", 3)
-end)
+KV.createButton(KV.aboutPage, "Owner: harin", "Click to copy Discord", function() pcall(function() setclipboard("harin") end); KV.notify("Vortex", "Discord copied: harin", 3) end)
 
--- ============================================================
--- MENU CONTROLS & KEYBINDS
--- ============================================================
 KV.switchTab("ClickGUI")
-
 local guiVisible = false
 local isAnimating = false
 
 KV.openMenu = function()
     if guiVisible or isAnimating then return end
-    isAnimating = true
-    guiVisible = true
-    KV.MainFrame.Visible = true
-    KV.OpenBtn.Visible = false
+    isAnimating = true; guiVisible = true; KV.MainFrame.Visible = true; KV.OpenBtn.Visible = false
     KV.tw(KV.MainFrame, {Position = KV.menuTargetPos}, 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
     task.delay(0.2, function() isAnimating = false end)
 end
 
 KV.closeMenu = function()
     if not guiVisible or isAnimating then return end
-    isAnimating = true
-    guiVisible = false
+    isAnimating = true; guiVisible = false
     KV.tw(KV.MainFrame, {Position = UDim2.new(KV.menuTargetPos.X.Scale, KV.menuTargetPos.X.Offset, KV.menuTargetPos.Y.Scale, KV.menuTargetPos.Y.Offset + 30)}, 0.15):Play()
-    task.delay(0.15, function()
-        KV.MainFrame.Visible = false
-        KV.MainFrame.Position = KV.menuTargetPos
-        KV.OpenBtn.Visible = true
-        isAnimating = false
-    end)
+    task.delay(0.15, function() KV.MainFrame.Visible = false; KV.MainFrame.Position = KV.menuTargetPos; KV.OpenBtn.Visible = true; isAnimating = false end)
 end
 
-KV.toggleMenu = function()
-    if guiVisible then KV.closeMenu() else KV.openMenu() end
-end
-
+KV.toggleMenu = function() if guiVisible then KV.closeMenu() else KV.openMenu() end end
 KV.CloseHeaderBtn.MouseButton1Click:Connect(KV.closeMenu)
 KV.OpenBtn.MouseButton1Click:Connect(KV.toggleMenu)
 
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
-    if input.KeyCode == Enum.KeyCode.RightShift then
-        KV.toggleMenu()
-    end
+    if input.KeyCode == Enum.KeyCode.RightShift then KV.toggleMenu() end
 end)
 
--- Initial Load
 KV.openMenu()
 print("[Vortex Glass UI v0.24]: Muscle Legends Hub loaded successfully!")
 
