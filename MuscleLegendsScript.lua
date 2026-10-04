@@ -2735,13 +2735,13 @@ KV.createSlider(KV.trainingPage, "Max reps/s", 1, 1000, 659, function(v)
 end, nil, "Recommended Speed: 659, more = lag")
 
 -- 3. Р§РµРєР±РѕРєСЃ Fast Rep
-KV.createToggle(KV.trainingPage, "Fast Rep", "РЈСЃРєРѕСЂРµРЅРЅС‹Р№ СЂРµР¶РёРј РєР°С‡Р° РјС‹С€С†", true, function(v)
+KV.createToggle(KV.trainingPage, "Fast Rep", "Accelerated muscle training rep mode", true, function(v)
     KV.FarmState.fastRep = v
     KV.Config.UltraFastRep = v
 end)
 
 -- 4. Р•РґРёРЅР°СЏ С„СѓРЅРєС†РёСЏ Auto Farm
-KV.createToggle(KV.trainingPage, "Auto Farm", "РЎР°РґРёС‚СЃСЏ РЅР° С‚СЂРµРЅР°Р¶РµСЂ, РєР°С‡Р°РµС‚СЃСЏ Рё РІС‹РІРѕРґРёС‚ РїРѕРґСЂРѕР±РЅСѓСЋ СЃС‚Р°С‚РёСЃС‚РёРєСѓ!", KV.Config.AutoFarmCombined or false, function(v)
+KV.createToggle(KV.trainingPage, "Auto Farm", "Automatically sits on gym machines, farms strength and displays live statistics!", KV.Config.AutoFarmCombined or false, function(v)
     KV.Config.AutoFarmCombined = v
     KV.FarmState.active = v
     
@@ -3309,7 +3309,7 @@ KV.getActiveBoss = function()
     return bestModel, bestHum, bestHrp
 end
 
-KV.createToggle(KV.combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Авто-фарм Босса: позиция у босса + без урона по вам + быстрая атака!", KV.Config.AutoKillBoss, function(v)
+KV.createToggle(KV.combatPage, "Auto Farm Boss (Godmode Safe TP & Fast Beat)", "Auto boss killer for all bosses (including x10 Boss): safe TP + fast attacks!", KV.Config.AutoKillBoss, function(v)
     KV.Config.AutoKillBoss = v
     if v then
         KV.notify("Vortex Boss", KV.tn("Авто-фарм Босса включен! Наведение...", "Boss auto farm enabled! Targeting..."), 3)
