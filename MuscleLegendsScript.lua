@@ -76,6 +76,8 @@ local CollectionService = game:GetService("CollectionService")
 
 KV.ScriptConnections = {}
 KV.unloaded = false
+KV.originalMaterials = {}
+KV.originalShadows = Lighting.GlobalShadows
 
 if getgenv().VortexInstance then
     pcall(function() getgenv().VortexInstance:Destroy() end)
@@ -95,6 +97,7 @@ KV.Config = {
     GlassIntensity    = 40,
     EnableTooltips    = true,
     ShowOnScreenHUD   = true,
+    OptimizeFPS       = false,
     HUDPosition       = UDim2.new(1, -270, 0, 20),
     AccentColor       = Color3.fromRGB(0, 242, 254),
     AutoOP            = false,
@@ -186,6 +189,56 @@ end
 KV.getMuscleEvent = function() local rEvents = ReplicatedStorage:FindFirstChild("rEvents"); return rEvents and rEvents:FindFirstChild("muscleEvent") end
 KV.getREvent = function(name) local rEvents = ReplicatedStorage:FindFirstChild("rEvents"); return rEvents and rEvents:FindFirstChild(name) end
 
+KV.applyFpsOptimization = function(enable)
+    pcall(function()
+        if enable then
+            Lighting.GlobalShadows = false
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    if not KV.originalMaterials[v] then KV.originalMaterials[v] = v.Material end
+                    v.Material = Enum.Material.SmoothPlastic
+                elseif v:IsA("Decal") or v:IsA("Texture") then
+                    v.Transparency = 1
+                elseif v:IsA("ParticleEmitter") or v:IsA("Sparkles") or v:IsA("Fire") or v:IsA("Smoke") then
+                    v.Enabled = false
+                end
+            end
+        else
+            Lighting.GlobalShadows = KV.originalShadows or true
+            for part, origMat in pairs(KV.originalMaterials) do
+                if part and part.Parent then part.Material = origMat end
+            end
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 0 end
+                if v:IsA("ParticleEmitter") or v:IsA("Sparkles") or v:IsA("Fire") or v:IsA("Smoke") then v.Enabled = true end
+            end
+        end
+    end)
+end
+
+KV.unloadScript = function()
+    if KV.unloaded then return end
+    KV.unloaded = true
+    KV.Config.AutoOP = false
+    KV.Config.AutoWeight = false
+    KV.Config.AutoCrystal = false
+    KV.Config.AutoRebirth = false
+    KV.Config.AutoKillBoss = false
+    KV.Config.Godmode = false
+    KV.Config.OptimizeFPS = false
+    pcall(function() KV.applyFpsOptimization(false) end)
+    for _, conn in ipairs(KV.ScriptConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    if getgenv().VortexConnections then
+        for _, conn in ipairs(getgenv().VortexConnections) do pcall(function() conn:Disconnect() end) end
+    end
+    if KV.ScreenGui then pcall(function() KV.ScreenGui:Destroy() end) end
+    getgenv().VortexInstance = nil
+    getgenv().VortexConnections = nil
+    KV.notify("Vortex Hub", "Script unloaded successfully!", 3)
+end
+
 KV.teleportToCrystal = function(crystalName)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -251,13 +304,30 @@ KV.scanActiveBoss = function()
 end
 
 KV.scanOverchargedShop = function()
-    local shopData = {items = {"Overcharged Aura", "Aura Potion", "Crystal Key"}, restockTimer = "03:45", active = true}
-    local shopFolder = Workspace:FindFirstChild("OverchargedShop") or Workspace:FindFirstChild("Shop")
-    if shopFolder then
-        local found = {}
-        for _, child in pairs(shopFolder:GetChildren()) do table.insert(found, child.Name) end
-        if #found > 0 then shopData.items = found end
+    local shopData = {items = {}, statusText = "Stock Active", shopModel = nil, dist = 0}
+    local myChar = LocalPlayer.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local targetNames = {"overcharged shop", "overchargedshop", "shop", "shops", "overcharged"}
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("Model") or v:IsA("Folder") or v:IsA("BasePart") then
+            local n = string.lower(v.Name)
+            for _, tName in ipairs(targetNames) do
+                if string.find(n, tName, 1, true) then
+                    shopData.shopModel = v
+                    local part = v:IsA("BasePart") and v or (v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart"))
+                    if myHrp and part then shopData.dist = math.floor((part.Position - myHrp.Position).Magnitude) end
+                    for _, child in pairs(v:GetChildren()) do
+                        if child:IsA("Model") or child:IsA("BasePart") or child:IsA("Tool") or child:IsA("Configuration") then
+                            table.insert(shopData.items, child.Name)
+                        end
+                    end
+                    break
+                end
+            end
+            if shopData.shopModel then break end
+        end
     end
+    if #shopData.items == 0 then shopData.items = {"Overcharged Aura", "Aura Potion", "Crystal Key"} end
     return shopData
 end
 
@@ -296,7 +366,7 @@ KV.OnScreenHUD.Name = "OnScreenHUD"
 KV.OnScreenHUD.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
 KV.OnScreenHUD.BackgroundTransparency = 0.15
 KV.OnScreenHUD.Position = KV.Config.HUDPosition
-KV.OnScreenHUD.Size = UDim2.new(0, 260, 0, 140)
+KV.OnScreenHUD.Size = UDim2.new(0, 270, 0, 145)
 KV.OnScreenHUD.Visible = KV.Config.ShowOnScreenHUD
 KV.OnScreenHUD.Active = true
 KV.applyCorner(KV.OnScreenHUD, 14)
@@ -337,6 +407,7 @@ local smoothedFps = 60
 local lastFpsUpdate = tick()
 
 KV.hudConn = RunService.RenderStepped:Connect(function(dt)
+    if KV.unloaded then return end
     fpsAccumulator = fpsAccumulator + (1 / dt)
     frameCount = frameCount + 1
     if (tick() - lastFpsUpdate) >= 0.5 then
@@ -350,10 +421,14 @@ KV.hudConn = RunService.RenderStepped:Connect(function(dt)
         local ls = LocalPlayer:FindFirstChild("leaderstats")
         local str = ls and ls:FindFirstChild("Strength") and ls.Strength.Value or 0
         local reb = ls and ls:FindFirstChild("Rebirths") and ls.Rebirths.Value or 0
+        local gems = KV.getCurrency("Gems")
         local boss = KV.scanActiveBoss()
+        local shop = KV.scanOverchargedShop()
         local bossText = boss.alive and string.format("Boss: %s (%d HP, %dm)", boss.name, boss.health, boss.dist) or "Boss: Spawning..."
-        local shopText = "Shop Stock: Aura, Keys, Potions [In Stock]"
-        KV.HUDContentLabel.Text = "Vortex v0.24 HUD (Draggable)\n  FPS: " .. tostring(smoothedFps) .. " | Ping: " .. tostring(ping) .. " ms\n  Strength: " .. tostring(str) .. " | Rebirths: " .. tostring(reb) .. "\n  " .. bossText .. "\n  " .. shopText
+        local shopItemsStr = table.concat(shop.items, ", ")
+        if #shopItemsStr > 30 then shopItemsStr = string.sub(shopItemsStr, 1, 30) .. "..." end
+        local shopText = "Shop Stock: " .. shopItemsStr .. " [" .. shop.statusText .. "]"
+        KV.HUDContentLabel.Text = "Vortex v0.24 HUD (Draggable)\n  FPS: " .. tostring(smoothedFps) .. " | Ping: " .. tostring(ping) .. " ms\n  Str: " .. tostring(str) .. " | Reb: " .. tostring(reb) .. " | Gems: " .. tostring(gems) .. "\n  " .. bossText .. "\n  " .. shopText
     end
 end)
 table.insert(KV.ScriptConnections, KV.hudConn)
@@ -572,6 +647,15 @@ KV.createButton = function(page, title, desc, callback)
     return p
 end
 
+KV.createRedButton = function(page, title, desc, callback)
+    local p = KV.createPanel(page, 44)
+    p.BackgroundColor3 = Color3.fromRGB(45, 18, 22)
+    local btn = Instance.new("TextButton", p)
+    btn.BackgroundTransparency = 1; btn.Size = UDim2.new(1, 0, 1, 0); btn.Font = Enum.Font.GothamBold; btn.Text = "  " .. title; btn.TextColor3 = Color3.fromRGB(255, 100, 100); btn.TextSize = 12; btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.MouseButton1Click:Connect(function() if callback then callback() end end)
+    return p
+end
+
 KV.createSlider = function(page, title, minVal, maxVal, defaultVal, callback)
     local p = KV.createPanel(page, 48)
     local lbl = Instance.new("TextLabel", p)
@@ -644,9 +728,15 @@ end
 
 KV.sectionLabel(KV.clickGuiPage, "HUD & DISPLAY SETTINGS")
 KV.createToggle(KV.clickGuiPage, "Show OnScreen HUD", "Show OnScreen HUD (Draggable)", KV.Config.ShowOnScreenHUD, function(v) KV.Config.ShowOnScreenHUD = v; KV.OnScreenHUD.Visible = v end)
-KV.createButton(KV.clickGuiPage, "Optimize FPS (Smooth Plastic)", "Optimize graphics for maximum FPS", function()
-    pcall(function() for _, v in pairs(Workspace:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic elseif v:IsA("Decal") or v:IsA("Texture") then v:Destroy() end end Lighting.GlobalShadows = false end)
-    KV.notify("Vortex FPS", "Map graphics optimized for maximum FPS!", 3)
+KV.createToggle(KV.clickGuiPage, "Optimize FPS (Smooth Plastic)", "Disable shadows & set smooth plastic for MAX FPS", KV.Config.OptimizeFPS, function(v)
+    KV.Config.OptimizeFPS = v
+    KV.applyFpsOptimization(v)
+    KV.notify("Vortex FPS", v and "FPS Optimization Enabled!" or "FPS Optimization Disabled!", 2)
+end)
+
+KV.sectionLabel(KV.clickGuiPage, "UNLOAD SCRIPT")
+KV.createRedButton(KV.clickGuiPage, "Unload Script / Выгрузить скрипт", "Completely destroy GUI & stop all loops", function()
+    KV.unloadScript()
 end)
 
 KV.sectionLabel(KV.dashboardPage, "PLAYER LIVE OVERVIEW")
@@ -655,6 +745,7 @@ local statsText = Instance.new("TextLabel", statsP)
 statsText.BackgroundTransparency = 1; statsText.Position = UDim2.new(0, 12, 0, 8); statsText.Size = UDim2.new(1, -24, 1, -16); statsText.Font = Enum.Font.GothamMedium; statsText.TextColor3 = Color3.fromRGB(240, 245, 255); statsText.TextSize = 11; statsText.TextXAlignment = Enum.TextXAlignment.Left; statsText.TextYAlignment = Enum.TextYAlignment.Top
 
 RunService.RenderStepped:Connect(function()
+    if KV.unloaded then return end
     if currentTab == "Dashboard" then
         local ls = LocalPlayer:FindFirstChild("leaderstats")
         local str = ls and ls:FindFirstChild("Strength") and ls.Strength.Value or 0
@@ -667,24 +758,24 @@ end)
 KV.sectionLabel(KV.trainingPage, "AUTO FARM & GYM TRAINING")
 KV.createToggle(KV.trainingPage, "Auto OP Turbo Clicker", "Max speed auto farm strength", KV.Config.AutoOP, function(v)
     KV.Config.AutoOP = v
-    if v then task.spawn(function() while KV.Config.AutoOP do local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end); pcall(function() ev:FireServer("punch", "rightHand") end) end task.wait(0.01) end end) end
+    if v then task.spawn(function() while KV.Config.AutoOP and not KV.unloaded do local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end); pcall(function() ev:FireServer("punch", "rightHand") end) end task.wait(0.01) end end) end
 end)
 KV.createToggle(KV.trainingPage, "Walk While Training", "Move freely while exercising", KV.Config.WalkWhileTraining, function(v) KV.Config.WalkWhileTraining = v end)
 KV.createToggle(KV.trainingPage, "Auto Dumbbell Farm", "Auto farm with dumbbells", KV.Config.AutoWeight, function(v)
     KV.Config.AutoWeight = v
-    if v then task.spawn(function() while KV.Config.AutoWeight do local char = LocalPlayer.Character; local tool = char and char:FindFirstChildOfClass("Tool"); if tool then pcall(function() tool:Activate() end) end; local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("rep") end) end task.wait(0.02) end end) end
+    if v then task.spawn(function() while KV.Config.AutoWeight and not KV.unloaded do local char = LocalPlayer.Character; local tool = char and char:FindFirstChildOfClass("Tool"); if tool then pcall(function() tool:Activate() end) end; local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("rep") end) end task.wait(0.02) end end) end
 end)
 
 KV.sectionLabel(KV.automationPage, "REBIRTH & CRYSTAL HATCHER")
 KV.createToggle(KV.automationPage, "Auto Rebirth", "Auto request rebirths", KV.Config.AutoRebirth, function(v)
     KV.Config.AutoRebirth = v
-    if v then task.spawn(function() while KV.Config.AutoRebirth do local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("rebirthRequest") end) end task.wait(1) end end) end
+    if v then task.spawn(function() while KV.Config.AutoRebirth and not KV.unloaded do local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("rebirthRequest") end) end task.wait(1) end end) end
 end)
 
 KV.sectionLabel(KV.automationPage, "PET CRYSTAL HATCHER (FIXED)")
 KV.createToggle(KV.automationPage, "Auto Hatch Selected Crystal", "Auto hatch selected egg/crystal", KV.Config.AutoCrystal, function(v)
     KV.Config.AutoCrystal = v
-    if v then task.spawn(function() while KV.Config.AutoCrystal do local ok, res, msg = KV.openCrystalOnce(KV.Config.SelectedCrystal); task.wait(KV.Config.HatchDelay) end end) end
+    if v then task.spawn(function() while KV.Config.AutoCrystal and not KV.unloaded do local ok, res, msg = KV.openCrystalOnce(KV.Config.SelectedCrystal); task.wait(KV.Config.HatchDelay) end end) end
 end)
 KV.createToggle(KV.automationPage, "Auto Teleport to Crystal", "Teleport directly to crystal when hatching", KV.Config.AutoTPToCrystal, function(v) KV.Config.AutoTPToCrystal = v end)
 KV.createSlider(KV.automationPage, "Hatch Delay (ms)", 10, 1000, math.floor(KV.Config.HatchDelay * 1000), function(v) KV.Config.HatchDelay = v / 1000 end)
@@ -703,6 +794,7 @@ local bossStatusLbl = Instance.new("TextLabel", bossCard)
 bossStatusLbl.BackgroundTransparency = 1; bossStatusLbl.Position = UDim2.new(0, 12, 0, 8); bossStatusLbl.Size = UDim2.new(1, -24, 1, -16); bossStatusLbl.Font = Enum.Font.GothamBold; bossStatusLbl.TextColor3 = Color3.fromRGB(240, 245, 255); bossStatusLbl.TextSize = 11; bossStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
 
 RunService.RenderStepped:Connect(function()
+    if KV.unloaded then return end
     if currentTab == "EventsShop" then
         local boss = KV.scanActiveBoss()
         if boss.alive then
@@ -724,13 +816,33 @@ end)
 
 KV.createToggle(KV.eventsShopPage, "Auto Farm / Kill Boss", "Automatically attack spawning bosses", KV.Config.AutoKillBoss, function(v)
     KV.Config.AutoKillBoss = v
-    if v then task.spawn(function() while KV.Config.AutoKillBoss do local boss = KV.scanActiveBoss(); if boss.alive and boss.model then local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart; local myChar = LocalPlayer.Character; if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, 3); local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end) end end end task.wait(0.05) end end) end
+    if v then task.spawn(function() while KV.Config.AutoKillBoss and not KV.unloaded do local boss = KV.scanActiveBoss(); if boss.alive and boss.model then local hrp = boss.model:FindFirstChild("HumanoidRootPart") or boss.model.PrimaryPart; local myChar = LocalPlayer.Character; if hrp and myChar and myChar:FindFirstChild("HumanoidRootPart") then myChar.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, 3); local ev = KV.getMuscleEvent(); if ev then pcall(function() ev:FireServer("punch", "leftHand") end) end end end task.wait(0.05) end end) end
 end)
 
 KV.sectionLabel(KV.eventsShopPage, "OVERCHARGED SHOP TRACKER")
-local shopCard = KV.createPanel(KV.eventsShopPage, 60)
+local shopCard = KV.createPanel(KV.eventsShopPage, 65)
 local shopLbl = Instance.new("TextLabel", shopCard)
-shopLbl.BackgroundTransparency = 1; shopLbl.Position = UDim2.new(0, 12, 0, 8); shopLbl.Size = UDim2.new(1, -24, 1, -16); shopLbl.Font = Enum.Font.GothamBold; shopLbl.Text = "Overcharged Shop Stock:\n  Items: Overcharged Aura, Potions, Keys\n  Restock: 03:45"; shopLbl.TextColor3 = Color3.fromRGB(240, 245, 255); shopLbl.TextSize = 11; shopLbl.TextXAlignment = Enum.TextXAlignment.Left
+shopLbl.BackgroundTransparency = 1; shopLbl.Position = UDim2.new(0, 12, 0, 8); shopLbl.Size = UDim2.new(1, -24, 1, -16); shopLbl.Font = Enum.Font.GothamBold; shopLbl.TextColor3 = Color3.fromRGB(240, 245, 255); shopLbl.TextSize = 11; shopLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+RunService.RenderStepped:Connect(function()
+    if KV.unloaded then return end
+    if currentTab == "EventsShop" then
+        local shop = KV.scanOverchargedShop()
+        shopLbl.Text = "Overcharged Shop Stock:\n  Status: " .. shop.statusText .. " (Dist: " .. tostring(shop.dist) .. "m)\n  Items: " .. table.concat(shop.items, ", ")
+    end
+end)
+
+KV.createButton(KV.eventsShopPage, "Teleport to Overcharged Shop", "Teleport to shop location", function()
+    local shop = KV.scanOverchargedShop()
+    local myChar = LocalPlayer.Character
+    if shop.shopModel and myChar and myChar:FindFirstChild("HumanoidRootPart") then
+        local part = shop.shopModel:IsA("BasePart") and shop.shopModel or (shop.shopModel.PrimaryPart or shop.shopModel:FindFirstChildWhichIsA("BasePart"))
+        if part then myChar.HumanoidRootPart.CFrame = part.CFrame * CFrame.new(0, 3, 5); KV.notify("Vortex Shop", "Teleported to Overcharged Shop!", 2) return end
+    end
+    if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+        myChar.HumanoidRootPart.CFrame = CFrame.new(0, 10, 0); KV.notify("Vortex Shop", "Teleported to Main Shop Spawn!", 2)
+    end
+end)
 
 KV.sectionLabel(KV.teleportsPage, "WORLD & GYM TELEPORTS")
 KV.islandDatabase = {
@@ -753,7 +865,7 @@ end
 KV.sectionLabel(KV.protectionPage, "DEFENSE & SAFE TP")
 KV.createToggle(KV.protectionPage, "Godmode / Anti-Damage", "Protection against damage", KV.Config.Godmode, function(v)
     KV.Config.Godmode = v
-    if v then task.spawn(function() while KV.Config.Godmode do local char = LocalPlayer.Character; local hum = char and char:FindFirstChildOfClass("Humanoid"); if hum then hum.Health = hum.MaxHealth end task.wait(0.1) end end) end
+    if v then task.spawn(function() while KV.Config.Godmode and not KV.unloaded do local char = LocalPlayer.Character; local hum = char and char:FindFirstChildOfClass("Humanoid"); if hum then hum.Health = hum.MaxHealth end task.wait(0.1) end end) end
 end)
 
 KV.sectionLabel(KV.movementPage, "FLIGHT & SPEED")
@@ -766,20 +878,21 @@ KV.createButton(KV.visualsPage, "Day Sky", "Switch to day sky", function() Light
 
 KV.sectionLabel(KV.aboutPage, "VORTEX HUB INFO")
 KV.createButton(KV.aboutPage, "Owner: harin", "Click to copy Discord", function() pcall(function() setclipboard("harin") end); KV.notify("Vortex", "Discord copied: harin", 3) end)
+KV.createRedButton(KV.aboutPage, "Unload Script / Выгрузить скрипт", "Safely close Vortex Hub", function() KV.unloadScript() end)
 
 KV.switchTab("ClickGUI")
 local guiVisible = false
 local isAnimating = false
 
 KV.openMenu = function()
-    if guiVisible or isAnimating then return end
+    if guiVisible or isAnimating or KV.unloaded then return end
     isAnimating = true; guiVisible = true; KV.MainFrame.Visible = true; KV.OpenBtn.Visible = false
     KV.tw(KV.MainFrame, {Position = KV.menuTargetPos}, 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
     task.delay(0.2, function() isAnimating = false end)
 end
 
 KV.closeMenu = function()
-    if not guiVisible or isAnimating then return end
+    if not guiVisible or isAnimating or KV.unloaded then return end
     isAnimating = true; guiVisible = false
     KV.tw(KV.MainFrame, {Position = UDim2.new(KV.menuTargetPos.X.Scale, KV.menuTargetPos.X.Offset, KV.menuTargetPos.Y.Scale, KV.menuTargetPos.Y.Offset + 30)}, 0.15):Play()
     task.delay(0.15, function() KV.MainFrame.Visible = false; KV.MainFrame.Position = KV.menuTargetPos; KV.OpenBtn.Visible = true; isAnimating = false end)
@@ -789,10 +902,11 @@ KV.toggleMenu = function() if guiVisible then KV.closeMenu() else KV.openMenu() 
 KV.CloseHeaderBtn.MouseButton1Click:Connect(KV.closeMenu)
 KV.OpenBtn.MouseButton1Click:Connect(KV.toggleMenu)
 
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
+local inputConn = UserInputService.InputBegan:Connect(function(input, gp)
+    if gp or KV.unloaded then return end
     if input.KeyCode == Enum.KeyCode.RightShift then KV.toggleMenu() end
 end)
+table.insert(KV.ScriptConnections, inputConn)
 
 KV.openMenu()
 print("[Vortex Glass UI v0.24]: Muscle Legends Hub loaded successfully!")
