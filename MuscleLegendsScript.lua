@@ -1631,7 +1631,7 @@ table.insert(KV.ScriptConnections, KV.hudConn)
 -- ============================================================
 -- ГЛАВНОЕ ОКНО Vortex 0.23 (690x520)
 -- ============================================================
-KV.MainFrame = Instance.new("Frame", KV.ScreenGui)
+KV.MainFrame = Instance.new("CanvasGroup", KV.ScreenGui)
 KV.MainFrame.Name = "MainFrame"
 KV.MainFrame.BackgroundColor3 = KV.currentTheme().window
 KV.MainFrame.BackgroundTransparency = 0
@@ -1645,7 +1645,7 @@ print("[Vortex STAGE E]: главное окно построено, показ�
 bootSet("[Vortex] UI built — starting load animation...")
 KV.MainFrame.ClipsDescendants = true
 CollectionService:AddTag(KV.MainFrame, "ThemeWindow")
-KV.applyCorner(KV.MainFrame, 16)
+KV.applyCorner(KV.MainFrame, 18)
 KV.MainStroke = KV.applyStroke(KV.MainFrame, KV.AccentColor, 0.3, 1.5)
 CollectionService:AddTag(KV.MainStroke, "AccentStroke")
 
@@ -1673,7 +1673,7 @@ KV.BrandHeader.Position = UDim2.new(0, 0, 0, 0)
 KV.BrandHeader.Size = UDim2.new(0, 190, 0, 58)
 KV.BrandHeader.ZIndex = 6
 KV.BrandHeader.Active = true
-CollectionService:AddTag(KV.BrandHeader, "ThemeBar")
+CollectionService:AddTag(KV.BrandHeader, "ThemeBar"); KV.applyCorner(KV.BrandHeader, 18)
 
 -- Мини-логотип (кот) в бренд-шапке
 KV.BrandIcon = KV.createCatLogo(KV.BrandHeader, 30)
@@ -1710,7 +1710,7 @@ KV.TopBar.Position = UDim2.new(0, 190, 0, 0)
 KV.TopBar.Size = UDim2.new(1, -190, 0, 58)
 KV.TopBar.Active = true
 KV.TopBar.ZIndex = 6
-CollectionService:AddTag(KV.TopBar, "ThemeBar")
+CollectionService:AddTag(KV.TopBar, "ThemeBar"); KV.applyCorner(KV.TopBar, 18)
 
 KV.PageTitle = Instance.new("TextLabel", KV.TopBar)
 KV.PageTitle.BackgroundTransparency = 1
@@ -1831,7 +1831,7 @@ KV.DescFooterBar.BorderSizePixel = 0
 KV.DescFooterBar.Position = UDim2.new(0, 190, 1, -28)
 KV.DescFooterBar.Size = UDim2.new(1, -190, 0, 28)
 KV.DescFooterBar.ZIndex = 8
-CollectionService:AddTag(KV.DescFooterBar, "ThemeBar")
+CollectionService:AddTag(KV.DescFooterBar, "ThemeBar"); KV.applyCorner(KV.DescFooterBar, 14)
 
 KV.DescTextLabel = Instance.new("TextLabel", KV.DescFooterBar)
 KV.DescTextLabel.BackgroundTransparency = 1
@@ -1849,7 +1849,7 @@ end)
 -- Сайдбар: полная высота под бренд-шапкой
 KV.Sidebar = Instance.new("ScrollingFrame", KV.MainFrame)
 KV.Sidebar.BackgroundColor3 = KV.currentTheme().side; KV.Sidebar.BackgroundTransparency = 0; KV.Sidebar.BorderSizePixel = 0; KV.Sidebar.Position = UDim2.new(0,0,0,58); KV.Sidebar.Size = UDim2.new(0,190,1,-58); KV.Sidebar.ZIndex = 5; KV.Sidebar.ScrollBarThickness = 3; KV.Sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y; KV.Sidebar.CanvasSize = UDim2.new(0,0,0,0)
-CollectionService:AddTag(KV.Sidebar, "ThemeSide")
+CollectionService:AddTag(KV.Sidebar, "ThemeSide"); KV.applyCorner(KV.Sidebar, 14)
 
 KV.SideLayout = Instance.new("UIListLayout", KV.Sidebar)
 KV.SideLayout.SortOrder = Enum.SortOrder.LayoutOrder; KV.SideLayout.Padding = UDim.new(0,4)
@@ -2004,7 +2004,7 @@ KV.createGlassPanel = function(page, height)
     local panel = Instance.new("Frame", page)
     panel.BackgroundColor3 = KV.currentTheme().panel; panel.BackgroundTransparency = 0; panel.Size = UDim2.new(1,-10,0,height)
     CollectionService:AddTag(panel, "ThemePanel")
-    KV.applyCorner(panel, 12); KV.applyStroke(panel, Color3.fromRGB(255,255,255), 0.94, 1)
+    KV.applyCorner(panel, 14); KV.applyStroke(panel, Color3.fromRGB(255,255,255), 0.94, 1)
     -- мягкая подсветка при наведении
     panel.MouseEnter:Connect(function()
         local base = KV.currentTheme().panel
@@ -2284,7 +2284,7 @@ KV.createToggle = function(page, name, desc, default, callback, extras)
     indicator.AnchorPoint = Vector2.new(1,0.5); indicator.Position = UDim2.new(1,-14,0.5,0); indicator.Size = UDim2.new(0,38,0,20)
     indicator.BackgroundColor3 = state and KV.AccentColor or Color3.fromRGB(51,65,85)
     indicator.ZIndex = 3
-    KV.applyCorner(indicator, 10)
+    KV.applyCorner(indicator, 12)
 
     local dot = Instance.new("Frame", indicator)
     dot.AnchorPoint = Vector2.new(0,0.5); dot.Position = state and UDim2.new(1,-17,0.5,0) or UDim2.new(0,3,0.5,0)
