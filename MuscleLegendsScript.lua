@@ -98,7 +98,7 @@ KV.Config = {
     EnableTooltips    = true,
     ShowOnScreenHUD   = true,
     OptimizeFPS       = false,
-    HUDPosition       = UDim2.new(1, -270, 0, 20),
+    HUDPosition       = UDim2.new(1, -280, 0, 20),
     AccentColor       = Color3.fromRGB(0, 242, 254),
     AutoOP            = false,
     WalkWhileTraining = true,
@@ -139,11 +139,11 @@ KV.crystalCatalog = {
 }
 
 KV.UIThemes = {
-    {name = "Cyber Neon",   window = Color3.fromRGB(15, 18, 28),  side = Color3.fromRGB(10, 12, 20),  panel = Color3.fromRGB(24, 28, 42),  bar = Color3.fromRGB(18, 22, 34)},
-    {name = "Slate Dark",   window = Color3.fromRGB(20, 24, 33),  side = Color3.fromRGB(15, 18, 25),  panel = Color3.fromRGB(30, 36, 48),  bar = Color3.fromRGB(22, 27, 38)},
-    {name = "Midnight",     window = Color3.fromRGB(12, 14, 24),  side = Color3.fromRGB(8, 9, 16),    panel = Color3.fromRGB(20, 23, 38),  bar = Color3.fromRGB(14, 16, 28)},
-    {name = "Crimson Red",  window = Color3.fromRGB(24, 14, 16),  side = Color3.fromRGB(16, 8, 10),   panel = Color3.fromRGB(38, 20, 24),  bar = Color3.fromRGB(28, 14, 16)},
-    {name = "Emerald Mint", window = Color3.fromRGB(12, 24, 20),  side = Color3.fromRGB(8, 16, 13),   panel = Color3.fromRGB(20, 38, 30),  bar = Color3.fromRGB(14, 28, 22)}
+    {name = "Cyber Neon",   window = Color3.fromRGB(14, 17, 26),  side = Color3.fromRGB(10, 12, 20),  panel = Color3.fromRGB(22, 26, 38),  bar = Color3.fromRGB(16, 20, 32)},
+    {name = "Slate Dark",   window = Color3.fromRGB(20, 24, 33),  side = Color3.fromRGB(14, 17, 24),  panel = Color3.fromRGB(28, 34, 46),  bar = Color3.fromRGB(20, 25, 36)},
+    {name = "Midnight",     window = Color3.fromRGB(11, 13, 22),  side = Color3.fromRGB(7, 8, 15),    panel = Color3.fromRGB(18, 22, 35),  bar = Color3.fromRGB(13, 15, 26)},
+    {name = "Crimson Red",  window = Color3.fromRGB(22, 13, 15),  side = Color3.fromRGB(15, 7, 9),    panel = Color3.fromRGB(35, 18, 22),  bar = Color3.fromRGB(26, 13, 15)},
+    {name = "Emerald Mint", window = Color3.fromRGB(11, 22, 18),  side = Color3.fromRGB(7, 15, 12),   panel = Color3.fromRGB(18, 35, 28),  bar = Color3.fromRGB(13, 26, 20)}
 }
 
 KV.AccentPresets = {
@@ -304,7 +304,7 @@ KV.scanActiveBoss = function()
 end
 
 KV.scanOverchargedShop = function()
-    local shopData = {items = {}, statusText = "Stock Active", shopModel = nil, dist = 0}
+    local shopData = {items = {}, statusText = "Active", shopModel = nil, dist = 0}
     local myChar = LocalPlayer.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local targetNames = {"overcharged shop", "overchargedshop", "shop", "shops", "overcharged"}
@@ -349,7 +349,7 @@ getgenv().VortexInstance = KV.ScreenGui
 
 KV.OpenBtn = Instance.new("TextButton", KV.ScreenGui)
 KV.OpenBtn.Name = "Vortex_OpenBtn"
-KV.OpenBtn.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
+KV.OpenBtn.BackgroundColor3 = Color3.fromRGB(14, 17, 26)
 KV.OpenBtn.Position = UDim2.new(0, 15, 0.5, -25)
 KV.OpenBtn.Size = UDim2.new(0, 110, 0, 42)
 KV.OpenBtn.Font = Enum.Font.GothamBold
@@ -363,10 +363,10 @@ KV.OpenBtnStroke = KV.applyStroke(KV.OpenBtn, KV.AccentColor, 0.4, 1.5)
 
 KV.OnScreenHUD = Instance.new("Frame", KV.ScreenGui)
 KV.OnScreenHUD.Name = "OnScreenHUD"
-KV.OnScreenHUD.BackgroundColor3 = Color3.fromRGB(15, 18, 28)
+KV.OnScreenHUD.BackgroundColor3 = Color3.fromRGB(14, 17, 26)
 KV.OnScreenHUD.BackgroundTransparency = 0.15
 KV.OnScreenHUD.Position = KV.Config.HUDPosition
-KV.OnScreenHUD.Size = UDim2.new(0, 270, 0, 145)
+KV.OnScreenHUD.Size = UDim2.new(0, 275, 0, 145)
 KV.OnScreenHUD.Visible = KV.Config.ShowOnScreenHUD
 KV.OnScreenHUD.Active = true
 KV.applyCorner(KV.OnScreenHUD, 14)
@@ -392,8 +392,8 @@ end)
 
 KV.HUDContentLabel = Instance.new("TextLabel", KV.OnScreenHUD)
 KV.HUDContentLabel.BackgroundTransparency = 1
-KV.HUDContentLabel.Position = UDim2.new(0, 12, 0, 8)
-KV.HUDContentLabel.Size = UDim2.new(1, -24, 1, -16)
+KV.HUDContentLabel.Position = UDim2.new(0, 14, 0, 10)
+KV.HUDContentLabel.Size = UDim2.new(1, -28, 1, -20)
 KV.HUDContentLabel.Font = Enum.Font.GothamBold
 KV.HUDContentLabel.TextColor3 = Color3.fromRGB(240, 250, 248)
 KV.HUDContentLabel.TextSize = 11
@@ -426,7 +426,7 @@ KV.hudConn = RunService.RenderStepped:Connect(function(dt)
         local shop = KV.scanOverchargedShop()
         local bossText = boss.alive and string.format("Boss: %s (%d HP, %dm)", boss.name, boss.health, boss.dist) or "Boss: Spawning..."
         local shopItemsStr = table.concat(shop.items, ", ")
-        if #shopItemsStr > 30 then shopItemsStr = string.sub(shopItemsStr, 1, 30) .. "..." end
+        if #shopItemsStr > 32 then shopItemsStr = string.sub(shopItemsStr, 1, 32) .. "..." end
         local shopText = "Shop Stock: " .. shopItemsStr .. " [" .. shop.statusText .. "]"
         KV.HUDContentLabel.Text = "Vortex v0.24 HUD (Draggable)\n  FPS: " .. tostring(smoothedFps) .. " | Ping: " .. tostring(ping) .. " ms\n  Str: " .. tostring(str) .. " | Reb: " .. tostring(reb) .. " | Gems: " .. tostring(gems) .. "\n  " .. bossText .. "\n  " .. shopText
     end
@@ -555,6 +555,7 @@ KV.PagesContainer.ZIndex = 5
 
 local pages = {}
 local tabButtons = {}
+local tabIndicators = {}
 local currentTab = nil
 
 KV.createPage = function(name)
@@ -578,6 +579,9 @@ KV.switchTab = function(tabName)
     for name, btn in pairs(tabButtons) do
         local active = (name == tabName)
         KV.tw(btn, {BackgroundColor3 = active and KV.currentTheme().panel or Color3.fromRGB(25, 28, 40), BackgroundTransparency = active and 0 or 1}, 0.15):Play()
+        if tabIndicators[name] then
+            KV.tw(tabIndicators[name], {BackgroundTransparency = active and 0 or 1}, 0.15):Play()
+        end
     end
 end
 
@@ -588,11 +592,18 @@ KV.createTabButton = function(displayName, internalName)
     btn.Size = UDim2.new(1, 0, 0, 34)
     btn.AutoButtonColor = false
     btn.Font = Enum.Font.GothamMedium
-    btn.Text = "  " .. displayName
+    btn.Text = "   " .. displayName
     btn.TextColor3 = Color3.fromRGB(230, 235, 245)
     btn.TextSize = 12
     btn.TextXAlignment = Enum.TextXAlignment.Left
     KV.applyCorner(btn, 8)
+    local ind = Instance.new("Frame", btn)
+    ind.BackgroundColor3 = KV.AccentColor
+    ind.Position = UDim2.new(0, 4, 0.5, -9)
+    ind.Size = UDim2.new(0, 3, 0, 18)
+    ind.BackgroundTransparency = 1
+    KV.applyCorner(ind, 2)
+    tabIndicators[internalName] = ind
     btn.MouseButton1Click:Connect(function() KV.switchTab(internalName) end)
     tabButtons[internalName] = btn
     return btn
@@ -601,9 +612,9 @@ end
 KV.sectionLabel = function(page, text)
     local lbl = Instance.new("TextLabel", page)
     lbl.BackgroundTransparency = 1
-    lbl.Size = UDim2.new(1, 0, 0, 24)
+    lbl.Size = UDim2.new(1, 0, 0, 26)
     lbl.Font = Enum.Font.GothamBold
-    lbl.Text = "  " .. string.upper(text)
+    lbl.Text = "  ▸  " .. string.upper(text)
     lbl.TextColor3 = KV.AccentColor
     lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -620,11 +631,11 @@ KV.createPanel = function(page, height)
 end
 
 KV.createToggle = function(page, title, desc, defaultVal, callback)
-    local p = KV.createPanel(page, 44)
+    local p = KV.createPanel(page, 46)
     local lbl = Instance.new("TextLabel", p)
-    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0, 12, 0, 4); lbl.Size = UDim2.new(1, -70, 0, 20); lbl.Font = Enum.Font.GothamBold; lbl.Text = title; lbl.TextColor3 = Color3.fromRGB(240, 245, 255); lbl.TextSize = 12; lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.BackgroundTransparency = 1; lbl.Position = UDim2.new(0, 12, 0, 5); lbl.Size = UDim2.new(1, -70, 0, 20); lbl.Font = Enum.Font.GothamBold; lbl.Text = title; lbl.TextColor3 = Color3.fromRGB(240, 245, 255); lbl.TextSize = 12; lbl.TextXAlignment = Enum.TextXAlignment.Left
     local dLbl = Instance.new("TextLabel", p)
-    dLbl.BackgroundTransparency = 1; dLbl.Position = UDim2.new(0, 12, 0, 22); dLbl.Size = UDim2.new(1, -70, 0, 16); dLbl.Font = Enum.Font.Gotham; dLbl.Text = desc or ""; dLbl.TextColor3 = Color3.fromRGB(150, 160, 175); dLbl.TextSize = 10; dLbl.TextXAlignment = Enum.TextXAlignment.Left
+    dLbl.BackgroundTransparency = 1; dLbl.Position = UDim2.new(0, 12, 0, 24); dLbl.Size = UDim2.new(1, -70, 0, 16); dLbl.Font = Enum.Font.Gotham; dLbl.Text = desc or ""; dLbl.TextColor3 = Color3.fromRGB(140, 150, 168); dLbl.TextSize = 10; dLbl.TextXAlignment = Enum.TextXAlignment.Left
     local tBtn = Instance.new("TextButton", p)
     tBtn.BackgroundColor3 = defaultVal and KV.AccentColor or Color3.fromRGB(45, 50, 65); tBtn.Position = UDim2.new(1, -50, 0.5, -11); tBtn.Size = UDim2.new(0, 38, 0, 22); tBtn.Text = ""; KV.applyCorner(tBtn, 11)
     local dot = Instance.new("Frame", tBtn)
@@ -640,7 +651,7 @@ KV.createToggle = function(page, title, desc, defaultVal, callback)
 end
 
 KV.createButton = function(page, title, desc, callback)
-    local p = KV.createPanel(page, 40)
+    local p = KV.createPanel(page, 42)
     local btn = Instance.new("TextButton", p)
     btn.BackgroundTransparency = 1; btn.Size = UDim2.new(1, 0, 1, 0); btn.Font = Enum.Font.GothamBold; btn.Text = "  " .. title; btn.TextColor3 = Color3.fromRGB(240, 245, 255); btn.TextSize = 12; btn.TextXAlignment = Enum.TextXAlignment.Left
     btn.MouseButton1Click:Connect(function() if callback then callback() end end)
@@ -648,10 +659,10 @@ KV.createButton = function(page, title, desc, callback)
 end
 
 KV.createRedButton = function(page, title, desc, callback)
-    local p = KV.createPanel(page, 44)
-    p.BackgroundColor3 = Color3.fromRGB(45, 18, 22)
+    local p = KV.createPanel(page, 42)
+    p.BackgroundColor3 = Color3.fromRGB(28, 16, 20)
     local btn = Instance.new("TextButton", p)
-    btn.BackgroundTransparency = 1; btn.Size = UDim2.new(1, 0, 1, 0); btn.Font = Enum.Font.GothamBold; btn.Text = "  " .. title; btn.TextColor3 = Color3.fromRGB(255, 100, 100); btn.TextSize = 12; btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.BackgroundTransparency = 1; btn.Size = UDim2.new(1, 0, 1, 0); btn.Font = Enum.Font.GothamBold; btn.Text = "  " .. title; btn.TextColor3 = Color3.fromRGB(248, 113, 113); btn.TextSize = 12; btn.TextXAlignment = Enum.TextXAlignment.Left
     btn.MouseButton1Click:Connect(function() if callback then callback() end end)
     return p
 end
@@ -705,23 +716,24 @@ KV.createTabButton("Movement", "Movement")
 KV.createTabButton("Visuals", "Visuals")
 KV.createTabButton("About", "About")
 
-KV.sectionLabel(KV.clickGuiPage, "GUI SIZE & ACCENT PALETTE")
+KV.sectionLabel(KV.clickGuiPage, "GUI SCALE & ACCENT")
 KV.createSlider(KV.clickGuiPage, "GUI Scale (%)", 70, 150, math.floor(KV.Config.GuiScale * 100), function(v)
     KV.Config.GuiScale = v / 100; KV.tw(KV.guiSizeScale, {Scale = KV.Config.GuiScale}, 0.12):Play()
 end)
 
-KV.sectionLabel(KV.clickGuiPage, "COLOR PALETTE (PALETTE)")
-local palettePanel = KV.createPanel(KV.clickGuiPage, 90)
-local pGrid = Instance.new("UIGridLayout", palettePanel); pGrid.CellSize = UDim2.new(0, 110, 0, 36); pGrid.CellPadding = UDim2.new(0, 8, 0, 8); pGrid.SortOrder = Enum.SortOrder.LayoutOrder
-local pPadding = Instance.new("UIPadding", palettePanel); pPadding.PaddingTop = UDim.new(0, 8); pPadding.PaddingLeft = UDim.new(0, 8)
+KV.sectionLabel(KV.clickGuiPage, "COLOR PALETTE")
+local palettePanel = KV.createPanel(KV.clickGuiPage, 102)
+local pGrid = Instance.new("UIGridLayout", palettePanel); pGrid.CellSize = UDim2.new(0, 112, 0, 36); pGrid.CellPadding = UDim2.new(0, 8, 0, 8); pGrid.SortOrder = Enum.SortOrder.LayoutOrder
+local pPadding = Instance.new("UIPadding", palettePanel); pPadding.PaddingTop = UDim.new(0, 10); pPadding.PaddingLeft = UDim.new(0, 10)
 
 for _, preset in ipairs(KV.AccentPresets) do
     local tile = Instance.new("TextButton", palettePanel)
-    tile.BackgroundColor3 = Color3.fromRGB(25, 30, 42); tile.AutoButtonColor = false; tile.Text = ""; KV.applyCorner(tile, 6)
-    local cBar = Instance.new("Frame", tile); cBar.BackgroundColor3 = preset.color; cBar.Position = UDim2.new(0, 6, 0.5, -10); cBar.Size = UDim2.new(0, 20, 0, 20); KV.applyCorner(cBar, 4)
-    local tLbl = Instance.new("TextLabel", tile); tLbl.BackgroundTransparency = 1; tLbl.Position = UDim2.new(0, 32, 0, 0); tLbl.Size = UDim2.new(1, -34, 1, 0); tLbl.Font = Enum.Font.GothamBold; tLbl.Text = preset.name; tLbl.TextColor3 = Color3.fromRGB(230, 235, 245); tLbl.TextSize = 9; tLbl.TextXAlignment = Enum.TextXAlignment.Left
+    tile.BackgroundColor3 = Color3.fromRGB(26, 32, 44); tile.AutoButtonColor = false; tile.Text = ""; KV.applyCorner(tile, 6)
+    local cBar = Instance.new("Frame", tile); cBar.BackgroundColor3 = preset.color; cBar.Position = UDim2.new(0, 6, 0.5, -9); cBar.Size = UDim2.new(0, 18, 0, 18); KV.applyCorner(cBar, 4)
+    local tLbl = Instance.new("TextLabel", tile); tLbl.BackgroundTransparency = 1; tLbl.Position = UDim2.new(0, 30, 0, 0); tLbl.Size = UDim2.new(1, -32, 1, 0); tLbl.Font = Enum.Font.GothamBold; tLbl.Text = preset.name; tLbl.TextColor3 = Color3.fromRGB(230, 235, 245); tLbl.TextSize = 9; tLbl.TextXAlignment = Enum.TextXAlignment.Left
     tile.MouseButton1Click:Connect(function()
         KV.AccentColor = preset.color; KV.MainStroke.Color = preset.color; KV.HUDStroke.Color = preset.color; KV.OpenBtn.TextColor3 = preset.color; KV.OpenBtnStroke.Color = preset.color
+        for _, ind in pairs(tabIndicators) do ind.BackgroundColor3 = preset.color end
         KV.notify("Vortex Palette", "Accent changed to " .. preset.name, 2)
     end)
 end
