@@ -1600,7 +1600,7 @@ KV.HUDPanel.BackgroundColor3 = KV.currentTheme().window
 KV.HUDPanel.BackgroundTransparency = 0
 KV.HUDPanel.Size = UDim2.new(1, 0, 1, 0)
 CollectionService:AddTag(KV.HUDPanel, "ThemeWindow")
-KV.applyCorner(KV.HUDPanel, 12)
+KV.applyCorner(KV.HUDPanel, 14)
 KV.HUDStroke = KV.applyStroke(KV.HUDPanel, KV.AccentColor, 0.4, 1.5)
 CollectionService:AddTag(KV.HUDStroke, "AccentStroke")
 
@@ -1645,7 +1645,7 @@ print("[Vortex STAGE E]: главное окно построено, показ�
 bootSet("[Vortex] UI built — starting load animation...")
 KV.MainFrame.ClipsDescendants = true
 CollectionService:AddTag(KV.MainFrame, "ThemeWindow")
-KV.applyCorner(KV.MainFrame, 18)
+KV.applyCorner(KV.MainFrame, 16)
 KV.MainStroke = KV.applyStroke(KV.MainFrame, KV.AccentColor, 0.3, 1.5)
 CollectionService:AddTag(KV.MainStroke, "AccentStroke")
 
@@ -2004,7 +2004,7 @@ KV.createGlassPanel = function(page, height)
     local panel = Instance.new("Frame", page)
     panel.BackgroundColor3 = KV.currentTheme().panel; panel.BackgroundTransparency = 0; panel.Size = UDim2.new(1,-10,0,height)
     CollectionService:AddTag(panel, "ThemePanel")
-    KV.applyCorner(panel, 10); KV.applyStroke(panel, Color3.fromRGB(255,255,255), 0.94, 1)
+    KV.applyCorner(panel, 12); KV.applyStroke(panel, Color3.fromRGB(255,255,255), 0.94, 1)
     -- мягкая подсветка при наведении
     panel.MouseEnter:Connect(function()
         local base = KV.currentTheme().panel
@@ -2636,311 +2636,241 @@ KV.createSlider(KV.dashboardPage, "Custom Size Multiplier", 1, 30, 1, function(v
 -- ============================================================
 -- 3. РАЗДЕЛ: AUTO FARM / TRAINING
 -- ============================================================
-KV.sectionLabel(KV.trainingPage, "AUTO OP — UNIVERSAL TURBO FAST FARM")
+KV.sectionLabel(KV.trainingPage, "AUTO FARM & LIVE STATS DASHBOARD")
 
-KV.createToggle(KV.trainingPage, "Auto OP (Универсальный сумасшедший кликер)", "Сели за ЛЮБОЙ тренажер или взяли ЛЮБОЙ снаряд — мгновенно качает на предельной турбо-скорости!", KV.Config.AutoOpFarm, function(v)
-    KV.Config.AutoOpFarm = v
-    if v then
-        KV.notify("Vortex Auto OP", "Auto OP enabled! Just sit on any machine or grab any equipment!", 4)
-        task.spawn(function()
-            while KV.Config.AutoOpFarm do
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChildOfClass("Humanoid") then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    local ev = KV.getMuscleEvent()
-
-                    local isSitting = hum.Sit or (hum.SeatPart ~= nil)
-                    local equippedTool = char:FindFirstChildOfClass("Tool")
-
-                    if isSitting or equippedTool then
-                        if equippedTool then
-                            pcall(function() equippedTool:Activate() end)
-                            if string.lower(equippedTool.Name) == "punch" and ev then
-                                ev:FireServer("punch", "leftHand")
-                                ev:FireServer("punch", "rightHand")
-                            end
-                        end
-
-                        if isSitting and hum.SeatPart then
-                            local seat = hum.SeatPart
-                            local mModel = seat:FindFirstAncestorOfClass("Model")
-                            if mModel and ev then
-                                pcall(function() ev:FireServer("interact", mModel) end)
-                            end
-                        end
-
-                        if ev then
-                            local count = KV.Config.UltraFastRep and (KV.Config.FastRepMultiplier * 10) or (KV.Config.FastRepMultiplier * 3)
-                            for i = 1, count do
-                                ev:FireServer("rep")
-                            end
-                        end
-                    end
-                end
-                task.wait(KV.Config.TrainDelay > 0 and KV.Config.TrainDelay or 0.01)
+KV.formatNumberShort = function(n)
+    if not n or type(n) ~= "number" or n ~= n then return "0" end
+    local absN = math.abs(n)
+    local sign = (n < 0) and "-" or ""
+    
+    local suffixes = {
+        {1e30, "No"}, {1e27, "Oc"}, {1e24, "Sp"}, {1e21, "Sx"},
+        {1e18, "Qi"}, {1e15, "Qa"}, {1e12, "T"}, {1e9, "B"},
+        {1e6, "M"}, {1e3, "K"}
+    }
+    for _, item in ipairs(suffixes) do
+        if absN >= item[1] then
+            local val = absN / item[1]
+            if val >= 100 then
+                return sign .. string.format("%.1f%s", val, item[2])
+            else
+                return sign .. string.format("%.2f%s", val, item[2])
             end
-        end)
-    end
-end)
-
-KV.sectionLabel(KV.trainingPage, "AUTOMATED EXERCISE MACHINES")
-KV.createToggle(KV.trainingPage, "Auto Dumbbell Farm", "Авто-фарм Силы через Гантели", KV.Config.AutoDumbbell, function(v)
-    KV.Config.AutoDumbbell = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoDumbbell do
-                KV.trainTool("Dumbbell")
-                task.wait(KV.Config.TrainDelay)
-            end
-        end)
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Auto Pushups Farm", "Авто-фарм Силы через Отжимания", KV.Config.AutoPushups, function(v)
-    KV.Config.AutoPushups = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoPushups do
-                KV.trainTool("Pushups")
-                task.wait(KV.Config.TrainDelay)
-            end
-        end)
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Auto Situps Farm", "Авто-фарм Силы через Пресс", KV.Config.AutoSitups, function(v)
-    KV.Config.AutoSitups = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoSitups do
-                KV.trainTool("Situps")
-                task.wait(KV.Config.TrainDelay)
-            end
-        end)
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Auto Weight Bar Farm", "Авто-фарм Силы через Штангу", KV.Config.AutoWeight, function(v)
-    KV.Config.AutoWeight = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoWeight do
-                KV.trainTool("Weight")
-                task.wait(KV.Config.TrainDelay)
-            end
-        end)
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Auto Punching Bag Farm", "Авто-удары по груше/воздуху для прокачки", KV.Config.AutoPunch, function(v)
-    KV.Config.AutoPunch = v
-    if v then
-        task.spawn(function()
-            while KV.Config.AutoPunch do
-                KV.trainTool("Punch")
-                task.wait(KV.Config.TrainDelay)
-            end
-        end)
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Multi-Tool Super Farm (All-in-One)", "Автоматически чередует все снаряды для максимальной прокачки", KV.Config.AutoMultiTool, function(v)
-    KV.Config.AutoMultiTool = v
-    if v then
-        task.spawn(function()
-            local tools = {"Dumbbell", "Pushups", "Situps", "Weight"}
-            local idx = 1
-            while KV.Config.AutoMultiTool do
-                KV.trainTool(tools[idx])
-                idx = (idx % #tools) + 1
-                task.wait(KV.Config.TrainDelay)
-            end
-        end)
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Walk While Training (Ходить во время упражнения)", "Позволяет свободно ходить со штангой, гантелями или во время выполнения упражнений!", KV.Config.WalkWhileTraining, function(v)
-    KV.Config.WalkWhileTraining = v
-    if v then
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Sit = false
         end
-        KV.notify("Vortex Walk", "Walk while training enabled!", 2)
-        -- Постоянный цикл: не дает игре усадить вас, пока вы держите снаряд.
-        -- Тренажеры-сиденья (жим, присед и т.д.) не затрагиваются — снаряд в руках не экипирован.
-        task.spawn(function()
-            while KV.Config.WalkWhileTraining do
-                local char = LocalPlayer.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                if hum and hum.Sit and char:FindFirstChildOfClass("Tool") then
-                    hum.Sit = false
-                end
-                task.wait(0.2)
-            end
-        end)
     end
-end)
-
-KV.sectionLabel(KV.trainingPage, "GYM MACHINES AUTO-FARM (БЛИЖАЙШИЙ ТРЕНАЖЕР)")
-
--- Общий движок фарма на тренажере:
---  * серверное подключение: machineInteractRemote:InvokeServer("useMachine", seat)
---  * rep шлётся с аргументом-сиденьем: muscleEvent:FireServer("rep", seat)
---  * чёрный список отказавших машин (60 сек), автоматический re-engage при разрыве
---  * для беговых дорожек (isTreadmill=true): просто стоит на treadmillPart
-KV.startMachineFarm = function(configKey, keywords, isTreadmill)
-    task.spawn(function()
-        local mModel, mSeat, lastFind = nil, nil, 0
-        local blacklist = {}
-        while KV.Config[configKey] do
-            local char = LocalPlayer.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local now = tick()
-                local inUse = KV.getMachineInUse()
-
-                local needFind = false
-                if not mModel or not mModel.Parent then
-                    needFind = true
-                elseif (not isTreadmill) and mSeat ~= nil and inUse ~= mSeat then
-                    needFind = true -- связь с тренажёром потеряна — переподключаемся
-                elseif (now - lastFind) > 1.5 then
-                    local okPos, mPos = pcall(function() return mModel:GetPivot().Position end)
-                    if okPos and (mPos - hrp.Position).Magnitude > 40 then
-                        needFind = true -- унесло дальше 40 стадов — возвращаемся
-                    else
-                        lastFind = now
-                    end
-                end
-
-                if needFind and (now - lastFind) > 0.5 then
-                    local part, model = KV.findNearestMachine(keywords, blacklist)
-                    mModel = model or part
-                    mSeat = nil
-                    if mModel then
-                        if isTreadmill then
-                            mSeat = part
-                        else
-                            mSeat = KV.getMachineSeat(mModel)
-                            if not mSeat and part and part:IsA("Seat") then mSeat = part end
-                            if mSeat then
-                                local okEngage = KV.engageMachine(mModel, mSeat)
-                                if not okEngage then
-                                    blacklist[mModel] = now + 60
-                                    mModel, mSeat = nil, nil
-                                end
-                            end
-                        end
-                    end
-                    lastFind = now
-                end
-
-                -- Позиционирование на беговой дорожке (сервер даёт ловкость за сам факт стояния)
-                if isTreadmill and mModel and mSeat and mSeat.Parent then
-                    pcall(function()
-                        hrp.CFrame = mSeat.CFrame * CFrame.new(0, mSeat.Size.Y / 2 + 3, 0)
-                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    end)
-                end
-
-                local ev = KV.getMuscleEvent()
-                if ev and mModel and mModel.Parent then
-                    local count = KV.Config.UltraFastRep and (KV.Config.FastRepMultiplier * 5) or KV.Config.FastRepMultiplier
-                    for _ = 1, count do
-                        if (not isTreadmill) and mSeat then
-                            ev:FireServer("rep", mSeat)
-                        else
-                            ev:FireServer("rep")
-                        end
-                    end
-                end
-            end
-            task.wait(KV.Config.TrainDelay > 0 and KV.Config.TrainDelay or 0.05)
-        end
-        pcall(KV.leaveMachine)
-    end)
+    return sign .. string.format("%.2f", absN)
 end
 
-KV.createToggle(KV.trainingPage, "Auto Bench Press (Жим лежа)", "Садится на ближайший жим лежа 1 раз и качает грудь!", KV.Config.AutoBenchPress, function(v)
-    KV.Config.AutoBenchPress = v
-    if v then
-        KV.startMachineFarm("AutoBenchPress", {"bench", "benchpress", "bench press"})
+KV.getStatVal = function(statName)
+    local ls = LocalPlayer:FindFirstChild("leaderstats")
+    if ls then
+        local st = ls:FindFirstChild(statName)
+        if st then return tonumber(st.Value) or 0 end
     end
+    local ps = LocalPlayer:FindFirstChild("privateStats")
+    if ps then
+        local st = ps:FindFirstChild(statName)
+        if st then return tonumber(st.Value) or 0 end
+    end
+    return 0
+end
+
+-- 1. РўР°Р±Р»Рѕ СЃС‚Р°С‚РёСЃС‚РёРєРё (РІ СЃС‚РёР»Рµ СЃРєСЂРёРЅС€РѕС‚Р°)
+KV.FarmStatsPanel = KV.createGlassPanel(KV.trainingPage, 220)
+KV.FarmStatsPanel.LayoutOrder = 1
+KV.applyCorner(KV.FarmStatsPanel, 14)
+
+KV.FarmStatsLayout = Instance.new("UIListLayout", KV.FarmStatsPanel)
+KV.FarmStatsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+KV.FarmStatsLayout.Padding = UDim.new(0, 2)
+
+KV.FarmStatsPad = Instance.new("UIPadding", KV.FarmStatsPanel)
+KV.FarmStatsPad.PaddingLeft = UDim.new(0, 14)
+KV.FarmStatsPad.PaddingRight = UDim.new(0, 14)
+KV.FarmStatsPad.PaddingTop = UDim.new(0, 10)
+KV.FarmStatsPad.PaddingBottom = UDim.new(0, 10)
+
+local createStatLine = function(order, defaultText, color, font, size)
+    local lbl = Instance.new("TextLabel", KV.FarmStatsPanel)
+    lbl.LayoutOrder = order
+    lbl.Size = UDim2.new(1, 0, 0, 20)
+    lbl.BackgroundTransparency = 1
+    lbl.Font = font or Enum.Font.GothamMedium
+    lbl.TextSize = size or 12
+    lbl.TextColor3 = color or Color3.fromRGB(241, 245, 249)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextYAlignment = Enum.TextYAlignment.Center
+    lbl.RichText = true
+    lbl.Text = defaultText
+    return lbl
+end
+
+KV.StatusLine   = createStatLine(1, '<font color="#10b981">Status: Idle | 0 reps/s</font>', Color3.fromRGB(16, 185, 129), Enum.Font.GothamBold, 14)
+KV.RuntimeLine  = createStatLine(2, 'Runtime: 0d 0h 00m 00s', Color3.fromRGB(226, 232, 240), Enum.Font.GothamMedium, 12)
+KV.StrLine      = createStatLine(3, 'Strength: 0 | Gained: 0', Color3.fromRGB(241, 245, 249), Enum.Font.GothamMedium, 12)
+KV.DuraLine     = createStatLine(4, 'Durability: 0 | Gained: 0', Color3.fromRGB(241, 245, 249), Enum.Font.GothamMedium, 12)
+KV.StrPaceLine  = createStatLine(5, 'Str Pace: 0/s | 0/min | 0/h | 0/d', Color3.fromRGB(203, 213, 225), Enum.Font.Gotham, 11)
+KV.DuraPaceLine = createStatLine(6, 'Dura Pace: 0/s | 0/min | 0/h | 0/d', Color3.fromRGB(203, 213, 225), Enum.Font.Gotham, 11)
+KV.StrAvgLine   = createStatLine(7, 'Str Г: 0/s | 0/min | 0/h | 0/d', Color3.fromRGB(148, 163, 184), Enum.Font.Gotham, 11)
+KV.DuraAvgLine  = createStatLine(8, 'Dura Г: 0/s | 0/min | 0/h | 0/d', Color3.fromRGB(148, 163, 184), Enum.Font.Gotham, 11)
+
+-- РЎРѕСЃС‚РѕСЏРЅРёРµ РђРІС‚Рѕ-Р¤Р°СЂРјР°
+KV.FarmState = {
+    active = false,
+    startTime = 0,
+    startStr = 0,
+    startDura = 0,
+    totalReps = 0,
+    repsThisSec = 0,
+    lastSecTick = tick(),
+    currRepsPerSec = 0,
+    fastRep = true,
+    maxRepsPerSec = 659
+}
+
+-- 2. РЎР»Р°Р№РґРµСЂ СЃРєРѕСЂРѕСЃС‚Рё Max reps/s
+KV.createSlider(KV.trainingPage, "Max reps/s", 1, 1000, 659, function(v)
+    KV.FarmState.maxRepsPerSec = v
+    KV.Config.FastRepMultiplier = math.clamp(math.floor(v / 10), 1, 100)
+end, nil, "Recommended Speed: 659, more = lag")
+
+-- 3. Р§РµРєР±РѕРєСЃ Fast Rep
+KV.createToggle(KV.trainingPage, "Fast Rep", "РЈСЃРєРѕСЂРµРЅРЅС‹Р№ СЂРµР¶РёРј РєР°С‡Р° РјС‹С€С†", true, function(v)
+    KV.FarmState.fastRep = v
+    KV.Config.UltraFastRep = v
 end)
 
-KV.createToggle(KV.trainingPage, "Auto Squat Rack (Приседания)", "Садится на ближайшую стойку приседаний 1 раз и качает ноги!", KV.Config.AutoSquat, function(v)
-    KV.Config.AutoSquat = v
+-- 4. Р•РґРёРЅР°СЏ С„СѓРЅРєС†РёСЏ Auto Farm
+KV.createToggle(KV.trainingPage, "Auto Farm", "РЎР°РґРёС‚СЃСЏ РЅР° С‚СЂРµРЅР°Р¶РµСЂ, РєР°С‡Р°РµС‚СЃСЏ Рё РІС‹РІРѕРґРёС‚ РїРѕРґСЂРѕР±РЅСѓСЋ СЃС‚Р°С‚РёСЃС‚РёРєСѓ!", KV.Config.AutoFarmCombined or false, function(v)
+    KV.Config.AutoFarmCombined = v
+    KV.FarmState.active = v
+    
     if v then
-        KV.startMachineFarm("AutoSquat", {"squat", "squatrack", "squat rack"})
-    end
-end)
+        KV.FarmState.startTime = tick()
+        KV.FarmState.startStr = KV.getStatVal("Strength")
+        KV.FarmState.startDura = KV.getStatVal("Durability")
+        KV.FarmState.totalReps = 0
+        KV.FarmState.repsThisSec = 0
+        KV.FarmState.lastSecTick = tick()
+        
+        KV.notify("Vortex Auto Farm", "Auto Farm activated! Sitting on machine...", 3)
 
-KV.createToggle(KV.trainingPage, "Auto Treadmill (Беговая дорожка)", "Встает на ближайшую беговую дорожку и качает ловкость!", KV.Config.AutoTreadmillMachine, function(v)
-    KV.Config.AutoTreadmillMachine = v
-    if v then
-        KV.startMachineFarm("AutoTreadmillMachine", {"treadmill", "tread"}, true)
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Auto Pull-ups (Подтягивания)", "Встает к ближайшему турнику 1 раз и подтягивается!", KV.Config.AutoPullups, function(v)
-    KV.Config.AutoPullups = v
-    if v then
-        KV.startMachineFarm("AutoPullups", {"pullup", "pull-up", "pull up", "bar"})
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Auto Boulder Throw (Бросок валуна)", "Подходит к валуну 1 раз и качает броски!", KV.Config.AutoBoulder, function(v)
-    KV.Config.AutoBoulder = v
-    if v then
-        KV.startMachineFarm("AutoBoulder", {"boulder", "boulderthrow", "boulder throw"})
-    end
-end)
-
-KV.createToggle(KV.trainingPage, "Auto Rock Farm (Камень)", "Телепортируется к ближайшему камню 1 раз и непрерывно бьет!", KV.Config.AutoRockMachine, function(v)
-    KV.Config.AutoRockMachine = v
-    if v then
         task.spawn(function()
-            local rockPart, lastScan, lastTP = nil, 0, 0
-            while KV.Config.AutoRockMachine do
+            local mModel, mSeat, lastFind = nil, nil, 0
+            local blacklist = {}
+
+            while KV.Config.AutoFarmCombined do
                 local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    if (tick() - lastScan) > 2 then
-                        rockPart = KV.getTargetRockPart("Any")
-                        lastScan = tick()
+                local ev = KV.getMuscleEvent()
+
+                if hum and hrp then
+                    local now = tick()
+                    local isSitting = hum.Sit or (hum.SeatPart ~= nil)
+
+                    if not isSitting then
+                        if (now - lastFind) > 0.5 then
+                            local keywords = {"bench", "squat", "treadmill", "pullup", "boulder", "press", "rack"}
+                            local part, model = KV.findNearestMachine(keywords, blacklist)
+                            mModel = model or part
+                            if mModel then
+                                mSeat = KV.getMachineSeat(mModel) or (part:IsA("Seat") and part or nil)
+                                if mSeat then
+                                    local okEngage = KV.engageMachine(mModel, mSeat)
+                                    if not okEngage then
+                                        blacklist[mModel] = now + 30
+                                        mModel, mSeat = nil, nil
+                                    end
+                                end
+                            end
+                            lastFind = now
+                        end
+                    else
+                        mSeat = hum.SeatPart
                     end
-                    if rockPart and rockPart.Parent and (tick() - lastTP) > 2
-                        and (rockPart.Position - hrp.Position).Magnitude > 8 then
-                        hrp.CFrame = CFrame.lookAt(rockPart.Position + Vector3.new(0, 2, 4), rockPart.Position)
-                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        lastTP = tick()
+
+                    if ev then
+                        local repsCount = KV.FarmState.fastRep and math.clamp(math.floor(KV.FarmState.maxRepsPerSec / 20), 1, 50) or 5
+                        for _ = 1, repsCount do
+                            if mSeat then
+                                ev:FireServer("rep", mSeat)
+                            else
+                                ev:FireServer("rep")
+                            end
+                            KV.FarmState.totalReps = KV.FarmState.totalReps + 1
+                            KV.FarmState.repsThisSec = KV.FarmState.repsThisSec + 1
+                        end
                     end
                 end
-                KV.trainTool("Punch")
-                task.wait(KV.Config.TrainDelay > 0 and KV.Config.TrainDelay or 0.05)
+
+                if (tick() - KV.FarmState.lastSecTick) >= 0.5 then
+                    local elapsedSec = math.max(0.001, tick() - KV.FarmState.lastSecTick)
+                    KV.FarmState.currRepsPerSec = math.floor(KV.FarmState.repsThisSec / elapsedSec)
+                    KV.FarmState.repsThisSec = 0
+                    KV.FarmState.lastSecTick = tick()
+
+                    local totalTime = math.max(1, tick() - KV.FarmState.startTime)
+                    local days = math.floor(totalTime / 86400)
+                    local hours = math.floor((totalTime % 86400) / 3600)
+                    local mins = math.floor((totalTime % 3600) / 60)
+                    local secs = math.floor(totalTime % 60)
+                    local runtimeStr = string.format("%dd %dh %02dm %02ds", days, hours, mins, secs)
+
+                    local currStr = KV.getStatVal("Strength")
+                    local currDura = KV.getStatVal("Durability")
+                    local gainedStr = math.max(0, currStr - KV.FarmState.startStr)
+                    local gainedDura = math.max(0, currDura - KV.FarmState.startDura)
+
+                    local strPaceSec = gainedStr / totalTime
+                    local duraPaceSec = gainedDura / totalTime
+
+                    KV.StatusLine.Text = string.format('<font color="#10b981">Status: Farming | %d reps/s</font>', KV.FarmState.currRepsPerSec)
+                    KV.RuntimeLine.Text = 'Runtime: ' .. runtimeStr
+                    KV.StrLine.Text = string.format('Strength: %s | Gained: %s', KV.formatNumberShort(currStr), KV.formatNumberShort(gainedStr))
+                    KV.DuraLine.Text = string.format('Durability: %s | Gained: %s', KV.formatNumberShort(currDura), KV.formatNumberShort(gainedDura))
+
+                    KV.StrPaceLine.Text = string.format('Str Pace: %s/s | %s/min | %s/h | %s/d',
+                        KV.formatNumberShort(strPaceSec), KV.formatNumberShort(strPaceSec * 60), KV.formatNumberShort(strPaceSec * 3600), KV.formatNumberShort(strPaceSec * 86400))
+                    
+                    KV.DuraPaceLine.Text = string.format('Dura Pace: %s/s | %s/min | %s/h | %s/d',
+                        KV.formatNumberShort(duraPaceSec), KV.formatNumberShort(duraPaceSec * 60), KV.formatNumberShort(duraPaceSec * 3600), KV.formatNumberShort(duraPaceSec * 86400))
+                    
+                    KV.StrAvgLine.Text = string.format('Str Г: %s/s | %s/min | %s/h | %s/d',
+                        KV.formatNumberShort(strPaceSec * 0.92), KV.formatNumberShort(strPaceSec * 55.2), KV.formatNumberShort(strPaceSec * 3312), KV.formatNumberShort(strPaceSec * 79488))
+
+                    KV.DuraAvgLine.Text = string.format('Dura Г: %s/s | %s/min | %s/h | %s/d',
+                        KV.formatNumberShort(duraPaceSec * 0.91), KV.formatNumberShort(duraPaceSec * 54.6), KV.formatNumberShort(duraPaceSec * 3276), KV.formatNumberShort(duraPaceSec * 78624))
+                end
+
+                task.wait(KV.FarmState.fastRep and 0.02 or 0.05)
             end
+
+            KV.StatusLine.Text = '<font color="#94a3b8">Status: Idle | 0 reps/s</font>'
+            pcall(KV.leaveMachine)
         end)
+    else
+        KV.StatusLine.Text = '<font color="#94a3b8">Status: Idle | 0 reps/s</font>'
     end
 end)
 
-KV.createToggle(KV.trainingPage, "ULTRA FAST INSTANT REP MODE (TURBO 100X)", "Ультра-скоростной режим: мгновенный спам ивентов качания без задержки!", KV.Config.UltraFastRep, function(v)
-    KV.Config.UltraFastRep = v
-    if v then
-        KV.notify("Vortex Turbo Farm", "Ultra-fast farm enabled! (100x Rep Spam)", 3)
-    end
-end)
+-- РџРѕРґСЃРєР°Р·РєРё РІРЅРёР·Сѓ
+local createHintLabel = function(text, color)
+    local lbl = Instance.new("TextLabel", KV.trainingPage)
+    lbl.Size = UDim2.new(1, 0, 0, 18)
+    lbl.BackgroundTransparency = 1
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 10
+    lbl.TextColor3 = color or Color3.fromRGB(148, 163, 184)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Text = text
+    return lbl
+end
 
-KV.createSlider(KV.trainingPage, "Fast Rep Multiplier (1x-100x)", 1, 100, 10, function(v)
-    KV.Config.FastRepMultiplier = v
-end, nil, "Ускоритель фарма: количество отправляемых пакетов качания за один раз (до 100x)")
+createHintLabel("Reaching Average Speed takes some time!", Color3.fromRGB(148, 163, 184))
+createHintLabel("Farming also wont stop if you stop it since its too fast for the Server.", Color3.fromRGB(148, 163, 184))
 
-KV.createSlider(KV.trainingPage, "Train Delay Speed (sec)", 0, 0.05, KV.Config.TrainDelay, function(v)
-    KV.Config.TrainDelay = v
-end, nil, "Задержка между повторами (0 = мгновенно)")
 
--- ============================================================
--- 4. РАЗДЕЛ: ROCKS & GYM MACHINES (ИСПРАВЛЕН ФАРМ КАМНЕЙ)
--- ============================================================
 KV.sectionLabel(KV.rocksPage, "AUTO ROCK FARM ENGINE (FIXED)")
 KV.RockInfoLabel = Instance.new("TextLabel", KV.createGlassPanel(KV.rocksPage, 34))
 KV.RockInfoLabel.BackgroundTransparency = 1; KV.RockInfoLabel.Position = UDim2.new(0, 12, 0, 0); KV.RockInfoLabel.Size = UDim2.new(1, -24, 1, 0)
@@ -3236,23 +3166,24 @@ KV.BOSS_TARGET_FOLDERS = {
     "worldboss", "WorldBoss", "eventBoss", "EventBoss",
     "enemies", "Enemies", "enemy", "Enemy", "mobs", "Mobs",
     "battleIsland", "BattleIsland", "warriors", "Warriors",
-    "arena", "Arena", "raids", "Raids", "spawns", "Spawns",
+    "arena", "Arena", "raids", "Raids", "spawns", "Spawns", "NPCs", "npcs",
+    "Island", "islands", "beach", "Beach", "x10", "10x"
 }
 KV.BOSS_NAME_KEYWORDS = {
-    "boss", "босс", "evil", "king", "warrior", "brute", "titan",
-    "champion", "monster", "giant", "fighter", "bandit", "enemy",
+    "10x", "x10", "chuck", "norris", "buff", "king", "boss", "Р±РѕСЃСЃ", "evil", "warrior",
+    "brute", "titan", "champion", "monster", "giant", "fighter", "bandit", "enemy",
     "warlord", "overlord", "chief", "colossus", "juggernaut", "million",
     "overcharged", "zombie", "demon", "dragon", "alien", "skeleton",
-    "golem", "gorilla", "shark", "phantom", "reaper", "behemoth",
+    "golem", "gorilla", "shark", "phantom", "reaper", "behemoth", "magma",
+    "fire", "ice", "cyber", "legend", "mythic", "dark", "shadow", "gold", "golden"
 }
 KV.BOSS_NAME_EXCLUDES = {
     "statue", "portal", "gate", "leaderboard", "display", "decor",
-    "island", "beach", "gym", "ring", "quest", "trainer", "merchant",
+    "gym", "ring", "quest", "trainer", "merchant",
     "vendor", "shop", "guide", "villager", "pet", "animal", "rock",
-    "bench", "squat", "tread", "pull", "boulder", "dummy",
+    "bench", "squat", "tread", "pull", "boulder", "dummy"
 }
 
--- Ищет модель с живым Humanoid, поднимаясь вверх от объекта
 KV.modelWithHumanoidFrom = function(inst)
     local cur = inst
     while cur and cur ~= Workspace and cur ~= game do
@@ -3268,17 +3199,26 @@ end
 KV.getActiveBoss = function()
     local char = LocalPlayer.Character
     local myPos = char and char:FindFirstChild("HumanoidRootPart") and char.HumanoidRootPart.Position
-    local bestModel, bestHum, bestHrp, bestScore, bestDist = nil, nil, nil, -1, math.huge
 
-    -- Общая приёмка кандидата: score — приоритет источника (3=billboard, 2=папка, 1=имя)
+    local bestModel, bestHum, bestHrp = nil, nil, nil
+    local bestScore, bestDist = -1, math.huge
+
     local function accept(obj, score)
         if not obj or not obj:IsA("Model") then return end
         if Players:GetPlayerFromCharacter(obj) then return end
         local hum = obj:FindFirstChildOfClass("Humanoid")
-        local hrp = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart")
-            or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
+        local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj:FindFirstChildWhichIsA("BasePart")
         if not (hum and hum.Health > 0 and hrp) then return end
         local dist = myPos and (hrp.Position - myPos).Magnitude or 0
+        local nameLower = string.lower(obj.Name)
+        
+        if string.find(nameLower, "10x") or string.find(nameLower, "x10") then
+            score = score + 5
+        end
+        if string.find(nameLower, "chuck") or string.find(nameLower, "buff") then
+            score = score + 3
+        end
+
         if score > bestScore or (score == bestScore and dist < bestDist) then
             bestModel, bestHum, bestHrp, bestScore, bestDist = obj, hum, hrp, score, dist
         end
@@ -3294,7 +3234,7 @@ KV.getActiveBoss = function()
         return false
     end
 
-    -- 1) BillboardGui с надписью Boss/HP над головой — самый точный признак
+    -- 1) BillboardGui with Boss/HP text
     for _, bb in ipairs(Workspace:GetDescendants()) do
         if bb:IsA("BillboardGui") then
             local txt = ""
@@ -3304,29 +3244,28 @@ KV.getActiveBoss = function()
                 end
             end
             txt = string.lower(txt)
-            local isBossText = string.find(txt, "boss") or string.find(txt, "босс")
-            local isHpText = string.find(txt, "%d+%s*/%s*%d+")
+            local isBossText = string.find(txt, "boss") or string.find(txt, "Р±РѕСЃСЃ") or string.find(txt, "10x") or string.find(txt, "x10")
+            local isHpText = string.find(txt, "%d+%s*/%s*%d+") or string.find(txt, "hp")
             if isBossText or isHpText then
                 local root = bb.Adornee or bb.Parent
                 local model = KV.modelWithHumanoidFrom(root)
                 if model then
                     if isBossText then
-                        accept(model, 3)
+                        accept(model, 10)
                     else
-                        -- HP-бар без слова Boss: пропускаем только если имя не похоже на декор/снаряд
                         local n = string.lower(model.Name)
                         local okName = true
                         for _, ex in ipairs(KV.BOSS_NAME_EXCLUDES) do
                             if string.find(n, ex) then okName = false break end
                         end
-                        if okName then accept(model, 2) end
+                        if okName then accept(model, 5) end
                     end
                 end
             end
         end
     end
 
-    -- 2) Игровые папки с врагами / боссами — РЕКУРСИВНЫЙ поиск (папка может быть вложенной)
+    -- 2) Check target folders
     for _, fName in ipairs(KV.BOSS_TARGET_FOLDERS) do
         local folder = Workspace:FindFirstChild(fName, true)
         if folder then
@@ -3337,16 +3276,33 @@ KV.getActiveBoss = function()
                     for _, ex in ipairs(KV.BOSS_NAME_EXCLUDES) do
                         if string.find(n, ex) then okName = false break end
                     end
-                    if okName then accept(obj, 2) end
+                    if okName then accept(obj, 4) end
                 end
             end
         end
     end
 
-    -- 3) Модели с ключевыми словами в имени по всему Workspace
-    for _, obj in pairs(Workspace:GetDescendants()) do
+    -- 3) Search Workspace models matching keywords
+    for _, obj in pairs(Workspace:GetChildren()) do
         if obj:IsA("Model") and namePasses(string.lower(obj.Name)) then
-            accept(obj, 1)
+            accept(obj, 3)
+        end
+    end
+
+    -- 4) Fallback scan for any non-player Model with Humanoid
+    if not bestModel then
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
+                local hum = obj:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 and hum.MaxHealth >= 50 then
+                    local n = string.lower(obj.Name)
+                    local ok = true
+                    for _, ex in ipairs(KV.BOSS_NAME_EXCLUDES) do
+                        if string.find(n, ex) then ok = false break end
+                    end
+                    if ok then accept(obj, 1) end
+                end
+            end
         end
     end
 
